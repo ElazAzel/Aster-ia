@@ -1,0 +1,11 @@
+{
+  "id": "streaming-chat",
+  "name": "Streaming Chat",
+  "category": "chat",
+  "description": "Streams Ollama generation tokens over Server-Sent Events to the Svelte EventSource client.",
+  "privacy_level": "local",
+  "inputs": ["message", "room_id", "model"],
+  "outputs": ["SSE token events", "conversation_id"],
+  "tools": ["ChatService", "OllamaService"],
+  "guardrails": ["Use local Ollama by default.", "Persist user and assistant messages to encrypted SQLite."]
+}

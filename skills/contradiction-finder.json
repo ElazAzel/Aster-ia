@@ -1,0 +1,11 @@
+{
+  "id": "contradiction-finder",
+  "name": "Contradiction Finder",
+  "category": "research",
+  "description": "Embeds claims, compares cosine similarity, and flags similar claims with opposing sentiment.",
+  "privacy_level": "local",
+  "inputs": ["claims", "threshold"],
+  "outputs": ["ContradictionMatch[]"],
+  "tools": ["ContradictionFinder", "OllamaService"],
+  "guardrails": ["Use local embeddings.", "Do not claim contradiction without both similarity and sentiment opposition."]
+}

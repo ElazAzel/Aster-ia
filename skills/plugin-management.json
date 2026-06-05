@@ -1,0 +1,11 @@
+{
+  "id": "plugin-management",
+  "name": "Plugin Management",
+  "category": "plugins",
+  "description": "Loads MCP plugin manifests from ~/.asterion/plugins and exposes trust levels.",
+  "privacy_level": "local",
+  "inputs": ["manifest.json"],
+  "outputs": ["PluginManifest[]"],
+  "tools": ["PluginManager"],
+  "guardrails": ["Treat unknown trust levels as danger.", "Require approval for network, shell, file, or danger trust plugins."]
+}

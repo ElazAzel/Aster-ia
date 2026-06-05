@@ -1,0 +1,11 @@
+{
+  "id": "model-routing",
+  "name": "Model Routing",
+  "category": "models",
+  "description": "Selects local model when hardware VRAM satisfies requirements, otherwise selects API fallback.",
+  "privacy_level": "local",
+  "inputs": ["task_description", "hw_profile"],
+  "outputs": ["ModelSelection"],
+  "tools": ["ModelRouter"],
+  "guardrails": ["Prefer local model when feasible.", "Explain why API fallback was selected."]
+}

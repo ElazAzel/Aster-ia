@@ -1,0 +1,11 @@
+{
+  "id": "workflow-automation",
+  "name": "Workflow Automation",
+  "category": "automation",
+  "description": "Runs workflow JSON sequentially, pauses on human approval gates, and resumes after confirmation.",
+  "privacy_level": "local",
+  "inputs": ["workflow", "run_id", "approval_payload"],
+  "outputs": ["workflow_status", "approval_events"],
+  "tools": ["WorkflowRunner", "WebSocket"],
+  "guardrails": ["Never bypass human approval gates.", "Emit UI event before pausing."]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "sandboxed-code",
+  "name": "Sandboxed Code",
+  "category": "agents",
+  "description": "Runs Python code in an isolated subprocess with allowed folders, network on/off, and shell on/off controls.",
+  "privacy_level": "local",
+  "inputs": ["code", "permissions"],
+  "outputs": ["exit_code", "stdout", "stderr"],
+  "tools": ["AgentSandbox"],
+  "guardrails": ["Reject shell calls unless shell permission is enabled.", "Reject network libraries unless network permission is enabled."]
+}

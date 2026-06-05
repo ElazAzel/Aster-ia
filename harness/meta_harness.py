@@ -92,6 +92,18 @@ def main():
         "ComfyUIService": ("backend/asterion_api/services/comfyui_service.py", "class ComfyUIService"),
         "WorkflowRunner": ("backend/asterion_api/services/workflow_runner.py", "class WorkflowRunner"),
         "PluginManager": ("backend/asterion_api/services/plugin_manager.py", "class PluginManager"),
+        "AgentRegistry": ("backend/asterion_api/services/agent_registry.py", "class AgentRegistry"),
+        "Agent catalog API": ("backend/asterion_api/routers/agents.py", "def catalog"),
+        "Research agent manifest": ("agents/research-supervisor.json", "\"id\": \"research-supervisor\""),
+        "Privacy agent manifest": ("agents/privacy-guardian.json", "\"id\": \"privacy-guardian\""),
+        "RAG skill manifest": ("skills/rag-indexing.json", "\"id\": \"rag-indexing\""),
+        "Streaming skill manifest": ("skills/streaming-chat.json", "\"id\": \"streaming-chat\""),
+        "Root README": ("README.md", "# Asterion AI"),
+        "Repository AGENTS instructions": ("AGENTS.md", "# Asterion AI Agent Instructions"),
+        "Architecture docs": ("docs/architecture.md", "# Architecture"),
+        "API docs": ("docs/api.md", "# API Reference"),
+        "Agents and skills docs": ("docs/agents-and-skills.md", "# Agents and Skills"),
+        "Privacy docs": ("docs/privacy-security.md", "# Privacy and Security"),
     }
 
     source_results = {}

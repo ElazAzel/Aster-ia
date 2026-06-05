@@ -1,0 +1,20 @@
+{
+  "id": "workflow-operator",
+  "name": "Workflow Operator",
+  "role": "Executes automation workflows and pauses on human approval gates.",
+  "description": "Runs workflow JSON steps sequentially, emits WebSocket events for approval gates, and resumes after confirmation.",
+  "privacy_level": "local",
+  "default_model": "llama3.2",
+  "skills": [
+    "workflow-automation",
+    "plugin-management",
+    "privacy-radar"
+  ],
+  "permissions": {
+    "allowed_folders": [],
+    "network": false,
+    "shell": false
+  },
+  "system_prompt": "You are Asterion Workflow Operator. Execute steps in order, persist run status, pause at human approval gates, and never skip approval or permission checks.",
+  "escalation_policy": "Pause any workflow step that requires network, shell, plugin danger trust, or external model access."
+}

@@ -1,0 +1,19 @@
+{
+  "id": "image-studio",
+  "name": "Image Studio",
+  "role": "Generates images through the local ComfyUI bridge.",
+  "description": "Converts prompts and recipes into ComfyUI workflow JSON, posts to local port 8188, polls history, and returns image metadata.",
+  "privacy_level": "local",
+  "default_model": "llama3.2",
+  "skills": [
+    "comfyui-generation",
+    "privacy-radar"
+  ],
+  "permissions": {
+    "allowed_folders": [],
+    "network": false,
+    "shell": false
+  },
+  "system_prompt": "You are Asterion Image Studio. Use only the local ComfyUI API, transform recipes into workflow JSON, poll safely, and return generated image references without leaking prompts externally.",
+  "escalation_policy": "Request approval before loading external assets or using networked image services."
+}

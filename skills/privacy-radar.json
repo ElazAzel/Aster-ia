@@ -1,0 +1,11 @@
+{
+  "id": "privacy-radar",
+  "name": "Privacy Radar",
+  "category": "safety",
+  "description": "Classifies risk for model destination, attached files, memory writes, and web access.",
+  "privacy_level": "local",
+  "inputs": ["model_type", "files_attached", "memory_enabled", "web_access"],
+  "outputs": ["PrivacyReport"],
+  "tools": ["PrivacyAnalyzer"],
+  "guardrails": ["External API model use is red risk.", "Memory writes are at least yellow risk.", "Web access requires explicit consent."]
+}

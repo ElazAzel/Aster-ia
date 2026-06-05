@@ -1,0 +1,11 @@
+{
+  "id": "deep-research",
+  "name": "Deep Research",
+  "category": "research",
+  "description": "Decomposes a query into 3-5 subtasks, runs parallel local SearXNG searches, and aggregates results in DuckDB.",
+  "privacy_level": "hybrid",
+  "inputs": ["query", "max_subtasks", "web_access"],
+  "outputs": ["DeepResearchResponse"],
+  "tools": ["SupervisorAgent", "SubAgent", "SearXNG", "DuckDB"],
+  "guardrails": ["Require web access approval.", "Preserve URLs and snippets.", "Return empty results when web access is disabled."]
+}

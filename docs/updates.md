@@ -13,3 +13,4 @@
 - Added real SSE streaming chat endpoint for browser `EventSource` and a Svelte `StreamingChat` component.
 - Added `PrivacyAnalyzer`, `ModelRouter`, Memory Ledger CRUD API, LanceDB RAG indexing/search, Deep Research via local SearXNG, contradiction detection, agent sandbox/task simulation, ComfyUI bridge, workflow runner, and plugin manifest loader.
 - Pulled local Ollama models `llama3.2` and `nomic-embed-text` for chat and embeddings smoke checks.
+- Added root `README.md`, repository `AGENTS.md`, architecture/API/local-dev/privacy/roadmap docs, runtime agent manifests, runtime skill manifests, and `AgentRegistry` catalog API.

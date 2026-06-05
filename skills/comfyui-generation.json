@@ -1,0 +1,11 @@
+{
+  "id": "comfyui-generation",
+  "name": "ComfyUI Generation",
+  "category": "images",
+  "description": "Builds ComfyUI workflow JSON, posts to local /prompt, polls /history/{id}, and returns image metadata.",
+  "privacy_level": "local",
+  "inputs": ["prompt", "recipe"],
+  "outputs": ["prompt_id", "history"],
+  "tools": ["ComfyUIService"],
+  "guardrails": ["Use local port 8188.", "Do not route prompts to external image services."]
+}

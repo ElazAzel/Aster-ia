@@ -1,0 +1,11 @@
+{
+  "id": "rag-indexing",
+  "name": "RAG Indexing",
+  "category": "knowledge",
+  "description": "Parses local files into chunks, embeds with nomic-embed-text, upserts into LanceDB, and performs hybrid dense plus BM25 search.",
+  "privacy_level": "local",
+  "inputs": ["file_path", "room_id", "query"],
+  "outputs": ["indexed_chunks", "RagChunk[]"],
+  "tools": ["DocumentIndexer", "OllamaService", "LanceDB"],
+  "guardrails": ["Index only approved local files.", "Use local embeddings.", "Return source paths and scores."]
+}

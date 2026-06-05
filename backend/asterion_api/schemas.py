@@ -163,6 +163,36 @@ class AgentPermissions(BaseModel):
     shell: bool = False
 
 
+class RuntimeSkillManifest(BaseModel):
+    id: str
+    name: str
+    category: str
+    description: str
+    privacy_level: Literal["local", "hybrid", "external"]
+    inputs: list[str] = Field(default_factory=list)
+    outputs: list[str] = Field(default_factory=list)
+    tools: list[str] = Field(default_factory=list)
+    guardrails: list[str] = Field(default_factory=list)
+
+
+class AgentManifest(BaseModel):
+    id: str
+    name: str
+    role: str
+    description: str
+    privacy_level: Literal["local", "hybrid", "external"]
+    default_model: str
+    skills: list[str] = Field(default_factory=list)
+    permissions: AgentPermissions = Field(default_factory=AgentPermissions)
+    system_prompt: str
+    escalation_policy: str
+
+
+class AgentCatalog(BaseModel):
+    agents: list[AgentManifest]
+    skills: list[RuntimeSkillManifest]
+
+
 class AgentPlan(BaseModel):
     steps: list[str]
     required_permissions: list[str]

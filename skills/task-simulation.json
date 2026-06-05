@@ -1,0 +1,11 @@
+{
+  "id": "task-simulation",
+  "name": "Task Simulation",
+  "category": "agents",
+  "description": "Generates AgentPlan with steps, required permissions, and estimated token budget before an agent runs.",
+  "privacy_level": "local",
+  "inputs": ["task"],
+  "outputs": ["AgentPlan"],
+  "tools": ["TaskSimulator"],
+  "guardrails": ["Plan before execute.", "Surface network, shell, and file-write permission needs."]
+}

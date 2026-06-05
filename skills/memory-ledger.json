@@ -1,0 +1,11 @@
+{
+  "id": "memory-ledger",
+  "name": "Memory Ledger",
+  "category": "memory",
+  "description": "Stores, lists, updates, and deletes room-scoped memories in encrypted SQLCipher storage.",
+  "privacy_level": "local",
+  "inputs": ["room_id", "content", "source", "expires_at", "privacy"],
+  "outputs": ["MemoryRecord"],
+  "tools": ["MemoryLedger", "EncryptedSQLiteStore", "PrivacyAnalyzer"],
+  "guardrails": ["Run privacy check before every create.", "Never write memory to plaintext production storage."]
+}

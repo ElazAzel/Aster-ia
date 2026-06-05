@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 
 from asterion_api.config import Settings, get_settings
+from asterion_api.services.agent_registry import AgentRegistry
 from asterion_api.services.agent_sandbox import AgentSandbox, TaskSimulator
 from asterion_api.services.chat_service import ChatService
 from asterion_api.services.comfyui_service import ComfyUIService
@@ -76,6 +77,11 @@ def get_task_simulator() -> TaskSimulator:
 @lru_cache(maxsize=1)
 def get_agent_sandbox() -> AgentSandbox:
     return AgentSandbox()
+
+
+@lru_cache(maxsize=1)
+def get_agent_registry() -> AgentRegistry:
+    return AgentRegistry()
 
 
 @lru_cache(maxsize=1)
