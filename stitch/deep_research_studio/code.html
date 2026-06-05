@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asterion AI - Deep Research Studio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;450;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#6ffbbe",
+                        "secondary-fixed-dim": "#b9c8de",
+                        "on-primary-fixed": "#07006c",
+                        "surface-container-low": "#131b2e",
+                        "outline": "#908fa0",
+                        "on-surface-variant": "#c7c4d7",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary-container": "#000703",
+                        "on-secondary-container": "#a7b6cc",
+                        "on-secondary-fixed-variant": "#39485a",
+                        "secondary-container": "#39485a",
+                        "on-primary-container": "#0d0096",
+                        "inverse-surface": "#dae2fd",
+                        "on-surface": "#dae2fd",
+                        "surface-container-lowest": "#060e20",
+                        "error-container": "#93000a",
+                        "surface-container": "#171f33",
+                        "surface-dim": "#0b1326",
+                        "on-primary": "#1000a9",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "primary-fixed": "#e1e0ff",
+                        "on-error": "#690005",
+                        "surface-container-high": "#222a3d",
+                        "on-secondary": "#233143",
+                        "inverse-primary": "#494bd6",
+                        "tertiary": "#4edea3",
+                        "secondary": "#b9c8de",
+                        "on-tertiary": "#003824",
+                        "tertiary-container": "#00885d",
+                        "on-background": "#dae2fd",
+                        "outline-variant": "#464554",
+                        "primary-container": "#8083ff",
+                        "surface": "#0b1326",
+                        "primary": "#c0c1ff",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "background": "#0b1326",
+                        "surface-container-highest": "#2d3449",
+                        "on-secondary-fixed": "#0d1c2d",
+                        "surface-variant": "#2d3449",
+                        "secondary-fixed": "#d4e4fa",
+                        "surface-tint": "#c0c1ff",
+                        "surface-bright": "#31394d",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed": "#002113",
+                        "inverse-on-surface": "#283044",
+                        "primary-fixed-dim": "#c0c1ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "gutter": "12px",
+                        "base": "4px",
+                        "md": "16px",
+                        "margin-desktop": "24px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-md": ["Inter"],
+                        "body-base": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "code-mono": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-base": ["14px", { "lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400" }],
+                        "body-sm": ["12px", { "lineHeight": "1.4", "letterSpacing": "0", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "code-mono": ["13px", { "lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "450" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+        }
+        .glow-active {
+            box-shadow: 0 0 4px 1px rgba(192, 193, 255, 0.2);
+        }
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(11, 19, 38, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2d3449;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #464554;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col h-full py-lg px-md bg-surface dark:bg-surface border-r border-outline-variant dark:border-outline-variant h-screen w-64 fixed left-0 top-0 z-40">
+<div class="mb-xl flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-primary-container text-sm font-bold">account_circle</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary">Asterion AI</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant">V 2.1.0-Stable</p>
+</div>
+</div>
+<ul class="flex flex-col gap-sm flex-grow">
+<li>
+<a class="flex items-center gap-sm p-sm rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors font-body-base text-body-base" href="#">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+                    Command Center
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-sm p-sm rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors font-body-base text-body-base" href="#">
+<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+                    Chat
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-sm p-sm rounded-DEFAULT text-primary dark:text-primary-fixed-dim font-bold border-r-2 border-primary bg-surface-container-low hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors font-body-base text-body-base opacity-80 scale-95 transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">science</span>
+                    Research
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-sm p-sm rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors font-body-base text-body-base" href="#">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+                    Agent Lab
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-sm p-sm rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors font-body-base text-body-base" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+                    Settings
+                </a>
+</li>
+</ul>
+<div class="mt-auto pt-sm border-t border-outline-variant">
+<a class="flex items-center gap-sm p-sm rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors font-body-base text-body-base" href="#">
+<span class="material-symbols-outlined text-[20px]">memory</span>
+                Hardware Status
+            </a>
+</div>
+</nav>
+<!-- TopNavBar -->
+<header class="hidden md:flex justify-between items-center h-16 px-margin-desktop ml-64 bg-surface-dim/80 dark:bg-surface-dim/80 backdrop-blur-md border-b border-outline-variant dark:border-outline-variant fixed top-0 right-0 w-[calc(100%-16rem)] z-50">
+<div class="flex items-center gap-xl">
+<h2 class="font-headline-md text-headline-md font-black text-primary">Asterion AI</h2>
+<nav class="flex gap-md">
+<a class="font-label-caps text-label-caps text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-tertiary transition-all" href="#">Workspace</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-tertiary transition-all" href="#">Smart Chat</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<button class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">developer_board</span>
+                Llama-3 70B (Local)
+            </button>
+<div class="h-4 w-px bg-outline-variant mx-xs"></div>
+<button class="font-label-caps text-label-caps px-md py-xs bg-error/10 text-error border border-error/30 rounded-DEFAULT hover:bg-error/20 transition-colors">
+                Stop All
+            </button>
+<div class="flex items-center gap-sm ml-sm text-on-surface-variant">
+<button class="hover:text-primary transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+<button class="hover:text-primary transition-colors"><span class="material-symbols-outlined">help</span></button>
+</div>
+</div>
+</header>
+<!-- Main Workspace -->
+<main class="ml-0 md:ml-64 mt-16 p-margin-desktop h-[calc(100vh-4rem)] flex flex-col gap-md">
+<!-- Toolbar -->
+<div class="flex justify-between items-center shrink-0">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Deep Research Studio: Q3 Battery Technology Analysis</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">Compiling findings from 14 sources across local documents and external URLs.</p>
+</div>
+<div class="flex gap-sm">
+<button class="flex items-center gap-xs px-md py-sm bg-surface-container-high border border-outline-variant rounded-DEFAULT hover:border-primary transition-colors font-label-caps text-label-caps text-on-surface">
+<span class="material-symbols-outlined text-[16px]">download</span>
+                    Full Citation Report
+                </button>
+<button class="flex items-center gap-xs px-md py-sm bg-primary text-on-primary font-bold rounded-DEFAULT hover:bg-primary-fixed transition-colors font-label-caps text-label-caps">
+<span class="material-symbols-outlined text-[16px]">summarize</span>
+                    Structured Summary
+                </button>
+</div>
+</div>
+<!-- Split View -->
+<div class="flex gap-lg h-full overflow-hidden">
+<!-- Left Panel: Source List -->
+<aside class="w-1/3 flex flex-col gap-sm overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest">
+<div class="p-sm border-b border-outline-variant bg-surface-container flex justify-between items-center">
+<h4 class="font-label-caps text-label-caps text-on-surface flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">library_books</span>
+                        Active Sources
+                    </h4>
+<span class="font-code-mono text-code-mono text-on-surface-variant text-[10px]">14 items</span>
+</div>
+<div class="overflow-y-auto flex-grow p-sm flex flex-col gap-xs">
+<!-- Source Item -->
+<div class="p-sm bg-surface-container-low border border-outline-variant rounded-DEFAULT hover:border-primary cursor-pointer transition-colors group">
+<div class="flex justify-between items-start mb-xs">
+<div class="flex items-center gap-xs text-primary">
+<span class="material-symbols-outlined text-[14px]">link</span>
+<span class="font-code-mono text-code-mono text-[11px] truncate w-48">IEEE_Solid_State_Batteries_2024.pdf</span>
+</div>
+<span class="font-label-caps text-[9px] px-xs py-[2px] bg-tertiary/10 text-tertiary rounded-sm border border-tertiary/20">HIGH CONF</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 text-[11px]">Comprehensive review of silicon-anode solid-state advancements in Q1-Q3.</p>
+</div>
+<!-- Source Item -->
+<div class="p-sm bg-surface-container-low border border-outline-variant rounded-DEFAULT hover:border-primary cursor-pointer transition-colors group">
+<div class="flex justify-between items-start mb-xs">
+<div class="flex items-center gap-xs text-secondary-fixed-dim">
+<span class="material-symbols-outlined text-[14px]">public</span>
+<span class="font-code-mono text-code-mono text-[11px] truncate w-48">https://tech-insider-blog.com/ev...</span>
+</div>
+<span class="font-label-caps text-[9px] px-xs py-[2px] bg-warning/10 text-yellow-400 rounded-sm border border-yellow-500/20">MED CONF</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 text-[11px]">Speculative analysis on consumer EV battery lifespans based on recent recalls.</p>
+</div>
+<!-- Source Item -->
+<div class="p-sm bg-surface-container-low border border-outline-variant rounded-DEFAULT hover:border-primary cursor-pointer transition-colors group">
+<div class="flex justify-between items-start mb-xs">
+<div class="flex items-center gap-xs text-primary">
+<span class="material-symbols-outlined text-[14px]">description</span>
+<span class="font-code-mono text-code-mono text-[11px] truncate w-48">Internal_R&amp;D_Memo_ProjX.docx</span>
+</div>
+<span class="font-label-caps text-[9px] px-xs py-[2px] bg-tertiary/10 text-tertiary rounded-sm border border-tertiary/20">HIGH CONF</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 text-[11px]">Local lab results for cycle testing of prototype cell B-49.</p>
+</div>
+<!-- Source Item -->
+<div class="p-sm bg-surface-container-low border border-outline-variant rounded-DEFAULT hover:border-primary cursor-pointer transition-colors group">
+<div class="flex justify-between items-start mb-xs">
+<div class="flex items-center gap-xs text-secondary-fixed-dim">
+<span class="material-symbols-outlined text-[14px]">forum</span>
+<span class="font-code-mono text-code-mono text-[11px] truncate w-48">reddit.com/r/hardware/comments...</span>
+</div>
+<span class="font-label-caps text-[9px] px-xs py-[2px] bg-error/10 text-error rounded-sm border border-error/20">LOW CONF</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 text-[11px]">Community discussion regarding alleged thermal throttling in competitor chips.</p>
+</div>
+</div>
+</aside>
+<!-- Right Panel: Evidence Report Canvas -->
+<div class="w-2/3 flex flex-col gap-md overflow-y-auto pb-xl">
+<!-- AI Synthesis Section -->
+<div class="glass-panel rounded-lg p-md">
+<div class="flex justify-between items-center mb-sm border-b border-outline-variant pb-xs">
+<h4 class="font-label-caps text-label-caps text-primary flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+                            Synthesized Findings
+                        </h4>
+<div class="w-32 h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="w-3/4 h-full bg-gradient-to-r from-primary to-tertiary"></div>
+</div>
+</div>
+<div class="font-body-base text-body-base text-on-surface space-y-sm leading-relaxed">
+<p>Analysis of 14 localized and external sources indicates a paradigm shift toward silicon-anode solid-state integration by Q4 2024. Local R&amp;D memos <span class="bg-primary/20 text-primary px-xs rounded font-code-mono text-[11px] cursor-help">#ProjX</span> align closely with external academic publications <span class="bg-primary/20 text-primary px-xs rounded font-code-mono text-[11px] cursor-help">#IEEE_2024</span> regarding energy density improvements (~28% increase over current generation).</p>
+<p>However, thermal management remains a critical vector for failure in high-discharge scenarios, a point heavily debated across consumer and industrial datasets.</p>
+</div>
+</div>
+<!-- Contradiction Finder -->
+<div class="border border-error/30 bg-[#1A0B13] rounded-lg p-md relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-error/50"></div>
+<h4 class="font-label-caps text-label-caps text-error flex items-center gap-xs mb-md">
+<span class="material-symbols-outlined text-[18px]">warning</span>
+                        Contradiction Detected: Battery Degradation Curves
+                    </h4>
+<div class="grid grid-cols-2 gap-sm">
+<!-- Source A -->
+<div class="p-sm bg-surface-container border border-outline-variant rounded-DEFAULT">
+<div class="flex justify-between items-center mb-xs border-b border-outline-variant pb-xs">
+<span class="font-code-mono text-code-mono text-secondary text-[11px]">Internal_R&amp;D_Memo_ProjX.docx</span>
+<span class="font-label-caps text-[9px] text-tertiary">HIGH CONFIDENCE</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface">"Prototype B-49 exhibits a degradation of only 4.2% after 1,000 cycles under simulated high-load conditions at 40°C."</p>
+</div>
+<!-- Source B -->
+<div class="p-sm bg-surface-container border border-error/50 rounded-DEFAULT relative">
+<div class="absolute -left-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-[#1A0B13] flex items-center justify-center rotate-45 border-l border-b border-error/50 z-10"></div>
+<div class="flex justify-between items-center mb-xs border-b border-outline-variant pb-xs">
+<span class="font-code-mono text-code-mono text-secondary text-[11px]">tech-insider-blog.com/...</span>
+<span class="font-label-caps text-[9px] text-yellow-400">MED CONFIDENCE</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface">"Industry leaks suggest the new B-series architecture suffers severe capacity loss (up to 15%) after just 500 fast-charge cycles."</p>
+</div>
+</div>
+<div class="mt-sm p-xs bg-error/10 border border-error/20 rounded font-code-mono text-[11px] text-error/90 flex items-start gap-xs">
+<span class="material-symbols-outlined text-[14px]">psychology</span>
+<span>AI Note: The discrepancy likely stems from differing testing methodologies. Internal tests used steady-state discharge, while external reports cite fast-charge scenarios. Requires further parameter alignment.</span>
+</div>
+</div>
+<!-- Extracted Metrics Data Grid -->
+<div class="border border-outline-variant bg-surface-container-low rounded-lg overflow-hidden">
+<div class="p-xs bg-surface-container border-b border-outline-variant">
+<h4 class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-xs px-xs">
+<span class="material-symbols-outlined text-[16px]">data_table</span>
+                            Extracted Quantitative Metrics
+                        </h4>
+</div>
+<table class="w-full text-left font-code-mono text-code-mono text-[12px]">
+<thead class="bg-surface-container-high text-on-surface-variant">
+<tr>
+<th class="p-sm font-normal border-b border-outline-variant">Metric</th>
+<th class="p-sm font-normal border-b border-outline-variant">Claimed Value</th>
+<th class="p-sm font-normal border-b border-outline-variant">Source Consensus</th>
+<th class="p-sm font-normal border-b border-outline-variant">Status</th>
+</tr>
+</thead>
+<tbody class="text-on-surface divide-y divide-outline-variant/50">
+<tr class="hover:bg-surface-container-high/50 transition-colors">
+<td class="p-sm">Energy Density</td>
+<td class="p-sm">~350 Wh/kg</td>
+<td class="p-sm">8/14 Sources</td>
+<td class="p-sm text-tertiary">Verified</td>
+</tr>
+<tr class="hover:bg-surface-container-high/50 transition-colors">
+<td class="p-sm">Cycle Life (80% ret)</td>
+<td class="p-sm">1200 Cycles</td>
+<td class="p-sm">3/14 Sources</td>
+<td class="p-sm text-yellow-400">Disputed</td>
+</tr>
+<tr class="hover:bg-surface-container-high/50 transition-colors">
+<td class="p-sm">Thermal Runaway Temp</td>
+<td class="p-sm">&gt;220°C</td>
+<td class="p-sm">11/14 Sources</td>
+<td class="p-sm text-tertiary">Verified</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asterion AI - Agent Lab</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "surface": "#131317",
+                "inverse-surface": "#e4e1e7",
+                "on-tertiary-fixed-variant": "#693c00",
+                "on-secondary-container": "#003e22",
+                "on-primary-fixed": "#160066",
+                "inverse-on-surface": "#303034",
+                "primary-container": "#8c80ff",
+                "secondary-fixed": "#6efdac",
+                "on-error-container": "#ffdad6",
+                "surface-container-low": "#1b1b1f",
+                "outline-variant": "#474554",
+                "on-tertiary-container": "#402300",
+                "surface-tint": "#c6bfff",
+                "surface-dim": "#131317",
+                "surface-container-high": "#2a292e",
+                "primary-fixed-dim": "#c6bfff",
+                "primary": "#c6bfff",
+                "secondary": "#4edf92",
+                "inverse-primary": "#5846d4",
+                "tertiary-fixed-dim": "#ffb86e",
+                "on-surface-variant": "#c8c4d7",
+                "surface-bright": "#39393d",
+                "background": "#131317",
+                "tertiary-fixed": "#ffdcbd",
+                "surface-container-highest": "#353439",
+                "outline": "#928ea0",
+                "on-background": "#e4e1e7",
+                "primary-fixed": "#e4dfff",
+                "surface-container-lowest": "#0e0e12",
+                "on-secondary-fixed-variant": "#00522e",
+                "on-secondary": "#00391e",
+                "secondary-container": "#00b56c",
+                "on-surface": "#e4e1e7",
+                "on-error": "#690005",
+                "error-container": "#93000a",
+                "on-tertiary": "#492900",
+                "secondary-fixed-dim": "#4edf92",
+                "on-primary-container": "#22008d",
+                "on-secondary-fixed": "#002110",
+                "on-primary-fixed-variant": "#3f29bc",
+                "on-primary": "#2800a0",
+                "on-tertiary-fixed": "#2c1600",
+                "tertiary-container": "#ce7e17",
+                "surface-variant": "#353439",
+                "error": "#ffb4ab",
+                "tertiary": "#ffb86e",
+                "surface-container": "#1f1f23"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "container-padding": "24px",
+                "stack-loose": "12px",
+                "element-gap": "20px",
+                "stack-tight": "8px"
+        },
+        "fontFamily": {
+                "label-caps": [
+                        "DM Sans"
+                ],
+                "headline-sm": [
+                        "DM Sans"
+                ],
+                "body-secondary": [
+                        "DM Sans"
+                ],
+                "body-base": [
+                        "DM Sans"
+                ],
+                "mono-sm": [
+                        "JetBrains Mono"
+                ],
+                "mono-base": [
+                        "JetBrains Mono"
+                ]
+        },
+        "fontSize": {
+                "label-caps": [
+                        "11px",
+                        {
+                                "lineHeight": "16px",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-sm": [
+                        "20px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-secondary": [
+                        "13px",
+                        {
+                                "lineHeight": "18px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-base": [
+                        "15px",
+                        {
+                                "lineHeight": "22px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "mono-sm": [
+                        "11px",
+                        {
+                                "lineHeight": "16px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "mono-base": [
+                        "13px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        body { background-color: #0c0c10; color: #e4e1e7; }
+        .flat-panel { background: #131318; border: 1px solid #2a2a36; }
+        .flat-panel-active { border-color: #c6bfff; }
+        .terminal-scroll::-webkit-scrollbar { width: 6px; }
+        .terminal-scroll::-webkit-scrollbar-track { background: #0c0c10; }
+        .terminal-scroll::-webkit-scrollbar-thumb { background: #2a2a36; border-radius: 4px; }
+        
+        /* Toggle Switch CSS */
+        .toggle-checkbox:checked { right: 0; border-color: #4edf92; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #4edf92; }
+    </style>
+</head>
+<body class="font-body-base text-body-base overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar Component -->
+<nav class="bg-[#131318] dark:bg-[#131318] text-[#e4e1e7] dark:text-[#e4e1e7] font-body-base text-body-base h-screen w-[72px] fixed left-0 top-0 border-r border-[#2a2a36] dark:border-[#2a2a36] flex flex-col items-center py-[24px] z-40">
+<div class="mb-[32px]">
+<span class="material-symbols-outlined text-[#c6bfff] text-[32px]" style="font-variation-settings: 'FILL' 1;">hexagon</span>
+</div>
+<div class="flex-1 space-y-[16px] w-full flex flex-col items-center">
+<a class="w-10 h-10 flex items-center justify-center rounded hover:bg-[#1c1c24] dark:hover:bg-[#1c1c24] transition-colors text-[#c8c4d7] dark:text-[#c8c4d7]" href="#" title="Home">
+<span class="material-symbols-outlined text-[24px]">home</span>
+</a>
+<a class="w-10 h-10 flex items-center justify-center rounded hover:bg-[#1c1c24] dark:hover:bg-[#1c1c24] transition-colors text-[#c8c4d7] dark:text-[#c8c4d7]" href="#" title="Chat">
+<span class="material-symbols-outlined text-[24px]">chat_bubble</span>
+</a>
+<a class="w-10 h-10 flex items-center justify-center rounded hover:bg-[#1c1c24] dark:hover:bg-[#1c1c24] transition-colors text-[#c8c4d7] dark:text-[#c8c4d7]" href="#" title="Research">
+<span class="material-symbols-outlined text-[24px]">science</span>
+</a>
+<a class="w-10 h-10 flex items-center justify-center rounded hover:bg-[#1c1c24] dark:hover:bg-[#1c1c24] transition-colors text-[#c8c4d7] dark:text-[#c8c4d7]" href="#" title="Documents">
+<span class="material-symbols-outlined text-[24px]">description</span>
+</a>
+<a class="w-10 h-10 flex items-center justify-center rounded hover:bg-[#1c1c24] dark:hover:bg-[#1c1c24] transition-colors text-[#c8c4d7] dark:text-[#c8c4d7]" href="#" title="Vault">
+<span class="material-symbols-outlined text-[24px]">lock</span>
+</a>
+<!-- ACTIVE NAV ITEM -->
+<a class="w-10 h-10 flex items-center justify-center rounded transition-colors text-[#c6bfff] dark:text-[#c6bfff] bg-[#1c1c24] border-l-2 border-[#c6bfff]" href="#" title="Agents">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</a>
+<a class="w-10 h-10 flex items-center justify-center rounded hover:bg-[#1c1c24] dark:hover:bg-[#1c1c24] transition-colors text-[#c8c4d7] dark:text-[#c8c4d7]" href="#" title="Images">
+<span class="material-symbols-outlined text-[24px]">image</span>
+</a>
+<a class="w-10 h-10 flex items-center justify-center rounded hover:bg-[#1c1c24] dark:hover:bg-[#1c1c24] transition-colors text-[#c8c4d7] dark:text-[#c8c4d7]" href="#" title="Automations">
+<span class="material-symbols-outlined text-[24px]">bolt</span>
+</a>
+<a class="w-10 h-10 flex items-center justify-center rounded hover:bg-[#1c1c24] dark:hover:bg-[#1c1c24] transition-colors text-[#c8c4d7] dark:text-[#c8c4d7]" href="#" title="Models">
+<span class="material-symbols-outlined text-[24px]">view_in_ar</span>
+</a>
+<a class="w-10 h-10 flex items-center justify-center rounded hover:bg-[#1c1c24] dark:hover:bg-[#1c1c24] transition-colors text-[#c8c4d7] dark:text-[#c8c4d7]" href="#" title="Settings">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+</a>
+</div>
+</nav>
+<!-- TopNavBar Component -->
+<header class="bg-[#131318] dark:bg-[#131318] text-[#e4e1e7] dark:text-[#e4e1e7] font-label-caps text-label-caps fixed top-0 right-0 w-[calc(100%-72px)] z-50 border-b border-[#2a2a36] dark:border-[#2a2a36] flex justify-between items-center h-[64px] px-container-padding ml-[72px]">
+<div class="flex items-center gap-[24px]">
+<div class="flex items-center gap-[8px]">
+<span class="text-[#c8c4d7] dark:text-[#c8c4d7] hover:text-[#c6bfff] dark:hover:text-[#c6bfff] transition-all cursor-pointer">Workspace</span>
+<span class="text-[#474554]">/</span>
+<span class="text-[#e4e1e7] dark:text-[#e4e1e7] font-semibold cursor-pointer">Agent Lab</span>
+</div>
+</div>
+<div class="flex items-center gap-[16px]">
+<div class="hidden md:flex items-center gap-[12px] px-[12px] py-[6px] bg-[#1c1c24] rounded-lg border border-[#2a2a36] text-[#c8c4d7]">
+<div class="flex items-center gap-[6px]">
+<span class="w-2 h-2 rounded-full bg-[#4edf92] animate-pulse"></span>
+<span class="font-mono-base text-[12px] text-[#4edf92]">LOCAL</span>
+</div>
+<span class="text-[#474554]">|</span>
+<span class="font-mono-base text-[12px]">Llama-3 70B</span>
+<span class="text-[#474554]">|</span>
+<div class="flex items-center gap-[6px]">
+<span class="font-mono-base text-[12px]">VRAM</span>
+<div class="w-16 h-1.5 bg-[#2a2a36] rounded-full overflow-hidden">
+<div class="h-full bg-[#c6bfff] w-[65%]"></div>
+</div>
+</div>
+</div>
+<button class="material-symbols-outlined text-[#c8c4d7] hover:text-[#c6bfff] transition-colors">notifications</button>
+<button class="material-symbols-outlined text-[#c8c4d7] hover:text-[#c6bfff] transition-colors">help</button>
+<button class="bg-[#ffb4ab] text-[#690005] font-label-caps text-label-caps px-[16px] py-[8px] rounded font-bold uppercase tracking-widest flex items-center gap-[4px] hover:bg-[#93000a] hover:text-[#ffdad6] transition-colors">
+<span class="material-symbols-outlined text-[16px]">stop</span>
+                Stop All Processes
+            </button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-[72px] mt-[64px] p-container-padding h-[calc(100vh-64px)] grid grid-cols-12 gap-[16px]">
+<!-- Left/Center Column: Task Simulator & Config (8 cols) -->
+<div class="col-span-8 flex flex-col gap-[16px] h-full overflow-hidden">
+<!-- Task Simulator Stepper -->
+<section class="flat-panel rounded-xl p-container-padding flex-1 overflow-y-auto terminal-scroll flex flex-col">
+<div class="flex justify-between items-center mb-[24px] sticky top-0 bg-[#131318] z-10 pb-[8px] border-b border-[#2a2a36]">
+<h2 class="font-headline-sm text-headline-sm text-[#e4e1e7] flex items-center gap-[8px]">
+<span class="material-symbols-outlined text-[#c6bfff]">account_tree</span>
+                        Task Simulator
+                    </h2>
+<div class="flex items-center gap-[8px]">
+<button class="text-[#c8c4d7] hover:text-[#c6bfff] transition-colors flex items-center gap-[4px] font-label-caps text-label-caps mr-[16px]">
+<span class="material-symbols-outlined text-[16px]">filter_list</span> Filter
+                        </button>
+</div>
+</div>
+<div class="space-y-0 relative pl-[8px] flex-1">
+<!-- Vertical Line -->
+<div class="absolute left-[23px] top-4 bottom-4 w-px bg-[#2a2a36]"></div>
+<!-- Step 1 -->
+<div class="relative pl-[32px] pb-[24px] group">
+<div class="absolute left-0 top-1 w-8 h-8 rounded-full bg-[#0c0c10] border border-[#2a2a36] flex items-center justify-center z-10">
+<span class="text-[#e4e1e7] font-mono-base">1</span>
+</div>
+<div class="bg-[#1c1c24] border border-[#2a2a36] rounded p-[12px] group-hover:border-[#474554] transition-colors">
+<div class="flex justify-between items-center mb-[8px]">
+<div class="flex items-center gap-[8px]">
+<h3 class="font-mono-base text-mono-base text-[#e4e1e7]">Scan repository for auth files</h3>
+<div class="flex gap-[4px]">
+<span class="font-label-caps text-[10px] px-2 py-0.5 rounded bg-[#1c1c24] text-[#c8c4d7] border border-[#474554]">FILE READ</span>
+<span class="font-label-caps text-[10px] px-2 py-0.5 rounded bg-[#4edf92]/10 text-[#4edf92] border border-[#4edf92]/20">LOCAL</span>
+</div>
+</div>
+<span class="font-label-caps text-[10px] px-2 py-0.5 rounded bg-[#4edf92]/10 text-[#4edf92] border border-[#4edf92]/20">APPROVED</span>
+</div>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="relative pl-[32px] pb-[24px] group">
+<div class="absolute left-0 top-1 w-8 h-8 rounded-full bg-[#0c0c10] border border-[#2a2a36] flex items-center justify-center z-10">
+<span class="text-[#e4e1e7] font-mono-base">2</span>
+</div>
+<div class="bg-[#1c1c24] border border-[#2a2a36] rounded p-[12px] group-hover:border-[#474554] transition-colors">
+<div class="flex justify-between items-center mb-[8px]">
+<div class="flex items-center gap-[8px]">
+<h3 class="font-mono-base text-mono-base text-[#e4e1e7]">Search documentation for migration paths</h3>
+<div class="flex gap-[4px]">
+<span class="font-label-caps text-[10px] px-2 py-0.5 rounded bg-[#1c1c24] text-[#c8c4d7] border border-[#474554]">WEB SEARCH</span>
+<span class="font-label-caps text-[10px] px-2 py-0.5 rounded bg-[#ffb86e]/10 text-[#ffb86e] border border-[#ffb86e]/20">HYBRID</span>
+</div>
+</div>
+<span class="font-label-caps text-[10px] px-2 py-0.5 rounded bg-[#4edf92]/10 text-[#4edf92] border border-[#4edf92]/20">APPROVED</span>
+</div>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="relative pl-[32px] pb-[24px] group">
+<div class="absolute left-0 top-1 w-8 h-8 rounded-full bg-[#0c0c10] border border-[#c6bfff] flex items-center justify-center z-10">
+<span class="text-[#c6bfff] font-mono-base">3</span>
+</div>
+<div class="flat-panel-active bg-[#1c1c24] rounded p-[12px]">
+<div class="flex justify-between items-center mb-[8px]">
+<div class="flex items-center gap-[8px]">
+<h3 class="font-mono-base text-mono-base text-[#e4e1e7]">Execute refactor script</h3>
+<div class="flex gap-[4px]">
+<span class="font-label-caps text-[10px] px-2 py-0.5 rounded bg-[#1c1c24] text-[#c8c4d7] border border-[#474554]">CODE RUN</span>
+<span class="font-label-caps text-[10px] px-2 py-0.5 rounded bg-[#4edf92]/10 text-[#4edf92] border border-[#4edf92]/20">LOCAL</span>
+</div>
+</div>
+<span class="font-label-caps text-[10px] px-2 py-0.5 rounded bg-[#ffb86e]/10 text-[#ffb86e] border border-[#ffb86e]/20">PENDING</span>
+</div>
+</div>
+</div>
+<!-- Step 4 -->
+<div class="relative pl-[32px] group">
+<div class="absolute left-0 top-1 w-8 h-8 rounded-full bg-[#0c0c10] border border-[#2a2a36] flex items-center justify-center z-10">
+<span class="text-[#928ea0] font-mono-base">4</span>
+</div>
+<div class="bg-[#0c0c10] border border-[#2a2a36] rounded p-[12px] opacity-80">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-[8px]">
+<h3 class="font-mono-base text-mono-base text-[#928ea0]">Write updated auth.js</h3>
+<div class="flex gap-[4px]">
+<span class="font-label-caps text-[10px] px-2 py-0.5 rounded bg-[#1c1c24] text-[#928ea0] border border-[#2a2a36]">FILE WRITE</span>
+<span class="font-label-caps text-[10px] px-2 py-0.5 rounded bg-[#4edf92]/10 text-[#4edf92] opacity-50 border border-[#4edf92]/20">LOCAL</span>
+</div>
+</div>
+<span class="font-label-caps text-[10px] px-2 py-0.5 rounded bg-[#ffb4ab]/10 text-[#ffb4ab] border border-[#ffb4ab]/20">BLOCKED</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Permissions Table & Actions -->
+<div class="mt-[24px] border-t border-[#2a2a36] pt-[16px]">
+<h3 class="font-label-caps text-label-caps text-[#c8c4d7] mb-[12px]">Permissions Required</h3>
+<div class="bg-[#0c0c10] border border-[#2a2a36] rounded overflow-hidden mb-[16px]">
+<table class="w-full text-left font-body-secondary">
+<thead class="bg-[#1c1c24] border-b border-[#2a2a36]">
+<tr>
+<th class="p-[8px] font-label-caps text-[#928ea0]">Permission</th>
+<th class="p-[8px] font-label-caps text-[#928ea0] text-right">Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-[#2a2a36]">
+<td class="p-[8px] text-[#e4e1e7] flex items-center gap-[8px]">
+<span class="material-symbols-outlined text-[16px] text-[#c8c4d7]">folder_open</span> Read Local Files
+                                    </td>
+<td class="p-[8px] text-right">
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-[#131318] border-2 border-[#4edf92] appearance-none cursor-pointer z-10" id="toggle1" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-[#4edf92] cursor-pointer" for="toggle1"></label>
+</div>
+</td>
+</tr>
+<tr>
+<td class="p-[8px] text-[#e4e1e7] flex items-center gap-[8px]">
+<span class="material-symbols-outlined text-[16px] text-[#c8c4d7]">terminal</span> Execute Shell Scripts
+                                    </td>
+<td class="p-[8px] text-right">
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-[#131318] border-2 border-[#2a2a36] appearance-none cursor-pointer z-10" id="toggle2" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-[#2a2a36] cursor-pointer" for="toggle2"></label>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="flex gap-[12px] justify-end">
+<button class="px-[16px] py-[8px] border border-[#2a2a36] rounded font-label-caps text-label-caps text-[#e4e1e7] hover:bg-[#1c1c24] transition-colors">Cancel</button>
+<button class="px-[16px] py-[8px] border border-[#c6bfff] rounded font-label-caps text-label-caps text-[#c6bfff] hover:bg-[#c6bfff]/10 transition-colors">Edit Plan</button>
+<button class="px-[16px] py-[8px] bg-[#c6bfff] rounded font-label-caps text-label-caps text-[#160066] hover:bg-[#8c80ff] transition-colors">Approve All</button>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Flight Recorder Terminal (4 cols) -->
+<div class="col-span-4 rounded-xl flex flex-col h-full overflow-hidden bg-[#0a0a0e] border border-[#2a2a36]">
+<div class="px-[16px] py-[8px] border-b border-[#2a2a36] bg-[#0e0e12] flex justify-between items-center">
+<h3 class="font-label-caps text-label-caps text-[#4edf92] flex items-center gap-[4px]">
+<span class="material-symbols-outlined text-[16px]">data_object</span> Flight Recorder
+                </h3>
+<div class="flex gap-[4px]">
+<button class="material-symbols-outlined text-[#928ea0] hover:text-[#e4e1e7] text-[16px]">file_copy</button>
+<button class="material-symbols-outlined text-[#928ea0] hover:text-[#e4e1e7] text-[16px]">open_in_full</button>
+</div>
+</div>
+<div class="p-container-padding flex-1 overflow-y-auto terminal-scroll font-mono-base text-mono-base leading-relaxed space-y-[4px] text-[#4edf92]">
+<div class="flex gap-[8px]">
+<span class="opacity-50">[14:02:01]</span>
+<span class="text-[#4edf92]">SYS Initializing agent sandbox environment...</span>
+</div>
+<div class="flex gap-[8px]">
+<span class="opacity-50">[14:02:03]</span>
+<span class="text-[#4edf92]">API GET /api/v1/repo/structure HTTP 200</span>
+</div>
+<div class="flex gap-[8px]">
+<span class="opacity-50">[14:02:04]</span>
+<span class="text-[#4edf92]">LLM Prompt tokens: 1245 | Completion tokens: 402 | Latency: 1.2s</span>
+</div>
+<div class="flex gap-[8px]">
+<span class="opacity-50">[14:02:05]</span>
+<span class="text-[#4edf92]">FS Read file: src/utils/auth.js (12Kb)</span>
+</div>
+<div class="flex gap-[8px]">
+<span class="opacity-50">[14:02:08]</span>
+<span class="text-[#4edf92]">LLM Generating refactor strategy. Strategy identified: 'jwt-migration'.</span>
+</div>
+<div class="flex gap-[8px]">
+<span class="opacity-50">[14:02:09]</span>
+<span class="text-[#4edf92] animate-pulse">API Streaming response from Llama-3...</span>
+</div>
+<!-- Terminal decorative elements -->
+<div class="mt-[16px] text-[#4edf92] opacity-50 select-none">
+                    &gt; _
+                </div>
+</div>
+<!-- Minimal Confidence/Status Footer -->
+<div class="p-[4px] bg-[#0e0e12] border-t border-[#2a2a36] flex items-center justify-between text-mono-sm font-label-caps text-[#928ea0]">
+<div class="flex items-center gap-[4px]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#4edf92]"></span> System Nominal
+                </div>
+<div>Mem: 42MB / 512MB</div>
+</div>
+</div>
+</main>
+</body></html>

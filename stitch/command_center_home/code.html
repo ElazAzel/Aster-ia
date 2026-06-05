@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asterion AI - Command Center</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;family=JetBrains+Mono:wght@400;450;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed": "#6ffbbe",
+                      "secondary-fixed-dim": "#b9c8de",
+                      "on-primary-fixed": "#07006c",
+                      "surface-container-low": "#131b2e",
+                      "outline": "#908fa0",
+                      "on-surface-variant": "#c7c4d7",
+                      "on-error-container": "#ffdad6",
+                      "on-tertiary-container": "#000703",
+                      "on-secondary-container": "#a7b6cc",
+                      "on-secondary-fixed-variant": "#39485a",
+                      "secondary-container": "#39485a",
+                      "on-primary-container": "#0d0096",
+                      "inverse-surface": "#dae2fd",
+                      "on-surface": "#dae2fd",
+                      "surface-container-lowest": "#060e20",
+                      "error-container": "#93000a",
+                      "surface-container": "#171f33",
+                      "surface-dim": "#0b1326",
+                      "on-primary": "#1000a9",
+                      "tertiary-fixed-dim": "#4edea3",
+                      "on-primary-fixed-variant": "#2f2ebe",
+                      "primary-fixed": "#e1e0ff",
+                      "on-error": "#690005",
+                      "surface-container-high": "#222a3d",
+                      "on-secondary": "#233143",
+                      "inverse-primary": "#494bd6",
+                      "tertiary": "#4edea3",
+                      "secondary": "#b9c8de",
+                      "on-tertiary": "#003824",
+                      "tertiary-container": "#00885d",
+                      "on-background": "#dae2fd",
+                      "outline-variant": "#464554",
+                      "primary-container": "#8083ff",
+                      "surface": "#0b1326",
+                      "primary": "#c0c1ff",
+                      "on-tertiary-fixed-variant": "#005236",
+                      "background": "#0b1326",
+                      "surface-container-highest": "#2d3449",
+                      "on-secondary-fixed": "#0d1c2d",
+                      "surface-variant": "#2d3449",
+                      "secondary-fixed": "#d4e4fa",
+                      "surface-tint": "#c0c1ff",
+                      "surface-bright": "#31394d",
+                      "error": "#ffb4ab",
+                      "on-tertiary-fixed": "#002113",
+                      "inverse-on-surface": "#283044",
+                      "primary-fixed-dim": "#c0c1ff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "lg": "24px",
+                      "gutter": "12px",
+                      "base": "4px",
+                      "md": "16px",
+                      "margin-desktop": "24px",
+                      "sm": "8px",
+                      "xs": "4px",
+                      "xl": "32px"
+              },
+              "fontFamily": {
+                      "label-caps": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "body-base": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "code-mono": [
+                              "JetBrains Mono"
+                      ]
+              },
+              "fontSize": {
+                      "label-caps": [
+                              "11px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-base": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "letterSpacing": "0",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "letterSpacing": "0",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "code-mono": [
+                              "13px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "letterSpacing": "0",
+                                      "fontWeight": "450"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for high-density feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #020617; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1E293B; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155; 
+        }
+        
+        .glow-active {
+            box-shadow: 0 0 4px 1px rgba(128, 131, 255, 0.3);
+        }
+        
+        .bento-card {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid #334155;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .bento-card:hover {
+            border-color: #8083ff;
+            background: rgba(30, 41, 59, 0.9);
+        }
+        
+        body {
+            background-color: #020617;
+            color: #dae2fd;
+        }
+    </style>
+</head>
+<body class="font-body-base text-body-base bg-background text-on-surface antialiased overflow-hidden flex h-screen">
+<!-- SideNavBar (Shared Component) -->
+<nav class="bg-surface dark:bg-surface font-body-base text-body-base h-screen w-64 fixed left-0 top-0 border-r border-outline-variant dark:border-outline-variant flex flex-col h-full py-lg px-md z-40">
+<div class="mb-xl flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-primary-container text-[18px]" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary tracking-tight">Asterion AI</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant opacity-70">V 2.1.0-Stable</p>
+</div>
+</div>
+<ul class="flex flex-col gap-sm flex-1 mt-md">
+<!-- Active: Command Center -->
+<li>
+<a class="flex items-center gap-md px-sm py-xs rounded-DEFAULT text-primary dark:text-primary-fixed-dim font-bold border-r-2 border-primary bg-surface-container-low opacity-80 scale-95 transition-all w-full" href="#">
+<span class="material-symbols-outlined">terminal</span>
+<span>Command Center</span>
+</a>
+</li>
+<!-- Inactive -->
+<li>
+<a class="flex items-center gap-md px-sm py-xs rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors w-full" href="#">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span>Chat</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-sm py-xs rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors w-full" href="#">
+<span class="material-symbols-outlined">science</span>
+<span>Research</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-sm py-xs rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors w-full" href="#">
+<span class="material-symbols-outlined">smart_toy</span>
+<span>Agent Lab</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-sm py-xs rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors w-full" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</li>
+</ul>
+<div class="mt-auto pt-md border-t border-outline-variant">
+<a class="flex items-center gap-md px-sm py-xs rounded-DEFAULT text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors w-full" href="#">
+<span class="material-symbols-outlined">memory</span>
+<span>Hardware Status</span>
+</a>
+</div>
+</nav>
+<!-- TopNavBar (Shared Component) -->
+<header class="bg-surface-dim/80 dark:bg-surface-dim/80 backdrop-blur-md font-label-caps text-label-caps fixed top-0 right-0 w-[calc(100%-16rem)] z-50 border-b border-outline-variant dark:border-outline-variant flex justify-between items-center h-16 px-margin-desktop ml-64">
+<div class="flex items-center gap-lg">
+<!-- Breadcrumb / Section Title -->
+<div class="flex items-center gap-sm text-on-surface font-semibold">
+<span class="material-symbols-outlined text-[16px]">terminal</span>
+<span class="font-body-base text-body-base font-bold">Command Center</span>
+</div>
+<!-- Global Search -->
+<div class="relative ml-xl hidden lg:block">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[16px]">search</span>
+<input class="bg-surface-container-lowest border border-outline-variant rounded-DEFAULT py-xs pl-[32px] pr-md w-96 text-body-sm font-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-on-surface placeholder-on-surface-variant" placeholder="Search operations, logs, models..." type="text"/>
+<div class="absolute right-sm top-1/2 -translate-y-1/2 flex items-center gap-1">
+<span class="px-1 border border-outline-variant rounded-[2px] text-[9px] text-on-surface-variant bg-surface-container">⌘</span>
+<span class="px-1 border border-outline-variant rounded-[2px] text-[9px] text-on-surface-variant bg-surface-container">K</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-sm mr-md border-r border-outline-variant pr-md">
+<a class="text-on-surface font-semibold hover:text-primary dark:hover:text-tertiary transition-all" href="#">Workspace</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-tertiary transition-all" href="#">Smart Chat</a>
+</div>
+<button class="bg-surface-container border border-outline-variant text-on-surface px-sm py-xs rounded-DEFAULT hover:border-outline hover:bg-surface-container-high transition-colors flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span>Llama-3 70B (Local)</span>
+</button>
+<button class="bg-error/10 text-error border border-error/30 px-sm py-xs rounded-DEFAULT hover:bg-error/20 transition-colors font-bold">
+                Stop All
+            </button>
+<div class="flex items-center gap-sm ml-sm text-on-surface-variant">
+<button class="hover:text-primary transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+<button class="hover:text-primary transition-colors"><span class="material-symbols-outlined">help</span></button>
+</div>
+</div>
+</header>
+<!-- Main Workspace -->
+<main class="ml-64 mt-16 p-margin-desktop w-[calc(100%-16rem)] h-[calc(100vh-4rem)] overflow-y-auto overflow-x-hidden relative">
+<!-- Background Graphic Elements -->
+<div class="fixed top-20 right-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none -z-10"></div>
+<div class="fixed bottom-[-100px] left-80 w-[500px] h-[500px] bg-tertiary/5 rounded-full blur-3xl pointer-events-none -z-10"></div>
+<div class="grid grid-cols-12 gap-md max-w-[1600px] mx-auto">
+<!-- Welcome / Overview Header -->
+<div class="col-span-12 mb-sm flex justify-between items-end">
+<div>
+<h2 class="font-display-lg text-display-lg text-on-surface tracking-tight mb-xs">System Active</h2>
+<p class="font-code-mono text-code-mono text-secondary-fixed-dim">Asterion Node-01 ready for orchestration.</p>
+</div>
+<div class="font-code-mono text-code-mono text-on-surface-variant text-right">
+<p>Uptime: 14d 08h 22m</p>
+<p class="text-tertiary-fixed-dim flex items-center justify-end gap-xs mt-xs">
+<span class="w-2 h-2 bg-tertiary-fixed-dim rounded-full"></span> Secure Connection
+                    </p>
+</div>
+</div>
+<!-- Bento Grid: Quick Actions -->
+<div class="col-span-12 lg:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-md">
+<button class="bento-card rounded-lg p-md flex flex-col items-start justify-between h-32 group text-left">
+<div class="w-10 h-10 rounded-DEFAULT bg-primary/10 text-primary flex items-center justify-center mb-sm group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">chat</span>
+</div>
+<div>
+<h3 class="font-body-base text-body-base font-semibold text-on-surface">Start New Chat</h3>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-xs">Interactive LLM Session</p>
+</div>
+</button>
+<button class="bento-card rounded-lg p-md flex flex-col items-start justify-between h-32 group text-left">
+<div class="w-10 h-10 rounded-DEFAULT bg-tertiary/10 text-tertiary flex items-center justify-center mb-sm group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">biotech</span>
+</div>
+<div>
+<h3 class="font-body-base text-body-base font-semibold text-on-surface">Initiate Research</h3>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-xs">Deep Data Extraction</p>
+</div>
+</button>
+<button class="bento-card rounded-lg p-md flex flex-col items-start justify-between h-32 group text-left">
+<div class="w-10 h-10 rounded-DEFAULT bg-secondary/10 text-secondary flex items-center justify-center mb-sm group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">description</span>
+</div>
+<div>
+<h3 class="font-body-base text-body-base font-semibold text-on-surface">Open Document Studio</h3>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-xs">Parse &amp; Embed PDFs</p>
+</div>
+</button>
+<button class="bento-card rounded-lg p-md flex flex-col items-start justify-between h-32 group text-left md:col-span-2">
+<div class="flex items-start justify-between w-full">
+<div class="w-10 h-10 rounded-DEFAULT bg-primary-container/20 text-primary-container flex items-center justify-center mb-sm group-hover:rotate-90 transition-transform duration-500">
+<span class="material-symbols-outlined">hub</span>
+</div>
+<span class="font-label-caps text-label-caps px-sm py-xs bg-surface-container rounded-[4px] text-on-surface border border-outline-variant">Advanced</span>
+</div>
+<div>
+<h3 class="font-body-base text-body-base font-semibold text-on-surface">Configure Agent Lab</h3>
+<p class="font-code-mono text-code-mono text-on-surface-variant mt-xs text-[11px]">Multi-agent swarms &amp; tool chaining</p>
+</div>
+</button>
+<button class="bento-card rounded-lg p-md flex flex-col items-start justify-between h-32 group text-left">
+<div class="w-10 h-10 rounded-DEFAULT bg-surface-bright text-inverse-surface flex items-center justify-center mb-sm group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">image</span>
+</div>
+<div>
+<h3 class="font-body-base text-body-base font-semibold text-on-surface">Render Image Studio</h3>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-xs">Stable Diffusion Core</p>
+</div>
+</button>
+</div>
+<!-- Bento Side: System Status & Privacy -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-md">
+<!-- System Status Card -->
+<div class="bento-card rounded-lg p-md relative overflow-hidden">
+<!-- Progress top bar -->
+<div class="absolute top-0 left-0 h-[2px] bg-tertiary w-[60%]"></div>
+<div class="flex justify-between items-center mb-md">
+<h3 class="font-body-base text-body-base font-semibold text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">memory</span> System Status
+                        </h3>
+<span class="font-label-caps text-label-caps px-2 py-1 bg-tertiary/10 text-tertiary rounded-[4px]">Stable</span>
+</div>
+<div class="mb-sm">
+<p class="font-code-mono text-code-mono text-on-surface-variant text-[11px] mb-xs">ACTIVE MODEL</p>
+<div class="bg-surface-container-lowest border border-outline-variant p-sm rounded-[4px] flex items-center justify-between">
+<span class="font-body-sm text-body-sm font-semibold">Gemma-2 9B</span>
+<span class="font-label-caps text-label-caps px-1 py-[2px] bg-surface-bright text-on-surface rounded-[2px]">- Local</span>
+</div>
+</div>
+<div class="mb-sm">
+<div class="flex justify-between items-end mb-xs">
+<p class="font-code-mono text-code-mono text-on-surface-variant text-[11px]">VRAM USAGE</p>
+<p class="font-code-mono text-code-mono text-on-surface text-[12px]">7.2GB <span class="text-on-surface-variant">/ 12GB</span></p>
+</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[60%]"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-end mb-xs">
+<p class="font-code-mono text-code-mono text-on-surface-variant text-[11px]">THERMAL</p>
+<p class="font-code-mono text-code-mono text-tertiary text-[12px]">68°C</p>
+</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden flex">
+<div class="h-full bg-tertiary w-[40%]"></div>
+<div class="h-full bg-secondary w-[20%]"></div>
+<div class="h-full bg-error w-[8%]"></div>
+</div>
+</div>
+</div>
+<!-- Privacy Radar -->
+<div class="bento-card rounded-lg p-md flex items-center gap-md">
+<div class="relative w-16 h-16 shrink-0 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 36 36">
+<path class="text-surface-container-highest" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-tertiary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="85, 100" stroke-width="3"></path>
+</svg>
+<span class="absolute font-code-mono text-code-mono text-[12px] font-bold">85%</span>
+</div>
+<div>
+<h3 class="font-body-base text-body-base font-semibold text-on-surface mb-xs">Privacy Radar</h3>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Local Traffic Isolation</p>
+<p class="font-code-mono text-code-mono text-[10px] text-tertiary-fixed-dim mt-xs flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">shield</span> Data Secured
+                        </p>
+</div>
+</div>
+</div>
+<!-- Full Width: Recent Activity Logs -->
+<div class="col-span-12 bento-card rounded-lg p-0 overflow-hidden flex flex-col h-[300px]">
+<div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest/50">
+<h3 class="font-body-base text-body-base font-semibold text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">list_alt</span> Recent Activity
+                    </h3>
+<div class="flex gap-sm">
+<button class="text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-[18px]">filter_list</span></button>
+<button class="text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-[18px]">content_copy</span></button>
+</div>
+</div>
+<div class="overflow-y-auto flex-1 p-sm font-code-mono text-code-mono text-[12px]">
+<table class="w-full text-left border-collapse">
+<tbody>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-container/50 transition-colors group">
+<td class="py-sm px-md w-32 text-on-surface-variant">14:02:45.01</td>
+<td class="py-sm px-md">
+<span class="inline-flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span class="text-on-surface">Agent Simulation Complete</span>
+</span>
+</td>
+<td class="py-sm px-md text-right text-on-surface-variant group-hover:text-primary transition-colors">
+<span class="px-2 py-1 bg-primary/10 text-primary rounded-[2px] text-[10px]">SUCCESS</span>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-container/50 transition-colors group">
+<td class="py-sm px-md w-32 text-on-surface-variant">13:45:12.99</td>
+<td class="py-sm px-md">
+<span class="inline-flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span class="text-on-surface">Research Report Exported</span>
+</span>
+</td>
+<td class="py-sm px-md text-right text-on-surface-variant group-hover:text-primary transition-colors">
+<span class="px-2 py-1 bg-surface-bright rounded-[2px] text-[10px]">FILE_IO</span>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-container/50 transition-colors group">
+<td class="py-sm px-md w-32 text-on-surface-variant">13:10:05.21</td>
+<td class="py-sm px-md">
+<span class="inline-flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="text-on-surface text-secondary-fixed-dim">Model Swapped: Llama-3 to Gemma-2</span>
+</span>
+</td>
+<td class="py-sm px-md text-right text-on-surface-variant group-hover:text-primary transition-colors">
+<span class="px-2 py-1 bg-surface-bright rounded-[2px] text-[10px]">SYS_OP</span>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-container/50 transition-colors group">
+<td class="py-sm px-md w-32 text-on-surface-variant">12:55:30.40</td>
+<td class="py-sm px-md">
+<span class="inline-flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+<span class="text-error">API Request Timeout (External Tool)</span>
+</span>
+</td>
+<td class="py-sm px-md text-right text-on-surface-variant group-hover:text-primary transition-colors">
+<span class="px-2 py-1 bg-error/10 text-error rounded-[2px] text-[10px]">ERROR</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container/50 transition-colors group">
+<td class="py-sm px-md w-32 text-on-surface-variant">11:20:01.00</td>
+<td class="py-sm px-md">
+<span class="inline-flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span class="text-on-surface">Document Studio Indexing Finished</span>
+</span>
+</td>
+<td class="py-sm px-md text-right text-on-surface-variant group-hover:text-primary transition-colors">
+<span class="px-2 py-1 bg-primary/10 text-primary rounded-[2px] text-[10px]">SUCCESS</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</body></html>

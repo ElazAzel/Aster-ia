@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asterion AI - Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "surface": "#131317",
+                "inverse-surface": "#e4e1e7",
+                "on-tertiary-fixed-variant": "#693c00",
+                "on-secondary-container": "#003e22",
+                "on-primary-fixed": "#160066",
+                "inverse-on-surface": "#303034",
+                "primary-container": "#8c80ff",
+                "secondary-fixed": "#6efdac",
+                "on-error-container": "#ffdad6",
+                "surface-container-low": "#1b1b1f",
+                "outline-variant": "#474554",
+                "on-tertiary-container": "#402300",
+                "surface-tint": "#c6bfff",
+                "surface-dim": "#131317",
+                "surface-container-high": "#2a292e",
+                "primary-fixed-dim": "#c6bfff",
+                "primary": "#c6bfff",
+                "secondary": "#4edf92",
+                "inverse-primary": "#5846d4",
+                "tertiary-fixed-dim": "#ffb86e",
+                "on-surface-variant": "#c8c4d7",
+                "surface-bright": "#39393d",
+                "background": "#131317",
+                "tertiary-fixed": "#ffdcbd",
+                "surface-container-highest": "#353439",
+                "outline": "#928ea0",
+                "on-background": "#e4e1e7",
+                "primary-fixed": "#e4dfff",
+                "surface-container-lowest": "#0e0e12",
+                "on-secondary-fixed-variant": "#00522e",
+                "on-secondary": "#00391e",
+                "secondary-container": "#00b56c",
+                "on-surface": "#e4e1e7",
+                "on-error": "#690005",
+                "error-container": "#93000a",
+                "on-tertiary": "#492900",
+                "secondary-fixed-dim": "#4edf92",
+                "on-primary-container": "#22008d",
+                "on-secondary-fixed": "#002110",
+                "on-primary-fixed-variant": "#3f29bc",
+                "on-primary": "#2800a0",
+                "on-tertiary-fixed": "#2c1600",
+                "tertiary-container": "#ce7e17",
+                "surface-variant": "#353439",
+                "error": "#ffb4ab",
+                "tertiary": "#ffb86e",
+                "surface-container": "#1f1f23",
+                "semantic-green": "#4edf92",
+                "semantic-amber": "#ffb86e",
+                "semantic-red": "#ffb4ab"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "container-padding": "24px",
+                "stack-loose": "12px",
+                "element-gap": "20px",
+                "stack-tight": "8px",
+                "xs": "4px",
+                "sm": "8px",
+                "md": "16px",
+                "lg": "24px",
+                "xl": "32px",
+                "margin-desktop": "24px",
+                "gutter": "12px"
+        },
+        "fontFamily": {
+                "label-caps": [
+                        "DM Sans"
+                ],
+                "headline-sm": [
+                        "DM Sans"
+                ],
+                "body-secondary": [
+                        "DM Sans"
+                ],
+                "body-base": [
+                        "DM Sans"
+                ],
+                "mono-sm": [
+                        "JetBrains Mono"
+                ],
+                "mono-base": [
+                        "JetBrains Mono"
+                ],
+                "code-mono": [
+                        "JetBrains Mono"
+                ],
+                "display-lg": [
+                        "DM Sans"
+                ],
+                "headline-md": [
+                        "DM Sans"
+                ],
+                "body-sm": [
+                        "DM Sans"
+                ]
+        },
+        "fontSize": {
+                "label-caps": [
+                        "11px",
+                        {
+                                "lineHeight": "16px",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-sm": [
+                        "20px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-secondary": [
+                        "13px",
+                        {
+                                "lineHeight": "18px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-base": [
+                        "15px",
+                        {
+                                "lineHeight": "22px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "mono-sm": [
+                        "11px",
+                        {
+                                "lineHeight": "16px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "mono-base": [
+                        "13px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "code-mono": ["13px", { "lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "500" }],
+                "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                "headline-md": ["24px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                "body-sm": ["12px", { "lineHeight": "1.4", "letterSpacing": "0", "fontWeight": "400" }]
+        }
+},
+    },
+  }
+</script>
+<style>
+        body { background-color: #0c0c10; } /* Base dark */
+        .glass-panel {
+            background-color: #131317; /* Surface Tier 1 */
+            border: 1px solid #474554;
+            border-radius: 0.5rem;
+            padding: 24px;
+        }
+        .model-card {
+            background-color: #1b1b1f;
+            border: 1px solid #474554;
+            border-radius: 0.25rem;
+            padding: 24px;
+        }
+        .hardware-accent {
+            border: 1px solid #474554;
+        }
+        .hardware-accent:hover {
+            border-color: #c6bfff; /* primary */
+        }
+        /* Custom Scrollbar for inner elements */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #474554; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: #c6bfff; }
+    </style>
+</head>
+<body class="text-on-surface antialiased h-screen overflow-hidden flex font-body-base bg-[#0c0c10]">
+<!-- Icon-only SideNavBar -->
+<nav class="h-screen w-16 fixed left-0 top-0 bg-surface dark:bg-surface border-r border-outline-variant dark:border-outline-variant flat no shadows flex flex-col py-lg items-center z-40">
+<div class="mb-xl flex justify-center w-full">
+<div class="w-8 h-8 rounded bg-primary/20 flex items-center justify-center border border-primary/30">
+<span class="font-headline-sm text-primary font-bold leading-none">A</span>
+</div>
+</div>
+<ul class="flex-1 space-y-sm w-full px-2 flex flex-col items-center">
+<li class="w-full flex justify-center">
+<a class="flex items-center justify-center w-10 h-10 rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant group relative" href="index.html" title="Home">
+<span class="material-symbols-outlined text-[20px]">home</span>
+<span class="absolute left-14 bg-surface-container-highest text-on-surface text-label-caps px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">Home</span>
+</a>
+</li>
+<li class="w-full flex justify-center">
+<a class="flex items-center justify-center w-10 h-10 rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant group relative" href="chat.html" title="Chat">
+<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+<span class="absolute left-14 bg-surface-container-highest text-on-surface text-label-caps px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">Chat</span>
+</a>
+</li>
+<li class="w-full flex justify-center">
+<a class="flex items-center justify-center w-10 h-10 rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant group relative" href="research.html" title="Research">
+<span class="material-symbols-outlined text-[20px]">science</span>
+<span class="absolute left-14 bg-surface-container-highest text-on-surface text-label-caps px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">Research</span>
+</a>
+</li>
+<li class="w-full flex justify-center">
+<a class="flex items-center justify-center w-10 h-10 rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant group relative" href="documents.html" title="Documents">
+<span class="material-symbols-outlined text-[20px]">description</span>
+<span class="absolute left-14 bg-surface-container-highest text-on-surface text-label-caps px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">Documents</span>
+</a>
+</li>
+<li class="w-full flex justify-center">
+<a class="flex items-center justify-center w-10 h-10 rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant group relative" href="vault.html" title="Vault">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+<span class="absolute left-14 bg-surface-container-highest text-on-surface text-label-caps px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">Vault</span>
+</a>
+</li>
+<li class="w-full flex justify-center">
+<a class="flex items-center justify-center w-10 h-10 rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant group relative" href="agents.html" title="Agents">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+<span class="absolute left-14 bg-surface-container-highest text-on-surface text-label-caps px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">Agents</span>
+</a>
+</li>
+<li class="w-full flex justify-center">
+<a class="flex items-center justify-center w-10 h-10 rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant group relative" href="images.html" title="Images">
+<span class="material-symbols-outlined text-[20px]">image</span>
+<span class="absolute left-14 bg-surface-container-highest text-on-surface text-label-caps px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">Images</span>
+</a>
+</li>
+<li class="w-full flex justify-center">
+<a class="flex items-center justify-center w-10 h-10 rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant group relative" href="automations.html" title="Automations">
+<span class="material-symbols-outlined text-[20px]">bolt</span>
+<span class="absolute left-14 bg-surface-container-highest text-on-surface text-label-caps px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">Automations</span>
+</a>
+</li>
+<li class="w-full flex justify-center">
+<a class="flex items-center justify-center w-10 h-10 rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant group relative" href="models.html" title="Models">
+<span class="material-symbols-outlined text-[20px]">view_in_ar</span>
+<span class="absolute left-14 bg-surface-container-highest text-on-surface text-label-caps px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">Models</span>
+</a>
+</li>
+<li class="w-full flex justify-center">
+<!-- Active State -->
+<a class="flex items-center justify-center w-10 h-10 rounded bg-surface-container-high text-primary dark:text-primary relative group" href="settings.html" title="Settings">
+<div class="absolute left-0 top-1 bottom-1 w-[2px] bg-primary rounded-r"></div>
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="absolute left-14 bg-surface-container-highest text-on-surface text-label-caps px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">Settings</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- Main Content Area -->
+<div class="ml-16 flex-1 flex flex-col h-screen relative">
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-4rem)] z-50 bg-surface/90 dark:bg-surface/90 border-b border-outline-variant dark:border-outline-variant flat no shadows flex justify-end items-center h-16 px-margin-desktop backdrop-blur-sm">
+<div class="flex items-center gap-md">
+<!-- VRAM Bar -->
+<div class="flex items-center gap-xs hidden md:flex mr-4">
+<span class="font-mono-sm text-mono-sm text-on-surface-variant uppercase">VRAM</span>
+<div class="w-24 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="bg-secondary h-full" style="width: 65%"></div>
+</div>
+</div>
+<div class="flex items-center gap-sm bg-surface-container border border-outline-variant px-3 py-1.5 rounded text-sm font-mono-base text-on-surface">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+    Llama-3 70B (Local)
+</div>
+<button class="bg-surface-container hover:bg-surface-container-high border border-outline-variant text-on-surface px-3 py-1.5 rounded transition-colors font-label-caps text-label-caps uppercase tracking-wider">
+    Stop All
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors ml-2">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</header>
+<!-- Canvas / Workspace -->
+<main class="flex-1 overflow-y-auto mt-16 p-margin-desktop relative z-0">
+<div class="max-w-[1400px] mx-auto grid grid-cols-12 gap-lg pb-xl">
+<!-- Page Header -->
+<div class="col-span-12 mb-sm">
+<h2 class="font-headline-md text-headline-md text-on-surface tracking-tight mb-xs">Model Settings &amp; Hardware</h2>
+<p class="font-body-base text-body-base text-on-surface-variant">Configure AI runtime environment, manage local models, and monitor hardware telemetry.</p>
+</div>
+<!-- Hardware Scan Results (Bento Block 1) -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-md">
+<div class="glass-panel relative overflow-hidden group">
+<!-- Top Progress Bar indicator -->
+<div class="absolute top-0 left-0 h-[2px] bg-primary w-full"></div>
+<div class="flex items-center justify-between mb-md">
+<h3 class="font-code-mono text-code-mono text-on-surface flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px] text-primary">memory</span>
+                                HARDWARE_TELEMETRY
+                            </h3>
+<span class="font-label-caps text-label-caps bg-semantic-green/10 text-semantic-green px-xs py-[2px] rounded uppercase border border-semantic-green/20">LIVE</span>
+</div>
+<!-- GPU Stats -->
+<div class="mb-md">
+<div class="flex justify-between font-body-sm text-body-sm text-on-surface-variant mb-xs">
+<span>Primary GPU</span>
+<span class="text-on-surface font-semibold">NVIDIA RTX 4090</span>
+</div>
+<div class="flex justify-between font-label-caps text-label-caps uppercase text-on-surface-variant mb-xs">
+<span>VRAM USAGE</span>
+<span class="text-semantic-green font-mono-base">14.2 GB / 24.0 GB</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden border border-outline-variant">
+<div class="bg-semantic-green h-full w-[60%]"></div>
+</div>
+</div>
+<!-- System RAM Stats -->
+<div class="mb-sm">
+<div class="flex justify-between font-label-caps text-label-caps uppercase text-on-surface-variant mb-xs">
+<span>SYSTEM RAM</span>
+<span class="font-mono-base text-on-surface-variant">32 GB / 128 GB</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden border border-outline-variant">
+<div class="bg-primary h-full w-[25%] opacity-70"></div>
+</div>
+</div>
+<!-- Compute Load -->
+<div>
+<div class="flex justify-between font-label-caps text-label-caps uppercase text-on-surface-variant mb-xs">
+<span>COMPUTE LOAD</span>
+<span class="font-mono-base text-semantic-amber">12%</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden border border-outline-variant">
+<div class="bg-semantic-amber h-full w-[12%] opacity-70"></div>
+</div>
+</div>
+</div>
+<!-- Privacy Mode Selector -->
+<div class="glass-panel">
+<h3 class="font-code-mono text-code-mono text-on-surface mb-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">shield_lock</span>
+                            DATA_ROUTING_MODE
+                        </h3>
+<div class="space-y-xs">
+<!-- Option 1: Local Only -->
+<label class="flex items-start gap-sm p-sm rounded border border-primary bg-primary/5 cursor-pointer hardware-accent">
+<input checked="" class="mt-[2px] bg-surface border-outline-variant text-primary focus:ring-primary focus:ring-offset-surface" name="privacy_mode" type="radio"/>
+<div>
+<span class="block font-body-sm text-body-sm text-primary font-semibold flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-semantic-green inline-block shadow-[0_0_8px_rgba(78,223,146,0.5)]"></span>
+                                        Local-Only
+                                    </span>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant mt-[2px]">Forces all inference to run on local hardware. Zero telemetry.</span>
+</div>
+</label>
+<!-- Option 2: Airgap -->
+<label class="flex items-start gap-sm p-sm rounded border border-outline-variant bg-surface-container-low cursor-pointer hardware-accent hover:bg-surface-container transition-colors">
+<input class="mt-[2px] bg-surface border-outline-variant text-primary focus:ring-primary focus:ring-offset-surface" name="privacy_mode" type="radio"/>
+<div>
+<span class="block font-body-sm text-body-sm text-on-surface font-semibold flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-semantic-red inline-block"></span>
+                                        Airgap Mode
+                                        <span class="font-label-caps text-label-caps uppercase bg-semantic-red/10 border border-semantic-red/20 text-semantic-red px-xs py-[1px] rounded text-[9px] ml-1">MAX SECURITY</span>
+</span>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant mt-[2px]">Disables network adapters for Asterion processes.</span>
+</div>
+</label>
+<!-- Option 3: Hybrid -->
+<label class="flex items-start gap-sm p-sm rounded border border-outline-variant bg-surface-container-low cursor-pointer hardware-accent hover:bg-surface-container transition-colors">
+<input class="mt-[2px] bg-surface border-outline-variant text-primary focus:ring-primary focus:ring-offset-surface" name="privacy_mode" type="radio"/>
+<div>
+<span class="block font-body-sm text-body-sm text-on-surface font-semibold flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-semantic-amber inline-block"></span>
+                                        Hybrid (Smart Routing)
+                                    </span>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant mt-[2px]">Routes simple queries locally, complex to cloud API.</span>
+</div>
+</label>
+</div>
+</div>
+</div>
+<!-- Model Catalog (Bento Block 2) -->
+<div class="col-span-12 lg:col-span-8 flex flex-col">
+<div class="flex items-center justify-between mb-sm">
+<h3 class="font-code-mono text-code-mono text-on-surface flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">database</span>
+                            LOCAL_MODEL_REGISTRY
+                        </h3>
+<button class="font-label-caps text-label-caps uppercase text-on-surface border border-outline-variant px-sm py-xs rounded hover:border-primary hover:text-primary transition-colors flex items-center gap-xs bg-surface-container-high">
+<span class="material-symbols-outlined text-[14px]">download</span>
+                            Pull Model
+                        </button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- Model Card 1 (Active) -->
+<div class="model-card border-primary/50 relative overflow-hidden bg-primary/5 shadow-[inset_0_0_20px_rgba(198,191,255,0.05)]">
+<div class="absolute top-0 right-0 p-sm opacity-5 font-display-lg text-display-lg text-primary select-none pointer-events-none font-bold">01</div>
+<div class="flex justify-between items-start mb-md relative z-10">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Llama-3 70B</h4>
+<span class="font-label-caps text-[9px] bg-semantic-green/10 text-semantic-green border border-semantic-green/20 px-1.5 py-0.5 rounded uppercase flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-semantic-green"></span>LOCAL
+</span>
+</div>
+<div class="flex gap-xs mt-xs">
+<span class="font-code-mono text-code-mono text-[10px] bg-primary/20 text-primary px-xs py-[2px] rounded border border-primary/30">Active</span>
+<span class="font-code-mono text-code-mono text-[10px] bg-surface-container text-on-surface-variant px-xs py-[2px] rounded border border-outline-variant">GGUF</span>
+</div>
+</div>
+<button class="text-primary hover:text-inverse-primary transition-colors bg-primary/10 rounded-full p-1"><span class="material-symbols-outlined block text-[24px]">stop_circle</span></button>
+</div>
+<div class="grid grid-cols-2 gap-sm border-t border-outline-variant pt-sm mt-auto relative z-10">
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">SIZE</span>
+<span class="block font-code-mono text-code-mono text-on-surface">40.2 GB</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">REQ VRAM</span>
+<span class="block font-code-mono text-code-mono text-on-surface">~24 GB</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">EST. SPEED</span>
+<span class="block font-code-mono text-code-mono text-semantic-green">15 tok/s</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">CONTEXT</span>
+<span class="block font-code-mono text-code-mono text-on-surface">8192</span>
+</div>
+</div>
+</div>
+<!-- Model Card 2 -->
+<div class="model-card hardware-accent relative overflow-hidden group cursor-pointer transition-all hover:border-primary hover:bg-surface-container-high bg-surface-container-low">
+<div class="absolute top-0 right-0 p-sm opacity-5 font-display-lg text-display-lg text-on-surface-variant select-none pointer-events-none group-hover:text-primary transition-colors font-bold">02</div>
+<div class="flex justify-between items-start mb-md relative z-10">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Mistral 8x7B</h4>
+<span class="font-label-caps text-[9px] bg-semantic-green/10 text-semantic-green border border-semantic-green/20 px-1.5 py-0.5 rounded uppercase flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-semantic-green"></span>LOCAL
+</span>
+</div>
+<div class="flex gap-xs mt-xs">
+<span class="font-code-mono text-code-mono text-[10px] bg-surface text-on-surface-variant px-xs py-[2px] rounded border border-outline-variant">Idle</span>
+<span class="font-code-mono text-code-mono text-[10px] bg-surface text-on-surface-variant px-xs py-[2px] rounded border border-outline-variant">MoE</span>
+</div>
+</div>
+<button class="text-on-surface-variant group-hover:text-primary transition-colors hover:bg-surface-container-highest rounded-full p-1"><span class="material-symbols-outlined block text-[24px]">play_circle</span></button>
+</div>
+<div class="grid grid-cols-2 gap-sm border-t border-outline-variant pt-sm mt-auto relative z-10">
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">SIZE</span>
+<span class="block font-code-mono text-code-mono text-on-surface">26.4 GB</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">REQ VRAM</span>
+<span class="block font-code-mono text-code-mono text-on-surface">~16 GB</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">EST. SPEED</span>
+<span class="block font-code-mono text-code-mono text-on-surface">32 tok/s</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">CONTEXT</span>
+<span class="block font-code-mono text-code-mono text-on-surface">32768</span>
+</div>
+</div>
+</div>
+<!-- Model Card 3 -->
+<div class="model-card hardware-accent relative overflow-hidden group cursor-pointer transition-all hover:border-primary hover:bg-surface-container-high bg-surface-container-low">
+<div class="absolute top-0 right-0 p-sm opacity-5 font-display-lg text-display-lg text-on-surface-variant select-none pointer-events-none group-hover:text-primary transition-colors font-bold">03</div>
+<div class="flex justify-between items-start mb-md relative z-10">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<h4 class="font-headline-sm text-headline-sm text-on-surface">GPT-4o API</h4>
+<span class="font-label-caps text-[9px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded uppercase flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>API
+</span>
+</div>
+<div class="flex gap-xs mt-xs">
+<span class="font-code-mono text-code-mono text-[10px] bg-surface text-on-surface-variant px-xs py-[2px] rounded border border-outline-variant">Idle</span>
+<span class="font-code-mono text-code-mono text-[10px] bg-surface text-on-surface-variant px-xs py-[2px] rounded border border-outline-variant">Cloud</span>
+</div>
+</div>
+<button class="text-on-surface-variant group-hover:text-primary transition-colors hover:bg-surface-container-highest rounded-full p-1"><span class="material-symbols-outlined block text-[24px]">play_circle</span></button>
+</div>
+<div class="grid grid-cols-2 gap-sm border-t border-outline-variant pt-sm mt-auto relative z-10">
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">SIZE</span>
+<span class="block font-code-mono text-code-mono text-on-surface">N/A</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">REQ VRAM</span>
+<span class="block font-code-mono text-code-mono text-on-surface">0 GB</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">EST. SPEED</span>
+<span class="block font-code-mono text-code-mono text-on-surface">Var. tok/s</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">CONTEXT</span>
+<span class="block font-code-mono text-code-mono text-on-surface">128k</span>
+</div>
+</div>
+</div>
+<!-- Model Card 4 -->
+<div class="model-card hardware-accent relative overflow-hidden group cursor-pointer transition-all hover:border-primary hover:bg-surface-container-high bg-surface-container-low">
+<div class="absolute top-0 right-0 p-sm opacity-5 font-display-lg text-display-lg text-on-surface-variant select-none pointer-events-none group-hover:text-primary transition-colors font-bold">04</div>
+<div class="flex justify-between items-start mb-md relative z-10">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<h4 class="font-headline-sm text-headline-sm text-on-surface">CodeLlama 34B</h4>
+<span class="font-label-caps text-[9px] bg-semantic-amber/10 text-semantic-amber border border-semantic-amber/20 px-1.5 py-0.5 rounded uppercase flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-semantic-amber"></span>HYBRID
+</span>
+</div>
+<div class="flex gap-xs mt-xs">
+<span class="font-code-mono text-code-mono text-[10px] bg-surface text-on-surface-variant px-xs py-[2px] rounded border border-outline-variant">Idle</span>
+<span class="font-code-mono text-code-mono text-[10px] bg-surface text-on-surface-variant px-xs py-[2px] rounded border border-outline-variant">AWQ</span>
+</div>
+</div>
+<button class="text-on-surface-variant group-hover:text-primary transition-colors hover:bg-surface-container-highest rounded-full p-1"><span class="material-symbols-outlined block text-[24px]">play_circle</span></button>
+</div>
+<div class="grid grid-cols-2 gap-sm border-t border-outline-variant pt-sm mt-auto relative z-10">
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">SIZE</span>
+<span class="block font-code-mono text-code-mono text-on-surface">19.8 GB</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">REQ VRAM</span>
+<span class="block font-code-mono text-code-mono text-on-surface">~12 GB</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">EST. SPEED</span>
+<span class="block font-code-mono text-code-mono text-on-surface">24 tok/s</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">CONTEXT</span>
+<span class="block font-code-mono text-code-mono text-on-surface">16384</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

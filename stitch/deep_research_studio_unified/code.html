@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asterion AI - Deep Research Studio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;450;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "surface": "#131317",
+                "inverse-surface": "#e4e1e7",
+                "on-tertiary-fixed-variant": "#693c00",
+                "on-secondary-container": "#003e22",
+                "on-primary-fixed": "#160066",
+                "inverse-on-surface": "#303034",
+                "primary-container": "#8c80ff",
+                "secondary-fixed": "#6efdac",
+                "on-error-container": "#ffdad6",
+                "surface-container-low": "#1b1b1f",
+                "outline-variant": "#474554",
+                "on-tertiary-container": "#402300",
+                "surface-tint": "#c6bfff",
+                "surface-dim": "#131317",
+                "surface-container-high": "#2a292e",
+                "primary-fixed-dim": "#c6bfff",
+                "primary": "#c6bfff",
+                "secondary": "#4edf92",
+                "inverse-primary": "#5846d4",
+                "tertiary-fixed-dim": "#ffb86e",
+                "on-surface-variant": "#c8c4d7",
+                "surface-bright": "#39393d",
+                "background": "#0c0c10",
+                "tertiary-fixed": "#ffdcbd",
+                "surface-container-highest": "#353439",
+                "outline": "#928ea0",
+                "on-background": "#e4e1e7",
+                "primary-fixed": "#e4dfff",
+                "surface-container-lowest": "#0e0e12",
+                "on-secondary-fixed-variant": "#00522e",
+                "on-secondary": "#00391e",
+                "secondary-container": "#00b56c",
+                "on-surface": "#e4e1e7",
+                "on-error": "#690005",
+                "error-container": "#93000a",
+                "on-tertiary": "#492900",
+                "secondary-fixed-dim": "#4edf92",
+                "on-primary-container": "#22008d",
+                "on-secondary-fixed": "#002110",
+                "on-primary-fixed-variant": "#3f29bc",
+                "on-primary": "#2800a0",
+                "on-tertiary-fixed": "#2c1600",
+                "tertiary-container": "#ce7e17",
+                "surface-variant": "#353439",
+                "error": "#ffb4ab",
+                "tertiary": "#ffb86e",
+                "surface-container": "#1f1f23"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem",
+                "card": "8px",
+                "panel": "14px"
+        },
+        "spacing": {
+                "container-padding": "24px",
+                "stack-loose": "12px",
+                "element-gap": "20px",
+                "stack-tight": "8px",
+                "lg": "24px",
+                "gutter": "12px",
+                "base": "4px",
+                "md": "16px",
+                "margin-desktop": "24px",
+                "sm": "8px",
+                "xs": "4px",
+                "xl": "32px"
+        },
+        "fontFamily": {
+                "label-caps": [
+                        "DM Sans"
+                ],
+                "headline-sm": [
+                        "DM Sans"
+                ],
+                "body-secondary": [
+                        "DM Sans"
+                ],
+                "body-base": [
+                        "DM Sans"
+                ],
+                "mono-sm": [
+                        "JetBrains Mono"
+                ],
+                "mono-base": [
+                        "JetBrains Mono"
+                ],
+                "headline-md": ["DM Sans", "sans-serif"],
+                "body-sm": ["DM Sans", "sans-serif"],
+                "display-lg": ["DM Sans", "sans-serif"],
+                "code-mono": ["JetBrains Mono", "monospace"]
+        },
+        "fontSize": {
+                "label-caps": [
+                        "11px",
+                        {
+                                "lineHeight": "16px",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-sm": [
+                        "20px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-secondary": [
+                        "13px",
+                        {
+                                "lineHeight": "18px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-base": [
+                        "15px",
+                        {
+                                "lineHeight": "22px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "mono-sm": [
+                        "11px",
+                        {
+                                "lineHeight": "16px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "mono-base": [
+                        "13px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-md": ["24px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                "body-sm": ["12px", { "lineHeight": "1.4", "letterSpacing": "0", "fontWeight": "400" }],
+                "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                "code-mono": ["13px", { "lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "450" }]
+        }
+},
+    },
+  }
+</script>
+<style>
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(12, 12, 16, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2a36;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #39393d;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen overflow-hidden selection:bg-primary-container selection:text-on-primary-container font-body-base">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col h-full py-[24px] px-[12px] bg-surface border-r border-outline-variant h-screen w-16 fixed left-0 top-0 z-40 items-center">
+<div class="mb-xl flex justify-center">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-primary text-sm font-bold">account_circle</span>
+</div>
+</div>
+<ul class="flex flex-col gap-sm flex-grow w-full items-center">
+<li>
+<a class="flex items-center justify-center w-10 h-10 rounded-card text-on-surface-variant hover:bg-surface-container transition-colors" href="#" title="Home">
+<span class="material-symbols-outlined text-[20px]">home</span>
+</a>
+</li>
+<li>
+<a class="flex items-center justify-center w-10 h-10 rounded-card text-on-surface-variant hover:bg-surface-container transition-colors" href="#" title="Chat">
+<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+</a>
+</li>
+<li>
+<a class="flex items-center justify-center w-10 h-10 rounded-card text-primary font-bold bg-surface-container hover:bg-surface-container-high transition-colors" href="#" title="Research">
+<span class="material-symbols-outlined text-[20px]">science</span>
+</a>
+</li>
+<li>
+<a class="flex items-center justify-center w-10 h-10 rounded-card text-on-surface-variant hover:bg-surface-container transition-colors" href="#" title="Documents">
+<span class="material-symbols-outlined text-[20px]">description</span>
+</a>
+</li>
+<li>
+<a class="flex items-center justify-center w-10 h-10 rounded-card text-on-surface-variant hover:bg-surface-container transition-colors" href="#" title="Vault">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+</a>
+</li>
+<li>
+<a class="flex items-center justify-center w-10 h-10 rounded-card text-on-surface-variant hover:bg-surface-container transition-colors" href="#" title="Agents">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+</a>
+</li>
+<li>
+<a class="flex items-center justify-center w-10 h-10 rounded-card text-on-surface-variant hover:bg-surface-container transition-colors" href="#" title="Images">
+<span class="material-symbols-outlined text-[20px]">image</span>
+</a>
+</li>
+<li>
+<a class="flex items-center justify-center w-10 h-10 rounded-card text-on-surface-variant hover:bg-surface-container transition-colors" href="#" title="Automations">
+<span class="material-symbols-outlined text-[20px]">bolt</span>
+</a>
+</li>
+<li>
+<a class="flex items-center justify-center w-10 h-10 rounded-card text-on-surface-variant hover:bg-surface-container transition-colors" href="#" title="Models">
+<span class="material-symbols-outlined text-[20px]">deployed_code</span>
+</a>
+</li>
+<li>
+<a class="flex items-center justify-center w-10 h-10 rounded-card text-on-surface-variant hover:bg-surface-container transition-colors" href="#" title="Settings">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- TopNavBar -->
+<header class="hidden md:flex justify-between items-center h-16 px-[24px] ml-16 bg-background border-b border-outline-variant fixed top-0 right-0 w-[calc(100%-4rem)] z-50">
+<div class="flex items-center gap-xl">
+<h2 class="font-headline-sm text-headline-sm font-black text-primary">Asterion AI</h2>
+</div>
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="font-label-caps text-label-caps text-secondary">Local</span>
+</div>
+<div class="h-4 w-px bg-outline-variant mx-xs"></div>
+<div class="flex flex-col gap-1 w-32">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface">Llama-3 70B</span>
+<span class="font-mono-sm text-[9px] text-on-surface-variant">24GB / 32GB</span>
+</div>
+<div class="h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary w-3/4"></div>
+</div>
+</div>
+<div class="h-4 w-px bg-outline-variant mx-xs"></div>
+<button class="font-label-caps text-label-caps px-md py-xs bg-error/10 text-error border border-error/30 rounded-card hover:bg-error/20 transition-colors">
+                Stop All
+            </button>
+<div class="flex items-center gap-sm ml-sm text-on-surface-variant">
+<button class="hover:text-primary transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+<button class="hover:text-primary transition-colors"><span class="material-symbols-outlined">help</span></button>
+</div>
+</div>
+</header>
+<!-- Main Workspace -->
+<main class="ml-0 md:ml-16 mt-16 p-[24px] h-[calc(100vh-4rem)] flex flex-col gap-md">
+<!-- Toolbar -->
+<div class="flex justify-between items-center shrink-0">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Deep Research Studio: Q3 Battery Technology Analysis</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">Compiling findings from 14 sources across local documents and external URLs.</p>
+</div>
+<div class="flex gap-sm">
+<button class="flex items-center gap-xs px-md py-sm bg-surface-container border border-outline-variant rounded-card hover:border-primary transition-colors font-label-caps text-label-caps text-on-surface">
+<span class="material-symbols-outlined text-[16px]">download</span>
+                    Full Citation Report
+                </button>
+<button class="flex items-center gap-xs px-md py-sm bg-primary text-surface font-bold rounded-card hover:bg-primary/80 transition-colors font-label-caps text-label-caps">
+<span class="material-symbols-outlined text-[16px]">summarize</span>
+                    Structured Summary
+                </button>
+</div>
+</div>
+<!-- Split View -->
+<div class="flex gap-lg h-full overflow-hidden">
+<!-- Left Panel: Source List -->
+<aside class="w-1/3 flex flex-col gap-sm overflow-hidden rounded-panel border border-outline-variant bg-surface">
+<div class="p-[24px] pb-sm border-b border-outline-variant bg-surface-container flex justify-between items-center">
+<h4 class="font-label-caps text-label-caps text-on-surface flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">library_books</span>
+                        Active Sources
+                    </h4>
+<span class="font-mono-base text-mono-base text-on-surface-variant text-[10px]">14 items</span>
+</div>
+<div class="overflow-y-auto flex-grow p-[24px] pt-sm flex flex-col gap-sm">
+<!-- Source Item -->
+<div class="p-sm bg-surface-container border border-outline-variant rounded-card hover:border-primary cursor-pointer transition-colors group">
+<div class="flex justify-between items-start mb-xs">
+<div class="flex items-center gap-xs text-primary">
+<span class="material-symbols-outlined text-[14px]">link</span>
+<span class="font-mono-sm text-mono-sm truncate w-40">IEEE_Solid_State_Batteries_2024.pdf</span>
+</div>
+<div class="flex gap-xs">
+<span class="font-label-caps text-[9px] px-xs py-[2px] bg-error/10 text-error rounded-sm border border-error/20">EXTERNAL</span>
+<span class="font-label-caps text-[9px] px-xs py-[2px] bg-secondary/10 text-secondary rounded-sm border border-secondary/20">HIGH CONF</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">Comprehensive review of silicon-anode solid-state advancements in Q1-Q3.</p>
+</div>
+<!-- Source Item -->
+<div class="p-sm bg-surface-container border border-outline-variant rounded-card hover:border-primary cursor-pointer transition-colors group">
+<div class="flex justify-between items-start mb-xs">
+<div class="flex items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">public</span>
+<span class="font-mono-sm text-mono-sm truncate w-40">https://tech-insider-blog.com/ev...</span>
+</div>
+<div class="flex gap-xs">
+<span class="font-label-caps text-[9px] px-xs py-[2px] bg-error/10 text-error rounded-sm border border-error/20">EXTERNAL</span>
+<span class="font-label-caps text-[9px] px-xs py-[2px] bg-warning/10 text-warning rounded-sm border border-warning/20">MED CONF</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">Speculative analysis on consumer EV battery lifespans based on recent recalls.</p>
+</div>
+<!-- Source Item -->
+<div class="p-sm bg-surface-container border border-outline-variant rounded-card hover:border-primary cursor-pointer transition-colors group">
+<div class="flex justify-between items-start mb-xs">
+<div class="flex items-center gap-xs text-primary">
+<span class="material-symbols-outlined text-[14px]">description</span>
+<span class="font-mono-sm text-mono-sm truncate w-40">Internal_R&amp;D_Memo_ProjX.docx</span>
+</div>
+<div class="flex gap-xs">
+<span class="font-label-caps text-[9px] px-xs py-[2px] bg-secondary/10 text-secondary rounded-sm border border-secondary/20">LOCAL</span>
+<span class="font-label-caps text-[9px] px-xs py-[2px] bg-secondary/10 text-secondary rounded-sm border border-secondary/20">HIGH CONF</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">Local lab results for cycle testing of prototype cell B-49.</p>
+</div>
+<!-- Source Item -->
+<div class="p-sm bg-surface-container border border-outline-variant rounded-card hover:border-primary cursor-pointer transition-colors group">
+<div class="flex justify-between items-start mb-xs">
+<div class="flex items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">forum</span>
+<span class="font-mono-sm text-mono-sm truncate w-40">reddit.com/r/hardware/comments...</span>
+</div>
+<div class="flex gap-xs">
+<span class="font-label-caps text-[9px] px-xs py-[2px] bg-error/10 text-error rounded-sm border border-error/20">EXTERNAL</span>
+<span class="font-label-caps text-[9px] px-xs py-[2px] bg-error/10 text-error rounded-sm border border-error/20">LOW CONF</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">Community discussion regarding alleged thermal throttling in competitor chips.</p>
+</div>
+</div>
+</aside>
+<!-- Right Panel: Evidence Report Canvas -->
+<div class="w-2/3 flex flex-col gap-md overflow-y-auto pb-xl">
+<!-- AI Synthesis Section -->
+<div class="bg-surface border border-outline-variant rounded-panel p-[24px]">
+<div class="flex justify-between items-center mb-sm border-b border-outline-variant pb-xs">
+<h4 class="font-label-caps text-label-caps text-primary flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+                            Synthesized Findings
+                        </h4>
+<div class="w-32 h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="w-3/4 h-full bg-primary"></div>
+</div>
+</div>
+<div class="font-body-base text-body-base text-on-surface space-y-sm leading-relaxed">
+<p>Analysis of 14 localized and external sources indicates a paradigm shift toward silicon-anode solid-state integration by Q4 2024. Local R&amp;D memos <span class="bg-primary/20 text-primary px-xs rounded font-mono-sm cursor-help">#ProjX</span> align closely with external academic publications <span class="bg-primary/20 text-primary px-xs rounded font-mono-sm cursor-help">#IEEE_2024</span> regarding energy density improvements (~28% increase over current generation).</p>
+<p>However, thermal management remains a critical vector for failure in high-discharge scenarios, a point heavily debated across consumer and industrial datasets.</p>
+</div>
+</div>
+<!-- Contradiction Finder -->
+<div class="border border-error/30 bg-surface rounded-panel p-[24px] relative overflow-hidden">
+<h4 class="font-label-caps text-label-caps text-error flex items-center gap-xs mb-md">
+<span class="material-symbols-outlined text-[18px]">warning</span>
+                        Contradiction Detected: Battery Degradation Curves
+                    </h4>
+<div class="grid grid-cols-2 gap-sm">
+<!-- Source A -->
+<div class="p-sm bg-surface-container border border-outline-variant rounded-card">
+<div class="flex justify-between items-center mb-xs border-b border-outline-variant pb-xs">
+<span class="font-mono-sm text-on-surface-variant">Internal_R&amp;D_Memo_ProjX.docx</span>
+<span class="font-label-caps text-[9px] text-secondary">HIGH CONFIDENCE</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface">"Prototype B-49 exhibits a degradation of only 4.2% after 1,000 cycles under simulated high-load conditions at 40°C."</p>
+</div>
+<!-- Source B -->
+<div class="p-sm bg-surface-container border border-error/50 rounded-card relative">
+<div class="flex justify-between items-center mb-xs border-b border-outline-variant pb-xs">
+<span class="font-mono-sm text-on-surface-variant">tech-insider-blog.com/...</span>
+<span class="font-label-caps text-[9px] text-warning">MED CONFIDENCE</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface">"Industry leaks suggest the new B-series architecture suffers severe capacity loss (up to 15%) after just 500 fast-charge cycles."</p>
+</div>
+</div>
+<div class="mt-sm p-sm bg-error/10 border border-error/20 rounded-card font-mono-sm text-error/90 flex items-start gap-xs">
+<span class="material-symbols-outlined text-[14px]">psychology</span>
+<span>AI Note: The discrepancy likely stems from differing testing methodologies. Internal tests used steady-state discharge, while external reports cite fast-charge scenarios. Requires further parameter alignment.</span>
+</div>
+</div>
+<!-- Extracted Metrics Data Grid -->
+<div class="border border-outline-variant bg-surface rounded-panel overflow-hidden">
+<div class="p-[24px] pb-sm bg-surface-container border-b border-outline-variant">
+<h4 class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">data_table</span>
+                            Extracted Quantitative Metrics
+                        </h4>
+</div>
+<table class="w-full text-left font-mono-base text-mono-base text-[12px]">
+<thead class="bg-surface-container text-on-surface-variant">
+<tr>
+<th class="px-[24px] py-sm font-normal border-b border-outline-variant">Metric</th>
+<th class="px-[24px] py-sm font-normal border-b border-outline-variant">Claimed Value</th>
+<th class="px-[24px] py-sm font-normal border-b border-outline-variant">Source Consensus</th>
+<th class="px-[24px] py-sm font-normal border-b border-outline-variant">Status</th>
+</tr>
+</thead>
+<tbody class="text-on-surface divide-y divide-outline-variant/50">
+<tr class="hover:bg-surface-container/50 transition-colors">
+<td class="px-[24px] py-sm">Energy Density</td>
+<td class="px-[24px] py-sm">~350 Wh/kg</td>
+<td class="px-[24px] py-sm">8/14 Sources</td>
+<td class="px-[24px] py-sm text-secondary">Verified</td>
+</tr>
+<tr class="hover:bg-surface-container/50 transition-colors">
+<td class="px-[24px] py-sm">Cycle Life (80% ret)</td>
+<td class="px-[24px] py-sm">1200 Cycles</td>
+<td class="px-[24px] py-sm">3/14 Sources</td>
+<td class="px-[24px] py-sm text-warning">Disputed</td>
+</tr>
+<tr class="hover:bg-surface-container/50 transition-colors">
+<td class="px-[24px] py-sm">Thermal Runaway Temp</td>
+<td class="px-[24px] py-sm">&gt;220°C</td>
+<td class="px-[24px] py-sm">11/14 Sources</td>
+<td class="px-[24px] py-sm text-secondary">Verified</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</body></html>

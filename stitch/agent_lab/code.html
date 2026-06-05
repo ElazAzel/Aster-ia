@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asterion AI - Agent Lab</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#6ffbbe",
+                        "secondary-fixed-dim": "#b9c8de",
+                        "on-primary-fixed": "#07006c",
+                        "surface-container-low": "#131b2e",
+                        "outline": "#908fa0",
+                        "on-surface-variant": "#c7c4d7",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary-container": "#000703",
+                        "on-secondary-container": "#a7b6cc",
+                        "on-secondary-fixed-variant": "#39485a",
+                        "secondary-container": "#39485a",
+                        "on-primary-container": "#0d0096",
+                        "inverse-surface": "#dae2fd",
+                        "on-surface": "#dae2fd",
+                        "surface-container-lowest": "#060e20",
+                        "error-container": "#93000a",
+                        "surface-container": "#171f33",
+                        "surface-dim": "#0b1326",
+                        "on-primary": "#1000a9",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "primary-fixed": "#e1e0ff",
+                        "on-error": "#690005",
+                        "surface-container-high": "#222a3d",
+                        "on-secondary": "#233143",
+                        "inverse-primary": "#494bd6",
+                        "tertiary": "#4edea3",
+                        "secondary": "#b9c8de",
+                        "on-tertiary": "#003824",
+                        "tertiary-container": "#00885d",
+                        "on-background": "#dae2fd",
+                        "outline-variant": "#464554",
+                        "primary-container": "#8083ff",
+                        "surface": "#0b1326",
+                        "primary": "#c0c1ff",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "background": "#0b1326",
+                        "surface-container-highest": "#2d3449",
+                        "on-secondary-fixed": "#0d1c2d",
+                        "surface-variant": "#2d3449",
+                        "secondary-fixed": "#d4e4fa",
+                        "surface-tint": "#c0c1ff",
+                        "surface-bright": "#31394d",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed": "#002113",
+                        "inverse-on-surface": "#283044",
+                        "primary-fixed-dim": "#c0c1ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "gutter": "12px",
+                        "base": "4px",
+                        "md": "16px",
+                        "margin-desktop": "24px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-md": ["Inter"],
+                        "body-base": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "code-mono": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-base": ["14px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                        "body-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "code-mono": ["13px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "450"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #020617; color: #dae2fd; }
+        .glass-panel { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); border: 1px solid #334155; }
+        .glass-panel-active { border-color: #c0c1ff; box-shadow: 0 0 4px 0px rgba(192, 193, 255, 0.5); }
+        .terminal-scroll::-webkit-scrollbar { width: 6px; }
+        .terminal-scroll::-webkit-scrollbar-track { background: #020617; }
+        .terminal-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    </style>
+</head>
+<body class="font-body-base text-body-base overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar Component -->
+<nav class="bg-surface dark:bg-surface text-primary dark:text-primary-fixed-dim font-body-base text-body-base h-screen w-64 fixed left-0 top-0 border-r border-outline-variant dark:border-outline-variant flex flex-col h-full py-lg px-md z-40">
+<div class="mb-xl flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary text-[28px]" style="font-variation-settings: 'FILL' 1;">hexagon</span>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary">Asterion AI</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant">V 2.1.0-Stable</p>
+</div>
+</div>
+<div class="flex-1 space-y-xs">
+<a class="flex items-center gap-md px-sm py-xs rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">terminal</span>
+<span>Command Center</span>
+</a>
+<a class="flex items-center gap-md px-sm py-xs rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span>Chat</span>
+</a>
+<a class="flex items-center gap-md px-sm py-xs rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">science</span>
+<span>Research</span>
+</a>
+<!-- ACTIVE NAV ITEM -->
+<a class="flex items-center gap-md px-sm py-xs rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-primary dark:text-primary-fixed-dim font-bold border-r-2 border-primary opacity-80 scale-95 transition-all bg-surface-container-high" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+<span>Agent Lab</span>
+</a>
+<a class="flex items-center gap-md px-sm py-xs rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</div>
+<div class="mt-auto border-t border-outline-variant pt-md">
+<a class="flex items-center gap-md px-sm py-xs rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">memory</span>
+<span>Hardware Status</span>
+</a>
+</div>
+</nav>
+<!-- TopNavBar Component -->
+<header class="bg-surface-dim/80 dark:bg-surface-dim/80 backdrop-blur-md text-primary dark:text-primary-fixed-dim font-label-caps text-label-caps fixed top-0 right-0 w-[calc(100%-16rem)] z-50 border-b border-outline-variant dark:border-outline-variant flex justify-between items-center h-16 px-margin-desktop ml-64">
+<div class="flex items-center gap-lg">
+<div class="flex items-center gap-sm">
+<span class="text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-tertiary transition-all cursor-pointer">Workspace</span>
+<span class="text-outline-variant">/</span>
+<span class="text-on-surface dark:text-on-surface font-semibold scale-98 duration-150 cursor-pointer">Agent Lab</span>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden md:flex items-center gap-sm px-sm py-xs bg-surface-container rounded border border-outline-variant text-on-surface-variant">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed animate-pulse"></span>
+<span>Llama-3 70B (Local)</span>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">help</button>
+<button class="bg-error text-on-error font-label-caps text-label-caps px-md py-sm rounded font-bold uppercase tracking-widest flex items-center gap-xs hover:bg-error-container hover:text-on-error-container transition-colors shadow-[0_0_10px_rgba(255,180,171,0.3)]">
+<span class="material-symbols-outlined text-[16px]">stop_circle</span>
+                Stop All
+            </button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 mt-16 p-margin-desktop h-[calc(100vh-64px)] grid grid-cols-12 gap-md">
+<!-- Left/Center Column: Task Simulator & Config (8 cols) -->
+<div class="col-span-8 flex flex-col gap-md h-full overflow-hidden">
+<!-- Configuration Panel -->
+<section class="glass-panel rounded-xl p-md flex-shrink-0">
+<div class="h-1 bg-surface-container-high w-full absolute top-0 left-0 rounded-t-xl overflow-hidden">
+<div class="h-full bg-tertiary w-1/3"></div>
+</div>
+<div class="flex justify-between items-start mb-md mt-sm">
+<div>
+<h2 class="font-headline-md text-[18px] text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">tune</span>
+                            Agent Parameters
+                        </h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">Configure operational bounds for current sequence.</p>
+</div>
+<div class="px-sm py-xs rounded bg-surface-container-high border border-outline-variant font-label-caps text-label-caps text-tertiary flex items-center gap-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+                        Active Profile: Dev-Ops
+                    </div>
+</div>
+<div class="grid grid-cols-2 gap-md">
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-xs">Autonomy Level</label>
+<select class="w-full bg-[#020617] border border-outline-variant rounded px-sm py-xs text-on-surface font-body-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+<option>Level 3: Conditional Execution</option>
+<option>Level 4: High Autonomy (Notify Only)</option>
+<option>Level 2: Strict Human-in-Loop</option>
+</select>
+</div>
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-xs">Resource Quotas</label>
+<div class="flex gap-sm">
+<div class="flex-1 bg-[#020617] border border-outline-variant rounded px-sm py-xs flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Compute</span>
+<span class="font-code-mono text-code-mono text-tertiary">85%</span>
+</div>
+<div class="flex-1 bg-[#020617] border border-outline-variant rounded px-sm py-xs flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">API Calls</span>
+<span class="font-code-mono text-code-mono text-secondary">420/5k</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Task Simulator Stepper -->
+<section class="glass-panel rounded-xl p-md flex-1 overflow-y-auto terminal-scroll">
+<div class="flex justify-between items-center mb-lg sticky top-0 bg-[#0F172A]/90 backdrop-blur z-10 pb-sm border-b border-outline-variant">
+<h2 class="font-headline-md text-[18px] text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">account_tree</span>
+                        Task Simulator
+                    </h2>
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-xs font-label-caps text-label-caps">
+<span class="material-symbols-outlined text-[16px]">filter_list</span> Filter
+                    </button>
+</div>
+<div class="space-y-0 relative pl-sm">
+<!-- Vertical Line -->
+<div class="absolute left-[19px] top-4 bottom-4 w-px bg-outline-variant"></div>
+<!-- Step 1: Completed -->
+<div class="relative pl-xl pb-lg group">
+<div class="absolute left-0 top-1 w-8 h-8 rounded-full bg-[#020617] border border-tertiary flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-tertiary text-[16px]">check</span>
+</div>
+<div class="bg-surface-container-low border border-outline-variant rounded p-sm group-hover:border-outline transition-colors">
+<div class="flex justify-between items-start mb-xs">
+<h3 class="font-code-mono text-code-mono text-on-surface">Analyze Repository Structure</h3>
+<span class="font-label-caps text-[10px] px-2 py-0.5 rounded bg-tertiary/10 text-tertiary border border-tertiary/20">Auto-Approve</span>
+</div>
+<p class="font-body-sm text-on-surface-variant">Scanned 142 files across 12 directories. Identified Node.js backend with React frontend.</p>
+</div>
+</div>
+<!-- Step 2: Active -->
+<div class="relative pl-xl pb-lg group">
+<div class="absolute left-0 top-1 w-8 h-8 rounded-full bg-[#020617] border-2 border-primary flex items-center justify-center z-10 shadow-[0_0_8px_rgba(192,193,255,0.4)]">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+</div>
+<div class="glass-panel-active bg-surface-container rounded p-sm">
+<div class="flex justify-between items-start mb-xs">
+<h3 class="font-code-mono text-code-mono text-primary">Draft Refactoring Plan: auth.js</h3>
+<span class="font-label-caps text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/30">In Progress</span>
+</div>
+<p class="font-body-sm text-on-surface-variant mb-sm">Identifying deprecated crypto functions and preparing JWT migration strategy.</p>
+<div class="w-full bg-[#020617] h-1 rounded overflow-hidden">
+<div class="bg-primary w-2/3 h-full rounded"></div>
+</div>
+</div>
+</div>
+<!-- Step 3: Pending Human -->
+<div class="relative pl-xl pb-lg group">
+<div class="absolute left-0 top-1 w-8 h-8 rounded-full bg-[#020617] border border-outline-variant flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-outline text-[16px]">hourglass_empty</span>
+</div>
+<div class="bg-[#020617] border border-outline-variant border-dashed rounded p-sm opacity-80">
+<div class="flex justify-between items-start mb-xs">
+<h3 class="font-code-mono text-code-mono text-on-surface-variant">Execute Migration Scripts (DB)</h3>
+<span class="font-label-caps text-[10px] px-2 py-0.5 rounded bg-error/10 text-error border border-error/20 flex items-center gap-xs">
+<span class="material-symbols-outlined text-[10px]">warning</span> Needs Confirmation
+                                </span>
+</div>
+<p class="font-body-sm text-outline">Will run generated SQL scripts against staging database. Requires manual review of generated queries.</p>
+<div class="mt-sm flex gap-sm">
+<button class="bg-surface-container-high text-on-surface font-label-caps text-label-caps px-sm py-xs border border-outline-variant rounded hover:border-primary transition-colors disabled:opacity-50" disabled="">Review Script</button>
+</div>
+</div>
+</div>
+<!-- Step 4: Pending -->
+<div class="relative pl-xl group">
+<div class="absolute left-0 top-1 w-8 h-8 rounded-full bg-[#020617] border border-outline-variant flex items-center justify-center z-10">
+<span class="text-outline text-label-caps">4</span>
+</div>
+<div class="bg-[#020617] border border-outline-variant rounded p-sm opacity-50">
+<div class="flex justify-between items-start">
+<h3 class="font-code-mono text-code-mono text-on-surface-variant">Deploy to Staging Environment</h3>
+<span class="font-label-caps text-[10px] px-2 py-0.5 rounded bg-surface-container-high text-outline border border-outline-variant">Auto-Approve</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Flight Recorder Terminal (4 cols) -->
+<div class="col-span-4 glass-panel rounded-xl border-l border-outline-variant bg-[#020617]/90 flex flex-col h-full overflow-hidden">
+<div class="px-md py-sm border-b border-outline-variant bg-surface-container-lowest flex justify-between items-center">
+<h3 class="font-label-caps text-label-caps text-secondary-fixed-dim flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">data_object</span> Flight Recorder
+                </h3>
+<div class="flex gap-xs">
+<button class="material-symbols-outlined text-outline hover:text-on-surface text-[16px]">file_copy</button>
+<button class="material-symbols-outlined text-outline hover:text-on-surface text-[16px]">open_in_full</button>
+</div>
+</div>
+<div class="p-sm flex-1 overflow-y-auto terminal-scroll font-code-mono text-[11px] leading-relaxed space-y-xs">
+<div class="flex gap-sm text-outline">
+<span class="text-secondary opacity-50">[14:02:01]</span>
+<span class="text-tertiary">SYS</span>
+<span class="text-on-surface">Initializing agent sandbox environment...</span>
+</div>
+<div class="flex gap-sm text-outline">
+<span class="text-secondary opacity-50">[14:02:03]</span>
+<span class="text-primary">API</span>
+<span class="text-on-surface">GET /api/v1/repo/structure HTTP 200</span>
+</div>
+<div class="flex gap-sm text-outline bg-surface-container-low p-xs rounded">
+<span class="text-secondary opacity-50">[14:02:04]</span>
+<span class="text-[#a7b6cc]">LLM</span>
+<span class="text-on-surface-variant">Prompt tokens: 1245 | Completion tokens: 402 | Latency: 1.2s</span>
+</div>
+<div class="flex gap-sm text-outline">
+<span class="text-secondary opacity-50">[14:02:05]</span>
+<span class="text-tertiary">FS</span>
+<span class="text-on-surface">Read file: src/utils/auth.js (12Kb)</span>
+</div>
+<div class="flex gap-sm text-outline bg-surface-container-low p-xs rounded">
+<span class="text-secondary opacity-50">[14:02:08]</span>
+<span class="text-[#a7b6cc]">LLM</span>
+<span class="text-on-surface-variant">Generating refactor strategy. Strategy identified: 'jwt-migration'.</span>
+</div>
+<div class="flex gap-sm text-outline">
+<span class="text-secondary opacity-50">[14:02:09]</span>
+<span class="text-primary">API</span>
+<span class="text-primary animate-pulse">Streaming response from Llama-3...</span>
+</div>
+<!-- Terminal decorative elements -->
+<div class="mt-md text-outline opacity-30 select-none">
+                    &gt; _
+                </div>
+</div>
+<!-- Minimal Confidence/Status Footer -->
+<div class="p-xs bg-surface-container-lowest border-t border-outline-variant flex items-center justify-between text-[10px] font-label-caps text-outline">
+<div class="flex items-center gap-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> System Nominal
+                </div>
+<div>Mem: 42MB / 512MB</div>
+</div>
+</div>
+</main>
+</body></html>

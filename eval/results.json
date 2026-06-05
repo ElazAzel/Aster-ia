@@ -1,0 +1,83 @@
+{
+  "metrics": {
+    "task_success_rate": 1.0,
+    "avg_latency_ms": 40.60029983520508,
+    "privacy_score": 1.0,
+    "harness_efficiency": 0.98,
+    "ui_contracts_passed": 8,
+    "ui_contracts_total": 8,
+    "source_contracts_passed": 37,
+    "source_contracts_total": 37,
+    "phase": 1,
+    "iterations_completed": 3
+  },
+  "ui_contracts": {
+    "Left Sidebar (240px)": true,
+    "Context Panel (320px)": true,
+    "Command Palette Modal": true,
+    "Cmd+K Key Listener": true,
+    "Home Screen Main Workspace": true,
+    "Privacy circular gauge": true,
+    "Recent activity list": true,
+    "System Status Panel": true
+  },
+  "source_contracts": {
+    "FastAPI app": true,
+    "Health router": true,
+    "Models router": true,
+    "Chat router": true,
+    "Ollama list_models": true,
+    "Ollama generate": true,
+    "Ollama stream_generate": true,
+    "BaseHarness execute": true,
+    "BaseHarness get_state": true,
+    "BaseHarness set_state": true,
+    "SQLCipher import": true,
+    "Keyring secret source": true,
+    "Conversations schema": true,
+    "Messages schema": true,
+    "Tauri start command": true,
+    "Tauri health command": true,
+    "Tauri shutdown command": true,
+    "Tauri sidecar shell": true,
+    "EventSource SSE route": true,
+    "Svelte EventSource client": true,
+    "PrivacyAnalyzer": true,
+    "Privacy risk JSON": true,
+    "ModelRouter": true,
+    "DocumentIndexer": true,
+    "LanceDB integration": true,
+    "BM25 hybrid search": true,
+    "Memories schema": true,
+    "Memory API": true,
+    "SupervisorAgent": true,
+    "SearXNG search": true,
+    "DuckDB aggregation": true,
+    "ContradictionFinder": true,
+    "AgentSandbox": true,
+    "TaskSimulator": true,
+    "ComfyUIService": true,
+    "WorkflowRunner": true,
+    "PluginManager": true
+  },
+  "runs": [
+    {
+      "run": 1,
+      "startup_success": true,
+      "chat_latency_seconds": 0.040509939193725586,
+      "status": "PASS"
+    },
+    {
+      "run": 2,
+      "startup_success": true,
+      "chat_latency_seconds": 0.040322303771972656,
+      "status": "PASS"
+    },
+    {
+      "run": 3,
+      "startup_success": true,
+      "chat_latency_seconds": 0.04096865653991699,
+      "status": "PASS"
+    }
+  ]
+}

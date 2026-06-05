@@ -1,0 +1,2412 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asterion AI — AI Workspace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "surface": "#131318",
+        "surface2": "#1c1c24",
+        "primary": "#7c6dfa",
+        "teal": "#2ec4a9",
+        "green": "#30c97e",
+        "background": "#0c0c10",
+        "on-surface": "#e4e1e7",
+        "on-surface-variant": "#c8c4d7",
+        "outline-variant": "#2a2a36",
+        "semantic-green": "#30c97e",
+        "semantic-amber": "#f5b831",
+        "semantic-red": "#f26a6a"
+      },
+      borderRadius: {
+        "DEFAULT": "8px",
+        "card": "8px",
+        "panel": "14px",
+        "full": "999px"
+      },
+      fontFamily: {
+        "sans": ["DM Sans", "sans-serif"],
+        "mono": ["JetBrains Mono", "monospace"],
+        "serif": ["Playfair Display", "serif"]
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { background-color: #0c0c10; font-family: 'DM Sans', sans-serif; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: rgba(12,12,16,0.5); }
+  ::-webkit-scrollbar-thumb { background: #2a2a36; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #474554; }
+  .bento-card { background: #131318; border: 1px solid #2a2a36; transition: all 0.2s ease-in-out; border-radius: 8px; padding: 24px; }
+  .bento-card:hover { border-color: #7c6dfa; background: #1c1c24; }
+  .flat-panel { background: #131318; border: 1px solid #2a2a36; }
+  .flat-panel-active { border-color: #7c6dfa; }
+  .screen { display: none; }
+  .screen.active { display: flex; }
+  .nav-item.active { background: #1c1c24; color: #7c6dfa; }
+  .nav-item.active .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .screen.active { animation: fadeIn 0.2s ease-out; }
+  @keyframes pulseGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(48,201,126,0.4); } 50% { box-shadow: 0 0 0 4px rgba(48,201,126,0); } }
+  .pulse-dot { animation: pulseGlow 2s infinite; }
+</style>
+</head>
+<body class="text-on-surface antialiased h-screen overflow-hidden flex flex-row selection:bg-primary/20 selection:text-primary">
+
+<!-- ═══════════ LEFT SIDEBAR (240px) ═══════════ -->
+<nav class="h-screen w-[240px] bg-surface border-r border-outline-variant flex flex-col py-6 px-4 z-40 shrink-0">
+  <div class="mb-8 flex items-center gap-3 px-2 cursor-pointer" onclick="navigate('home')">
+    <div class="w-8 h-8 rounded bg-primary/20 flex items-center justify-center border border-primary/30 hover:bg-primary/30 transition-colors">
+      <span class="font-bold text-primary text-lg leading-none">A</span>
+    </div>
+    <span class="font-serif text-white text-xl font-bold tracking-tight">Asterion AI</span>
+  </div>
+  <ul class="flex-1 space-y-1 w-full flex flex-col" id="main-nav">
+    <li>
+      <button onclick="navigate('home')" data-screen="home" class="nav-item active flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-colors text-on-surface-variant hover:bg-surface2 hover:text-primary text-sm font-semibold">
+        <span class="material-symbols-outlined text-[20px]">home</span>
+        <span>Home</span>
+      </button>
+    </li>
+    <li>
+      <button onclick="navigate('chat')" data-screen="chat" class="nav-item flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-colors text-on-surface-variant hover:bg-surface2 hover:text-primary text-sm font-semibold">
+        <span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+        <span>Smart Chat</span>
+      </button>
+    </li>
+    <li>
+      <button onclick="navigate('research')" data-screen="research" class="nav-item flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-colors text-on-surface-variant hover:bg-surface2 hover:text-primary text-sm font-semibold">
+        <span class="material-symbols-outlined text-[20px]">science</span>
+        <span>Research Studio</span>
+      </button>
+    </li>
+    <li>
+      <button onclick="navigate('documents')" data-screen="documents" class="nav-item flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-colors text-on-surface-variant hover:bg-surface2 hover:text-primary text-sm font-semibold">
+        <span class="material-symbols-outlined text-[20px]">description</span>
+        <span>Document Studio</span>
+      </button>
+    </li>
+    <li>
+      <button onclick="navigate('vault')" data-screen="vault" class="nav-item flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-colors text-on-surface-variant hover:bg-surface2 hover:text-primary text-sm font-semibold">
+        <span class="material-symbols-outlined text-[20px]">lock</span>
+        <span>Knowledge Vault</span>
+      </button>
+    </li>
+    <li>
+      <button onclick="navigate('agents')" data-screen="agents" class="nav-item flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-colors text-on-surface-variant hover:bg-surface2 hover:text-primary text-sm font-semibold">
+        <span class="material-symbols-outlined text-[20px]">smart_toy</span>
+        <span>Agent Lab</span>
+      </button>
+    </li>
+    <li>
+      <button onclick="navigate('images')" data-screen="images" class="nav-item flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-colors text-on-surface-variant hover:bg-surface2 hover:text-primary text-sm font-semibold">
+        <span class="material-symbols-outlined text-[20px]">image</span>
+        <span>Image Studio</span>
+      </button>
+    </li>
+    <li>
+      <button onclick="navigate('voice')" data-screen="voice" class="nav-item flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-colors text-on-surface-variant hover:bg-surface2 hover:text-primary text-sm font-semibold">
+        <span class="material-symbols-outlined text-[20px]">settings_voice</span>
+        <span>Voice Mode</span>
+      </button>
+    </li>
+    <li>
+      <button onclick="navigate('automation')" data-screen="automation" class="nav-item flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-colors text-on-surface-variant hover:bg-surface2 hover:text-primary text-sm font-semibold">
+        <span class="material-symbols-outlined text-[20px]">bolt</span>
+        <span>Automation Board</span>
+      </button>
+    </li>
+    <li>
+      <button onclick="navigate('settings')" data-screen="settings" class="nav-item flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-colors text-on-surface-variant hover:bg-surface2 hover:text-primary text-sm font-semibold">
+        <span class="material-symbols-outlined text-[20px]">settings</span>
+        <span>Settings</span>
+      </button>
+    </li>
+  </ul>
+  <!-- Command Palette shortcut -->
+  <div class="mt-auto p-3 bg-surface2 border border-outline-variant rounded-lg flex items-center justify-between text-xs text-on-surface-variant font-mono">
+    <span>Quick Search</span>
+    <kbd class="px-1.5 py-0.5 bg-surface rounded border border-outline-variant text-[10px]">⌘K</kbd>
+  </div>
+</nav>
+
+<!-- ═══════════ MAIN CONTENT AREA ═══════════ -->
+<div class="flex-1 flex flex-col h-screen relative bg-[#0c0c10] min-w-0">
+
+  <!-- ── TOP NAV BAR ── -->
+  <header class="bg-surface border-b border-outline-variant flex justify-between items-center h-16 px-6 z-40 shrink-0">
+    <div class="flex items-center">
+      <h2 class="font-sans text-lg font-bold text-primary" id="page-title">Command Center</h2>
+    </div>
+    <div class="flex items-center gap-4">
+      <button id="cmd-k-trigger" class="flex items-center gap-2 px-3 py-1.5 bg-surface2 border border-outline-variant rounded-lg text-sm text-on-surface-variant hover:border-primary transition-all">
+        <span class="material-symbols-outlined text-[16px]">search</span>
+        <span class="font-sans text-xs text-on-surface-variant/70">Search commands (⌘K)</span>
+      </button>
+      <button id="stop-all-btn" class="bg-semantic-red text-background text-xs px-4 py-2 rounded-lg font-bold uppercase tracking-wider flex items-center gap-1 hover:bg-semantic-red/80 transition-colors">
+        <span class="material-symbols-outlined text-[16px]">stop</span>
+        Stop All
+      </button>
+    </div>
+  </header>
+
+  <!-- ── THREE-COLUMN BODY ── -->
+  <div class="flex-1 flex flex-row overflow-hidden min-w-0">
+
+    <!-- ── LEFT/CENTER WORKSPACE CANVAS (Main screens) ── -->
+    <div class="flex-grow flex flex-col overflow-hidden min-w-0 bg-[#0c0c10]" id="main-workspace-wrapper">
+
+      <!-- ═══════════ SCREEN: HOME ═══════════ -->
+      <main id="screen-home" class="screen active flex-grow overflow-y-auto p-6 flex-col">
+        <div class="flex flex-col gap-6 max-w-[1200px] mx-auto w-full">
+          <!-- Greeting Card -->
+          <div class="flex justify-between items-end pb-4 border-b border-outline-variant">
+            <div>
+              <h2 class="font-serif text-3xl text-white font-semibold mb-1">System Active</h2>
+              <p class="font-mono text-sm text-on-surface-variant">Asterion Node-01 fully ready.</p>
+            </div>
+            <!-- Privacy Radar circular gauge -->
+            <div class="bento-card py-3 px-4 flex items-center gap-4 w-64 h-20 shrink-0">
+              <div class="relative w-12 h-12 shrink-0 flex items-center justify-center">
+                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                  <path class="text-semantic-amber" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="100, 100" stroke-width="3"></path>
+                  <path class="text-semantic-green" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="87, 100" stroke-width="3"></path>
+                </svg>
+                <span class="absolute font-mono text-xs font-bold text-on-surface">87%</span>
+              </div>
+              <div>
+                <p class="font-sans text-xs text-on-surface-variant font-semibold leading-tight">Local Requests</p>
+                <p class="font-mono text-[10px] text-semantic-green mt-1 flex items-center gap-1 uppercase">
+                  <span class="material-symbols-outlined text-[12px]">shield</span> Secured
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Action Cards (5 cards) -->
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <button onclick="navigate('chat')" class="bento-card flex flex-col items-center justify-center h-36 group text-center bg-primary/5">
+              <span class="material-symbols-outlined text-[36px] text-primary mb-2 group-hover:-translate-y-1 transition-transform">chat</span>
+              <h3 class="font-sans text-sm font-semibold text-on-surface">Smart Chat</h3>
+            </button>
+            <button onclick="navigate('research')" class="bento-card flex flex-col items-center justify-center h-36 group text-center bg-[#f5b831]/5">
+              <span class="material-symbols-outlined text-[36px] text-[#f5b831] mb-2 group-hover:-translate-y-1 transition-transform">science</span>
+              <h3 class="font-sans text-sm font-semibold text-on-surface">Research</h3>
+            </button>
+            <button onclick="navigate('documents')" class="bento-card flex flex-col items-center justify-center h-36 group text-center bg-[#30c97e]/5">
+              <span class="material-symbols-outlined text-[36px] text-[#30c97e] mb-2 group-hover:-translate-y-1 transition-transform">description</span>
+              <h3 class="font-sans text-sm font-semibold text-on-surface">Doc Studio</h3>
+            </button>
+            <button onclick="navigate('agents')" class="bento-card flex flex-col items-center justify-center h-36 group text-center bg-inverse-primary/5">
+              <span class="material-symbols-outlined text-[36px] text-white/80 mb-2 group-hover:rotate-45 transition-transform">smart_toy</span>
+              <h3 class="font-sans text-sm font-semibold text-on-surface">Agent Lab</h3>
+            </button>
+            <button onclick="navigate('images')" class="bento-card flex flex-col items-center justify-center h-36 group text-center bg-primary/5">
+              <span class="material-symbols-outlined text-[36px] text-primary-fixed mb-2 group-hover:-translate-y-1 transition-transform">image</span>
+              <h3 class="font-sans text-sm font-semibold text-on-surface">Image Studio</h3>
+            </button>
+          </div>
+
+          <!-- Recent Activity List -->
+          <div class="bento-card p-0 flex flex-col">
+            <div class="p-4 border-b border-outline-variant flex justify-between items-center bg-surface">
+              <h3 class="font-sans text-sm font-semibold text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">history</span> Recent Activity</h3>
+            </div>
+            <div class="overflow-y-auto max-h-[260px] p-2 font-mono text-xs">
+              <table class="w-full text-left border-collapse">
+                <tbody>
+                  <tr class="border-b border-outline-variant/50 hover:bg-surface2/30 transition-colors"><td class="py-2.5 px-4 w-32 text-on-surface-variant">14:02</td><td class="py-2.5 px-4"><span class="inline-flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-primary">chat</span><span class="text-on-surface">Chat: System Architecture Review</span></span></td><td class="py-2.5 px-4 text-right"><span class="px-2 py-0.5 bg-semantic-green/10 border border-semantic-green/20 text-semantic-green rounded font-mono text-[9px] uppercase">LOCAL</span></td></tr>
+                  <tr class="border-b border-outline-variant/50 hover:bg-surface2/30 transition-colors"><td class="py-2.5 px-4 w-32 text-on-surface-variant">11:45</td><td class="py-2.5 px-4"><span class="inline-flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-[#30c97e]">description</span><span class="text-on-surface">Doc: Q3_Financial_Report.pdf</span></span></td><td class="py-2.5 px-4 text-right"><span class="px-2 py-0.5 bg-semantic-green/10 border border-semantic-green/20 text-semantic-green rounded font-mono text-[9px] uppercase">LOCAL</span></td></tr>
+                  <tr class="border-b border-outline-variant/50 hover:bg-surface2/30 transition-colors"><td class="py-2.5 px-4 w-32 text-on-surface-variant">Yesterday</td><td class="py-2.5 px-4"><span class="inline-flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-[#f5b831]">science</span><span class="text-on-surface">Research: Competitor API Analysis</span></span></td><td class="py-2.5 px-4 text-right"><span class="px-2 py-0.5 bg-semantic-amber/10 border border-semantic-amber/20 text-semantic-amber rounded font-mono text-[9px] uppercase">HYBRID</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- ═══════════ SCREEN: SMART CHAT ═══════════ -->
+      <main id="screen-chat" class="screen flex-grow overflow-hidden flex-row">
+        <!-- Left Chat Sidebar inside workspace -->
+        <aside class="w-60 border-r border-outline-variant bg-surface flex flex-col shrink-0">
+          <div class="p-4 border-b border-outline-variant flex flex-col gap-3">
+            <div class="flex justify-between items-center">
+              <span class="font-sans text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Context Rooms</span>
+              <button class="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center p-0.5 rounded hover:bg-surface2"><span class="material-symbols-outlined text-[18px]">add</span></button>
+            </div>
+            <div class="space-y-1">
+              <button class="w-full flex items-center gap-2 p-2 rounded-lg bg-surface2 border border-primary/30 text-on-surface text-left text-xs font-semibold">
+                <span class="w-2 h-2 rounded-full bg-semantic-green"></span>
+                <span>General Room</span>
+              </button>
+              <button class="w-full flex items-center gap-2 p-2 rounded-lg text-on-surface-variant hover:bg-surface2 hover:text-on-surface text-left text-xs">
+                <span class="w-2 h-2 rounded-full bg-primary"></span>
+                <span>Secured Vault</span>
+              </button>
+              <button class="w-full flex items-center gap-2 p-2 rounded-lg text-on-surface-variant hover:bg-surface2 hover:text-on-surface text-left text-xs">
+                <span class="w-2 h-2 rounded-full bg-semantic-amber"></span>
+                <span>Sandbox</span>
+              </button>
+            </div>
+          </div>
+          <div class="flex-1 flex flex-col min-h-0">
+            <div class="p-4 pb-2">
+              <span class="font-sans text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Chat History</span>
+            </div>
+            <div class="flex-grow overflow-y-auto px-2 py-1 space-y-0.5" style="scrollbar-width: thin;">
+              <button class="w-full text-left p-2 rounded bg-surface2/50 text-primary border border-outline-variant text-xs font-semibold flex items-center gap-2">
+                <span class="material-symbols-outlined text-[16px]">chat</span>
+                <span class="truncate">Redis connection pooling</span>
+              </button>
+              <button class="w-full text-left p-2 rounded text-on-surface-variant hover:bg-surface2 text-xs flex items-center gap-2">
+                <span class="material-symbols-outlined text-[16px] opacity-75">chat</span>
+                <span class="truncate">System Architecture Review</span>
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Center Chat Area -->
+        <section class="flex-1 flex flex-col relative min-w-0">
+          <div id="chat-messages-container" class="flex-grow overflow-y-auto p-6 flex flex-col gap-6 pb-48" style="scrollbar-width: thin;">
+            <!-- User Message -->
+            <div class="flex gap-4 max-w-3xl mx-auto w-full">
+              <div class="w-8 h-8 rounded-full bg-surface2 border border-outline-variant flex items-center justify-center shrink-0 mt-1"><span class="text-xs text-on-surface">U</span></div>
+              <div class="flex-1 space-y-1">
+                <div class="inline-block px-2 py-0.5 rounded bg-surface2 border border-outline-variant font-mono text-[10px] text-on-surface-variant">USER</div>
+                <div class="font-sans text-sm text-on-surface">Analyze the latency issues we're seeing in the <code class="font-mono text-xs bg-surface2 px-1 py-0.5 rounded border border-outline-variant text-primary">user_auth</code> service. Suggest optimizations for Redis cache.</div>
+              </div>
+            </div>
+            <!-- AI Response -->
+            <div class="flex gap-4 max-w-3xl mx-auto w-full">
+              <div class="w-8 h-8 rounded bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0 mt-1"><span class="material-symbols-outlined text-primary text-[20px]">smart_toy</span></div>
+              <div class="flex-1 space-y-4">
+                <div class="inline-block px-2 py-0.5 rounded bg-primary/10 border border-primary/20 font-mono text-[10px] text-primary">ASTERION</div>
+                <!-- Response Block -->
+                <div class="border border-outline-variant rounded-lg bg-surface/50 p-4 space-y-2">
+                  <div class="font-sans text-[11px] font-bold text-on-surface-variant uppercase flex items-center justify-between border-b border-outline-variant pb-2 mb-2">
+                    <span>Summary</span>
+                    <span class="text-semantic-green">LOCAL</span>
+                  </div>
+                  <p class="text-sm text-on-surface leading-relaxed">The latency spikes in the auth service correlate with connection timeouts in the current Redis connection pool configuration.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Input Area -->
+          <div class="absolute bottom-0 left-0 w-full p-6 bg-[#0c0c10]/95 backdrop-blur-sm z-10 border-t border-outline-variant">
+            <div class="max-w-3xl mx-auto relative">
+              <div class="bg-surface border border-outline-variant focus-within:border-primary rounded-xl flex flex-col transition-all">
+                <textarea id="chat-composer-input" class="w-full bg-transparent border-none outline-none resize-none p-3 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:ring-0 min-h-[80px]" placeholder="Ask Asterion or type / for commands..."></textarea>
+                <div class="flex justify-between items-center p-2 border-t border-outline-variant bg-surface2 rounded-b-xl">
+                  <div class="flex items-center gap-3">
+                    <button class="p-1 text-on-surface-variant hover:text-primary transition-colors rounded" title="Attach files"><span class="material-symbols-outlined text-[20px]">attach_file</span></button>
+                    <!-- Autopilot switcher -->
+                    <div class="flex bg-surface border border-outline-variant rounded-lg p-0.5 text-[10px] font-sans shrink-0 items-center">
+                      <button onclick="setAutopilotMode('private')" id="ap-private" class="px-2 py-0.5 bg-primary text-background font-bold rounded transition-all">Private</button>
+                      <button onclick="setAutopilotMode('balanced')" id="ap-balanced" class="px-2 py-0.5 text-on-surface-variant hover:text-white rounded transition-all">Balanced</button>
+                      <button onclick="setAutopilotMode('fast')" id="ap-fast" class="px-2 py-0.5 text-on-surface-variant hover:text-white rounded transition-all">Fast</button>
+                    </div>
+                    <div id="composer-privacy-badge" class="flex items-center gap-1.5 bg-semantic-green/10 px-2 py-0.5 rounded border border-semantic-green/20"><span class="w-2 h-2 rounded-full bg-semantic-green animate-pulse"></span><span class="font-mono text-[9px] text-semantic-green font-bold">LOCAL</span></div>
+                  </div>
+                  <button id="chat-send-btn" class="bg-primary text-background hover:bg-primary/95 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-1">Send <span class="material-symbols-outlined text-[16px]">send</span></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- ═══════════ SCREEN: RESEARCH STUDIO ═══════════ -->
+      <main id="screen-research" class="screen flex-grow overflow-hidden flex-row p-6">
+        <div class="flex-grow flex flex-col gap-4 overflow-hidden min-h-0 w-full">
+          <div class="flex justify-between items-center shrink-0 mb-1">
+            <div>
+              <h3 class="font-serif text-2xl text-white font-semibold">Research Studio</h3>
+              <p class="font-sans text-xs text-on-surface-variant mt-1">Cross-referencing 14 sources for Battery Technology Degradation Curves.</p>
+            </div>
+          </div>
+          <!-- Split View -->
+          <div class="flex-grow flex flex-row gap-6 overflow-hidden min-h-0">
+            <!-- Left panel: Goal + Plan + Sources -->
+            <div class="w-1/3 flex flex-col gap-4 overflow-y-auto bg-surface border border-outline-variant p-4 rounded-xl" style="scrollbar-width:thin;">
+              <!-- Goal -->
+              <div class="border-b border-outline-variant pb-3">
+                <span class="font-sans text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Research Objective</span>
+                <p class="text-sm font-semibold mt-1">Analyze energy density vs degradation characteristics of prototype cell B-49.</p>
+              </div>
+              <!-- Plan -->
+              <div class="border-b border-outline-variant pb-3">
+                <span class="font-sans text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Research Plan</span>
+                <ul class="mt-2 space-y-1.5 text-xs text-on-surface-variant">
+                  <li class="flex items-center gap-2"><span class="material-symbols-outlined text-semantic-green text-[16px]">check_circle</span><span>Query SearXNG for battery recalls</span></li>
+                  <li class="flex items-center gap-2"><span class="material-symbols-outlined text-semantic-green text-[16px]">check_circle</span><span>Import local prototype cell datasets</span></li>
+                  <li class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-[16px] animate-pulse">sync_alt</span><span class="text-on-surface font-medium">Cross-reference degradation anomalies</span></li>
+                </ul>
+              </div>
+              <!-- Source list -->
+              <div class="flex-grow">
+                <span class="font-sans text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block mb-2">Sources list</span>
+                <div class="space-y-2">
+                  <div class="p-2 bg-surface2 rounded-lg border border-outline-variant flex justify-between items-center">
+                    <span class="font-mono text-xs truncate w-32">IEEE_Solid_State_2024.pdf</span>
+                    <span class="font-mono text-[9px] px-1.5 py-0.5 bg-semantic-green/10 text-semantic-green rounded border border-semantic-green/20">HIGH CONF</span>
+                  </div>
+                  <div class="p-2 bg-surface2 rounded-lg border border-outline-variant flex justify-between items-center">
+                    <span class="font-mono text-xs truncate w-32">tech-insider-blog.com/leak</span>
+                    <span class="font-mono text-[9px] px-1.5 py-0.5 bg-semantic-amber/10 text-semantic-amber rounded border border-semantic-amber/20">MED CONF</span>
+                  </div>
+                  <div class="p-2 bg-surface2 rounded-lg border border-outline-variant flex justify-between items-center">
+                    <span class="font-mono text-xs truncate w-32">reddit.com/r/hardware/comments</span>
+                    <span class="font-mono text-[9px] px-1.5 py-0.5 bg-semantic-red/10 text-semantic-red rounded border border-semantic-red/20">LOW CONF</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Right panel: Evidence Report canvas -->
+            <div class="w-2/3 flex flex-col gap-4 overflow-y-auto pb-8" style="scrollbar-width:thin;">
+              <!-- Synthesized report summary -->
+              <div class="bento-card bg-surface p-4 border border-outline-variant">
+                <h4 class="font-sans text-xs font-bold text-primary flex items-center gap-2 border-b border-outline-variant pb-2 mb-2"><span class="material-symbols-outlined text-[16px]">auto_awesome</span> Synthesized Findings</h4>
+                <p class="text-sm text-on-surface leading-relaxed">Local prototype metrics verify a steady-state efficiency of B-49 cells. However, public forums suggest early degradation in fast-charging scenarios.</p>
+              </div>
+
+              <!-- Contradiction Finder: red dotted borders -->
+              <div class="border border-dashed border-semantic-red/60 rounded-xl p-4 bg-semantic-red/5 flex flex-col gap-3">
+                <div class="flex items-center gap-2 text-semantic-red font-bold text-xs">
+                  <span class="material-symbols-outlined text-[16px]">warning</span>
+                  <span>CONTRADICTION DETECTED: Cycle Lifetime Curves</span>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="p-3 bg-surface border border-outline-variant rounded-lg">
+                    <div class="flex justify-between items-center border-b border-outline-variant pb-1.5 mb-1.5">
+                      <span class="font-mono text-[10px] text-on-surface-variant">Internal_R&D_Memo_ProjX.docx</span>
+                      <span class="text-semantic-green text-[9px] font-bold">🟢 High Confidence</span>
+                    </div>
+                    <p class="text-xs text-on-surface">"B-49 has only 4.2% capacity loss after 1000 standard charge cycles at 40°C."</p>
+                  </div>
+                  <div class="p-3 bg-surface border border-semantic-red/30 rounded-lg">
+                    <div class="flex justify-between items-center border-b border-outline-variant pb-1.5 mb-1.5">
+                      <span class="font-mono text-[10px] text-on-surface-variant">tech-insider-blog.com</span>
+                      <span class="text-semantic-amber text-[9px] font-bold">🟡 Medium Confidence</span>
+                    </div>
+                    <p class="text-xs text-on-surface">"Confidential reports indicate B-series cells degrade up to 15% after 500 fast-charge iterations."</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Research Receipt Card -->
+              <div>
+                <span class="font-sans text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block mb-2">Evidence Report Records</span>
+                <div class="bg-surface border border-outline-variant rounded-xl p-4 flex flex-col gap-2">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <h5 class="text-sm font-semibold text-white">IEEE_Solid_State_Batteries_2024.pdf</h5>
+                      <span class="text-[10px] text-on-surface-variant font-mono">URL: ieee-journal.org/ss-battery | Date: Jun 2024</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded bg-semantic-green/10 border border-semantic-green/20 text-semantic-green font-mono text-[9px] font-bold">🟢 High Confidence</span>
+                  </div>
+                  <blockquote class="border-l-2 border-primary pl-3 text-xs italic text-on-surface-variant py-1">
+                    "Silicon-anode structures demonstrated a 28% increase in energy retention compared to standard lithium cells."
+                  </blockquote>
+                  <div class="text-xs text-primary font-semibold">AI Conclusion: Energy density metrics verified by formal academic publication.</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- ═══════════ SCREEN: DOCUMENT STUDIO ═══════════ -->
+      <main id="screen-documents" class="screen flex-grow overflow-hidden flex-row p-6">
+        <div class="flex-grow flex flex-col gap-4 overflow-hidden min-h-0 w-full">
+          <div class="flex justify-between items-center shrink-0">
+            <div>
+              <h3 class="font-serif text-2xl text-white font-semibold">Document Studio</h3>
+              <p class="font-sans text-xs text-on-surface-variant mt-1">Interactive AI editor with Draft Layers Fact-Checking.</p>
+            </div>
+            <!-- Layer Selector Toggles -->
+            <div class="bg-surface border border-outline-variant p-1 rounded-lg flex gap-1 text-xs">
+              <button onclick="setDraftLayer('original')" id="layer-original" class="px-2.5 py-1 text-on-surface-variant hover:text-white rounded">Original</button>
+              <button onclick="setDraftLayer('ai')" id="layer-ai" class="px-2.5 py-1 bg-primary text-background font-semibold rounded">AI Draft</button>
+              <button onclick="setDraftLayer('factcheck')" id="layer-factcheck" class="px-2.5 py-1 text-on-surface-variant hover:text-white rounded">Fact-Check</button>
+              <button onclick="setDraftLayer('final')" id="layer-final" class="px-2.5 py-1 text-on-surface-variant hover:text-white rounded">Final</button>
+            </div>
+          </div>
+
+          <!-- Document Canvas + AI editor -->
+          <div class="flex-grow flex flex-row gap-6 overflow-hidden min-h-0">
+            <div class="w-3/4 flex flex-col gap-3 bg-surface border border-outline-variant p-6 rounded-panel">
+              <!-- Text format bar -->
+              <div class="flex gap-2 border-b border-outline-variant pb-3 shrink-0 text-on-surface-variant">
+                <button class="p-1 hover:text-primary"><span class="material-symbols-outlined text-[18px]">format_bold</span></button>
+                <button class="p-1 hover:text-primary"><span class="material-symbols-outlined text-[18px]">format_italic</span></button>
+                <button class="p-1 hover:text-primary"><span class="material-symbols-outlined text-[18px]">format_underlined</span></button>
+                <span class="text-outline-variant">|</span>
+                <button class="p-1 hover:text-primary"><span class="material-symbols-outlined text-[18px]">format_align_left</span></button>
+                <button class="p-1 hover:text-primary"><span class="material-symbols-outlined text-[18px]">format_list_bulleted</span></button>
+                <span class="text-outline-variant">|</span>
+                <button class="px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 text-xs font-semibold rounded hover:bg-primary/20 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px]">auto_awesome</span>
+                  <span>AI Expand Selection</span>
+                </button>
+              </div>
+              <div class="flex-grow overflow-y-auto font-sans text-sm text-on-surface leading-relaxed p-2" contenteditable="true" id="document-editor">
+                <!-- AI draft content default -->
+                <p class="mb-4 font-serif text-lg font-bold text-white">Q3 Strategic Energy Deployment Initiative</p>
+                <p class="mb-4">This document delineates the operational roadmap for silicon-anode solid-state integration. <span class="bg-primary/20 border-b border-primary text-white" id="draft-highlight-block">Based on early testing of prototype B-49, we project a 28% efficiency boost under normal discharge profiles.</span></p>
+                <p class="mb-4">However, thermal runaway threshold tests must be strictly adhered to under local safety rooms protocol to secure regulatory clearance.</p>
+              </div>
+            </div>
+
+            <!-- Fact-checking panel -->
+            <div class="w-1/4 bg-surface2 border border-outline-variant rounded-xl p-4 flex flex-col gap-3 overflow-y-auto" style="scrollbar-width:thin;">
+              <span class="font-sans text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block">Fact Check Audit</span>
+              <div class="p-3 bg-semantic-green/5 border border-semantic-green/30 rounded-lg flex flex-col gap-1">
+                <span class="text-xs font-bold text-semantic-green flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">verified</span> Claim Verified</span>
+                <p class="text-[11px] text-on-surface-variant">The 28% efficiency claim matches the R&D datasets in local vault Room.</p>
+              </div>
+              <div class="p-3 bg-semantic-amber/5 border border-semantic-amber/30 rounded-lg flex flex-col gap-1">
+                <span class="text-xs font-bold text-semantic-amber flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">info</span> Context Missing</span>
+                <p class="text-[11px] text-on-surface-variant">Regulatory clearance references require OSHA standard alignment.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- ═══════════ SCREEN: KNOWLEDGE VAULT ═══════════ -->
+      <main id="screen-vault" class="screen flex-grow overflow-hidden flex-row">
+        <!-- Left Sidebar: Context Rooms -->
+        <aside class="w-60 border-r border-outline-variant bg-surface flex flex-col shrink-0">
+          <div class="p-4 border-b border-outline-variant flex flex-col gap-3">
+            <div class="flex justify-between items-center">
+              <span class="font-sans text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Context Rooms</span>
+              <button class="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center p-0.5 rounded hover:bg-surface2"><span class="material-symbols-outlined text-[18px]">add</span></button>
+            </div>
+            <div class="space-y-1">
+              <div class="group flex items-center justify-between p-2 rounded-lg bg-surface2 border border-primary/30">
+                <button class="flex items-center gap-2 text-on-surface text-left text-xs font-semibold flex-grow">
+                  <span class="w-2.5 h-2.5 rounded-full bg-semantic-green"></span>
+                  <span>General Room</span>
+                </button>
+                <button onclick="openVaultDrawer()" class="text-on-surface-variant hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-[16px]">settings</span></button>
+              </div>
+              <div class="group flex items-center justify-between p-2 rounded-lg text-on-surface-variant hover:bg-surface2 hover:text-on-surface">
+                <button class="flex items-center gap-2 text-left text-xs flex-grow">
+                  <span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+                  <span>Secured Vault</span>
+                </button>
+                <button onclick="openVaultDrawer()" class="text-on-surface-variant hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-[16px]">settings</span></button>
+              </div>
+              <div class="group flex items-center justify-between p-2 rounded-lg text-on-surface-variant hover:bg-surface2 hover:text-on-surface">
+                <button class="flex items-center gap-2 text-left text-xs flex-grow">
+                  <span class="w-2.5 h-2.5 rounded-full bg-semantic-amber"></span>
+                  <span>Sandbox</span>
+                </button>
+                <button onclick="openVaultDrawer()" class="text-on-surface-variant hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-[16px]">settings</span></button>
+              </div>
+            </div>
+          </div>
+          <div class="p-4 mt-auto">
+            <button onclick="openVaultDrawer()" class="w-full py-2 bg-surface2 border border-outline-variant text-on-surface hover:border-primary transition-all text-xs font-semibold rounded-lg flex items-center justify-center gap-1">
+              <span class="material-symbols-outlined text-[16px]">settings</span>
+              Room Configurations
+            </button>
+          </div>
+        </aside>
+
+        <!-- Center Vault workspace -->
+        <section class="flex-grow flex flex-col p-6 min-w-0">
+          <div class="mb-4 flex items-center justify-between shrink-0">
+            <div class="relative w-96">
+              <span class="absolute left-2.5 top-2.5 material-symbols-outlined text-on-surface-variant/50 text-[18px]">search</span>
+              <input type="text" placeholder="Fuzzy Search Vault Files... (⌘F)" class="w-full bg-surface2 border border-outline-variant rounded-lg pl-9 pr-4 py-2 text-xs text-on-surface placeholder:text-on-surface-variant/40 focus:border-primary focus:ring-0" id="vault-search-bar"/>
+              <kbd class="absolute right-2.5 top-2.5 px-1.5 py-0.5 bg-surface rounded border border-outline-variant text-[9px] text-on-surface-variant/70 font-mono">⌘F</kbd>
+            </div>
+            <button class="bg-primary text-background font-semibold px-4 py-2 rounded-lg text-xs flex items-center gap-1 hover:bg-primary/95 transition-all">
+              <span class="material-symbols-outlined text-[16px]">upload_file</span>
+              Upload File
+            </button>
+          </div>
+
+          <!-- File manager grid -->
+          <div class="flex-grow overflow-y-auto" style="scrollbar-width:thin;">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- Card 1 -->
+              <div class="bento-card flex flex-col justify-between h-44 border border-outline-variant">
+                <div class="flex justify-between items-start">
+                  <div class="flex items-center gap-2 text-primary">
+                    <span class="material-symbols-outlined text-[24px]">picture_as_pdf</span>
+                    <span class="text-xs font-bold font-mono truncate w-36">Q3_Battery_Data.pdf</span>
+                  </div>
+                  <span class="px-1.5 py-0.5 bg-semantic-green/10 border border-semantic-green/20 text-semantic-green font-mono text-[9px] rounded">LOCAL</span>
+                </div>
+                <p class="text-xs text-on-surface-variant leading-relaxed line-clamp-3 my-2">
+                  <strong class="text-white">AI Summary:</strong> Analyzes energy density curves, silicon-anode composition results, and cycle testing configurations.
+                </p>
+                <div class="flex justify-between items-center text-[10px] text-on-surface-variant font-mono">
+                  <span>Size: 4.2 MB</span>
+                  <span>Uploaded: Jun 4</span>
+                </div>
+              </div>
+              <!-- Card 2 -->
+              <div class="bento-card flex flex-col justify-between h-44 border border-outline-variant">
+                <div class="flex justify-between items-start">
+                  <div class="flex items-center gap-2 text-[#2ec4a9]">
+                    <span class="material-symbols-outlined text-[24px]">description</span>
+                    <span class="text-xs font-bold font-mono truncate w-36">Competitor_API_Specs.docx</span>
+                  </div>
+                  <span class="px-1.5 py-0.5 bg-semantic-green/10 border border-semantic-green/20 text-semantic-green font-mono text-[9px] rounded">LOCAL</span>
+                </div>
+                <p class="text-xs text-on-surface-variant leading-relaxed line-clamp-3 my-2">
+                  <strong class="text-white">AI Summary:</strong> Benchmark response times, token efficiency metrics, and pricing for OpenAI, Anthropic, and Cohere APIs.
+                </p>
+                <div class="flex justify-between items-center text-[10px] text-on-surface-variant font-mono">
+                  <span>Size: 1.1 MB</span>
+                  <span>Uploaded: Jun 2</span>
+                </div>
+              </div>
+              <!-- Card 3 -->
+              <div class="bento-card flex flex-col justify-between h-44 border border-outline-variant">
+                <div class="flex justify-between items-start">
+                  <div class="flex items-center gap-2 text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[24px]">text_snippet</span>
+                    <span class="text-xs font-bold font-mono truncate w-36">System_Architecture.txt</span>
+                  </div>
+                  <span class="px-1.5 py-0.5 bg-semantic-green/10 border border-semantic-green/20 text-semantic-green font-mono text-[9px] rounded">LOCAL</span>
+                </div>
+                <p class="text-xs text-on-surface-variant leading-relaxed line-clamp-3 my-2">
+                  <strong class="text-white">AI Summary:</strong> Design log documenting Tauri v2 configuration, FastAPI sidecar routes, and local vector database initialization.
+                </p>
+                <div class="flex justify-between items-center text-[10px] text-on-surface-variant font-mono">
+                  <span>Size: 12 KB</span>
+                  <span>Uploaded: May 29</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- ═══════════ SCREEN: AGENT LAB ═══════════ -->
+      <main id="screen-agents" class="screen flex-grow overflow-hidden flex-row p-6">
+        <div class="flex-grow flex flex-col gap-4 overflow-hidden min-h-0 w-full">
+          <!-- Stepper Task Simulator -->
+          <section class="flat-panel rounded-xl p-6 flex-1 overflow-y-auto flex flex-col" style="scrollbar-width:thin;">
+            <div class="flex justify-between items-center mb-6 sticky top-0 bg-surface z-10 pb-2 border-b border-outline-variant">
+              <h2 class="font-sans text-md font-bold text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-primary">account_tree</span> Task Simulator</h2>
+            </div>
+            <div class="space-y-3 relative pl-3 flex-grow min-h-0">
+              <div class="absolute left-[27px] top-6 bottom-6 w-px bg-outline-variant"></div>
+              <!-- Step 1 (Completed) -->
+              <div class="relative pl-10 pb-4 group">
+                <div class="absolute left-0 top-0.5 w-7 h-7 rounded-full bg-surface border border-semantic-green flex items-center justify-center z-10 text-semantic-green">
+                  <span class="material-symbols-outlined text-[16px]">check</span>
+                </div>
+                <div class="bg-surface2 border border-outline-variant rounded p-3">
+                  <div class="flex justify-between items-center">
+                    <span class="text-xs font-mono font-semibold text-on-surface">Scan repository for auth files</span>
+                    <span class="text-[9px] bg-semantic-green/10 text-semantic-green px-1.5 py-0.5 rounded border border-semantic-green/20">FILE READ APPROVED</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Step 2 (Active) -->
+              <div class="relative pl-10 pb-4 group">
+                <div class="absolute left-0 top-0.5 w-7 h-7 rounded-full bg-surface border border-semantic-amber flex items-center justify-center z-10 text-semantic-amber">
+                  <span class="material-symbols-outlined text-[16px] animate-spin">sync</span>
+                </div>
+                <div class="bg-surface2 border border-semantic-amber/50 rounded p-3">
+                  <div class="flex justify-between items-center">
+                    <span class="text-xs font-mono font-semibold text-on-surface">Search documentation for migration paths</span>
+                    <span class="text-[9px] bg-semantic-amber/10 text-semantic-amber px-1.5 py-0.5 rounded border border-semantic-amber/20">WEB SEARCH PENDING</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Step 3 (Blocked/Inactive) -->
+              <div class="relative pl-10 group">
+                <div class="absolute left-0 top-0.5 w-7 h-7 rounded-full bg-surface border border-outline-variant flex items-center justify-center z-10 text-on-surface-variant/40">
+                  <span class="material-symbols-outlined text-[16px]">close</span>
+                </div>
+                <div class="bg-surface/30 border border-outline-variant rounded p-3 opacity-60">
+                  <div class="flex justify-between items-center">
+                    <span class="text-xs font-mono font-semibold text-on-surface-variant">Execute refactor script</span>
+                    <span class="text-[9px] bg-semantic-red/10 text-semantic-red px-1.5 py-0.5 rounded border border-semantic-red/20">CODE RUN BLOCKED</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Permissions Table -->
+            <div class="mt-6 border-t border-outline-variant pt-4 shrink-0">
+              <h3 class="font-sans text-xs font-bold text-on-surface-variant mb-2">Simulator Permissions Status</h3>
+              <div class="bg-surface2 border border-outline-variant rounded-lg overflow-hidden mb-4">
+                <table class="w-full text-left font-mono text-xs">
+                  <thead class="bg-surface border-b border-outline-variant">
+                    <tr>
+                      <th class="p-2 text-on-surface-variant font-bold">Action</th>
+                      <th class="p-2 text-on-surface-variant font-bold">Status</th>
+                      <th class="p-2 text-on-surface-variant font-bold text-right">Risk Level</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="border-b border-outline-variant/50">
+                      <td class="p-2">File Write permissions (auth.js)</td>
+                      <td class="p-2 text-semantic-amber">Pending approval</td>
+                      <td class="p-2 text-semantic-amber text-right font-semibold">🟡 Medium</td>
+                    </tr>
+                    <tr class="border-b border-outline-variant/50">
+                      <td class="p-2">External network lookup</td>
+                      <td class="p-2 text-semantic-green">Approved</td>
+                      <td class="p-2 text-semantic-green text-right font-semibold">🟢 Low</td>
+                    </tr>
+                    <tr>
+                      <td class="p-2">Execute shell execution</td>
+                      <td class="p-2 text-semantic-red">Blocked</td>
+                      <td class="p-2 text-semantic-red text-right font-semibold">🔴 High</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="flex gap-2 justify-end">
+                <button class="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-semibold hover:bg-surface2 text-on-surface">Deny / Stop</button>
+                <button class="px-3 py-1.5 border border-primary text-primary rounded-lg text-xs font-semibold hover:bg-primary/10">Modify Permissions</button>
+                <button class="px-4 py-1.5 bg-primary text-background rounded-lg text-xs font-bold hover:bg-primary/90">Allow / Approve All</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <!-- ═══════════ SCREEN: IMAGE STUDIO ═══════════ -->
+      <main id="screen-images" class="screen flex-grow overflow-hidden flex-row p-6">
+        <div class="flex-grow flex flex-col gap-4 overflow-hidden min-h-0 w-full">
+          <!-- Canvas Tools wrapper -->
+          <div class="flex-grow flex flex-row gap-4 overflow-hidden min-h-0">
+            <!-- Left panel tools -->
+            <div class="w-1/4 bg-surface border border-outline-variant rounded-xl p-4 flex flex-col gap-4">
+              <span class="font-sans text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Image Studio Tools</span>
+              <div class="flex flex-col gap-2">
+                <button class="flex items-center gap-2 p-2 rounded-lg bg-primary/20 text-primary border border-primary/30 text-xs font-semibold text-left">
+                  <span class="material-symbols-outlined text-[18px]">brush</span><span>Generate</span>
+                </button>
+                <button class="flex items-center gap-2 p-2 rounded-lg text-on-surface-variant hover:bg-surface2 hover:text-on-surface text-xs text-left">
+                  <span class="material-symbols-outlined text-[18px]">layers</span><span>Inpaint</span>
+                </button>
+                <button class="flex items-center gap-2 p-2 rounded-lg text-on-surface-variant hover:bg-surface2 hover:text-on-surface text-xs text-left">
+                  <span class="material-symbols-outlined text-[18px]">zoom_in</span><span>Upscale</span>
+                </button>
+                <button class="flex items-center gap-2 p-2 rounded-lg text-on-surface-variant hover:bg-surface2 hover:text-on-surface text-xs text-left">
+                  <span class="material-symbols-outlined text-[18px]">photo_filter</span><span>Remove BG</span>
+                </button>
+              </div>
+              <!-- Prompt input -->
+              <div class="mt-auto flex flex-col gap-2">
+                <textarea id="image-prompt-input" placeholder="Write image generation prompt..." class="w-full bg-surface2 border border-outline-variant rounded-lg p-2.5 text-xs text-on-surface placeholder:text-on-surface-variant/40 focus:border-primary focus:ring-0 h-20 resize-none"></textarea>
+                <button id="image-generate-btn" class="w-full py-2 bg-primary text-background font-bold text-xs rounded-lg hover:bg-primary/95 transition-all">Generate Studio Asset</button>
+              </div>
+            </div>
+            <!-- Center HTML Canvas -->
+            <div class="w-3/4 flex flex-col gap-4 overflow-hidden h-full">
+              <!-- Canvas Component -->
+              <div class="flex-grow bg-[#09090c] border border-outline-variant rounded-xl flex items-center justify-center relative overflow-hidden">
+                <canvas id="studio-canvas" class="bg-surface shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-outline-variant max-w-full max-h-full rounded" width="512" height="384"></canvas>
+                <div class="absolute bottom-3 right-3 px-2 py-1 bg-background/80 backdrop-blur-md rounded border border-outline-variant text-[10px] text-on-surface-variant font-mono">
+                  Dimensions: 512 x 384
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Bottom history timeline -->
+          <div class="h-28 shrink-0 bg-surface border border-outline-variant rounded-xl p-3 flex flex-col gap-2">
+            <span class="font-sans text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block">Generation history timeline</span>
+            <div id="image-history-timeline" class="flex gap-4 overflow-x-auto pb-1" style="scrollbar-width:thin;">
+              <div class="w-20 h-14 bg-surface2 border border-primary/50 rounded flex items-center justify-center cursor-pointer hover:border-primary shrink-0 relative overflow-hidden" onclick="drawToCanvas('avatar')">
+                <div class="w-full h-full bg-gradient-to-tr from-primary/30 to-teal/30 flex items-center justify-center text-[10px] font-semibold text-primary">Avatar</div>
+              </div>
+              <div class="w-20 h-14 bg-surface2 border border-outline-variant rounded flex items-center justify-center cursor-pointer hover:border-primary shrink-0 relative overflow-hidden" onclick="drawToCanvas('banner')">
+                <div class="w-full h-full bg-gradient-to-tr from-teal/30 to-green/30 flex items-center justify-center text-[10px] font-semibold text-[#2ec4a9]">Banner</div>
+              </div>
+              <div class="w-20 h-14 bg-surface2 border border-outline-variant rounded flex items-center justify-center cursor-pointer hover:border-primary shrink-0 relative overflow-hidden" onclick="drawToCanvas('landscape')">
+                <div class="w-full h-full bg-gradient-to-tr from-primary/30 to-green/30 flex items-center justify-center text-[10px] font-semibold text-[#30c97e]">SciFi</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- ═══════════ SCREEN: VOICE MODE ═══════════ -->
+      <main id="screen-voice" class="screen flex-grow overflow-hidden flex-col p-6 items-center justify-center">
+        <div class="max-w-md w-full text-center flex flex-col items-center gap-6">
+          <div>
+            <h3 class="font-serif text-2xl text-white font-semibold">Voice Transcription Node</h3>
+            <p class="font-sans text-xs text-on-surface-variant mt-1">Real-time local voice processing model active.</p>
+          </div>
+          <!-- Recording Mode Selector -->
+          <div class="bg-surface border border-outline-variant p-1.5 rounded-lg flex gap-1 text-xs">
+            <button id="voice-mode-note" class="px-3 py-1 bg-primary text-background font-semibold rounded-md">Voice Note</button>
+            <button id="voice-mode-meeting" class="px-3 py-1 text-on-surface-variant hover:text-on-surface rounded-md">Meeting</button>
+            <button id="voice-mode-lecture" class="px-3 py-1 text-on-surface-variant hover:text-on-surface rounded-md">Lecture</button>
+          </div>
+          <!-- Mic circular button -->
+          <div class="relative w-36 h-36 flex items-center justify-center">
+            <button id="voice-record-btn" class="w-28 h-28 bg-primary rounded-full flex items-center justify-center hover:bg-primary/90 shadow-[0_0_20px_rgba(124,109,250,0.4)] transition-all cursor-pointer z-10">
+              <span class="material-symbols-outlined text-background text-[48px]" id="voice-record-icon">mic</span>
+            </button>
+            <!-- Pulse ripple rings -->
+            <div id="voice-ripple-1" class="absolute inset-0 rounded-full border border-primary/20 scale-100 opacity-0 pointer-events-none transition-all duration-1000"></div>
+            <div id="voice-ripple-2" class="absolute inset-0 rounded-full border border-primary/10 scale-100 opacity-0 pointer-events-none transition-all duration-1000"></div>
+          </div>
+          <!-- Waveform viz -->
+          <canvas id="voice-waveform" class="w-full h-16 bg-surface border border-outline-variant rounded-xl" width="400" height="64"></canvas>
+          <!-- Live Transcript -->
+          <div class="w-full bg-surface border border-outline-variant p-4 rounded-xl text-left min-h-[100px]">
+            <span class="font-sans text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block mb-1">Real-time Transcript</span>
+            <p id="voice-transcript" class="text-xs text-on-surface leading-relaxed italic">Click mic to start transcribing locally...</p>
+          </div>
+        </div>
+      </main>
+
+      <!-- ═══════════ SCREEN: AUTOMATION BOARD ═══════════ -->
+      <main id="screen-automation" class="screen flex-grow overflow-hidden flex-col p-6">
+        <div class="flex-grow flex flex-col gap-4 overflow-hidden min-h-0 w-full">
+          <div class="flex justify-between items-center shrink-0">
+            <div>
+              <h3 class="font-serif text-2xl text-white font-semibold">Automation Board</h3>
+              <p class="font-sans text-xs text-on-surface-variant mt-1">Configure reactive no-code AI chains. Blocks can be dragged to reorder.</p>
+            </div>
+            <button id="run-workflow-btn" class="bg-primary text-background font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1 hover:bg-primary/95 transition-all">
+              <span class="material-symbols-outlined text-[16px]">play_arrow</span>
+              Run Workflow
+            </button>
+          </div>
+          <!-- horizontal chain canvas with drag-and-drop -->
+          <div class="flex-grow bg-[#09090c] border border-outline-variant rounded-panel p-6 flex items-center justify-start overflow-x-auto relative min-h-[300px]" id="automation-canvas" style="scrollbar-width:thin;">
+            <div class="flex items-center gap-8 pr-12" id="workflow-chain-container">
+              <!-- Trigger -->
+              <div id="flow-Trigger" draggable="true" class="w-44 bg-surface border border-outline-variant rounded-xl p-3 flex flex-col gap-1 relative shrink-0 transition-all duration-300 cursor-grab active:cursor-grabbing">
+                <span class="text-[9px] font-bold text-primary uppercase font-mono">Trigger block</span>
+                <span class="text-xs font-bold text-white">On File Upload</span>
+                <span class="text-[10px] text-on-surface-variant leading-tight mt-1">Triggers when PDF is uploaded to Vault.</span>
+              </div>
+              <span class="material-symbols-outlined text-outline-variant text-[24px] shrink-0 node-arrow">arrow_forward</span>
+              <!-- Context -->
+              <div id="flow-Context" draggable="true" class="w-44 bg-surface border border-outline-variant rounded-xl p-3 flex flex-col gap-1 relative shrink-0 transition-all duration-300 cursor-grab active:cursor-grabbing">
+                <span class="text-[9px] font-bold text-[#2ec4a9] uppercase font-mono">Context block</span>
+                <span class="text-xs font-bold text-white">Secured Room</span>
+                <span class="text-[10px] text-on-surface-variant leading-tight mt-1">Loads local vectors from Secure Vault.</span>
+              </div>
+              <span class="material-symbols-outlined text-outline-variant text-[24px] shrink-0 node-arrow">arrow_forward</span>
+              <!-- Model -->
+              <div id="flow-Model" draggable="true" class="w-44 bg-surface border border-outline-variant rounded-xl p-3 flex flex-col gap-1 relative shrink-0 transition-all duration-300 cursor-grab active:cursor-grabbing">
+                <span class="text-[9px] font-bold text-primary uppercase font-mono">Model block</span>
+                <span class="text-xs font-bold text-white">Autopilot Router</span>
+                <span class="text-[10px] text-on-surface-variant leading-tight mt-1">Selects Llama-3 70B for extraction.</span>
+              </div>
+              <span class="material-symbols-outlined text-outline-variant text-[24px] shrink-0 node-arrow">arrow_forward</span>
+              <!-- Tools -->
+              <div id="flow-Tools" draggable="true" class="w-44 bg-surface border border-outline-variant rounded-xl p-3 flex flex-col gap-1 relative shrink-0 transition-all duration-300 cursor-grab active:cursor-grabbing">
+                <span class="text-[9px] font-bold text-primary uppercase font-mono">Tools block</span>
+                <span class="text-xs font-bold text-white">Semantic Indexer</span>
+                <span class="text-[10px] text-on-surface-variant leading-tight mt-1">Invokes chunk parser & semantic index.</span>
+              </div>
+              <span class="material-symbols-outlined text-outline-variant text-[24px] shrink-0 node-arrow">arrow_forward</span>
+              <!-- Human Approval Gate -->
+              <div id="flow-Review" draggable="true" class="w-48 bg-surface border-2 border-dashed border-semantic-red rounded-xl p-3 flex flex-col gap-1 relative shrink-0 transition-all duration-300 bg-semantic-red/5 cursor-grab active:cursor-grabbing">
+                <span class="text-[9px] font-bold text-semantic-red uppercase font-mono">Human Approval Gate</span>
+                <span class="text-xs font-bold text-white">Requires Confirmation</span>
+                <span class="text-[10px] text-on-surface-variant leading-tight mt-1">Pauses chain execution until approved.</span>
+                <button id="workflow-confirm-btn" class="mt-2 py-1 bg-semantic-red text-background text-[10px] font-bold uppercase rounded hover:bg-semantic-red/80 transition-all hidden">Approve action</button>
+              </div>
+              <span class="material-symbols-outlined text-outline-variant text-[24px] shrink-0 node-arrow">arrow_forward</span>
+              <!-- Output -->
+              <div id="flow-Output" draggable="true" class="w-44 bg-surface border border-outline-variant rounded-xl p-3 flex flex-col gap-1 relative shrink-0 transition-all duration-300 cursor-grab active:cursor-grabbing">
+                <span class="text-[9px] font-bold text-[#30c97e] uppercase font-mono">Output block</span>
+                <span class="text-xs font-bold text-white">Slack Notify</span>
+                <span class="text-[10px] text-on-surface-variant leading-tight mt-1">Sends extracted findings payload.</span>
+              </div>
+            </div>
+          </div>
+          <!-- Execution log -->
+          <div class="h-28 shrink-0 bg-surface border border-outline-variant rounded-xl p-3 flex flex-col gap-1">
+            <span class="font-sans text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block">Automation execution status log</span>
+            <div id="workflow-log" class="flex-grow overflow-y-auto font-mono text-[11px] text-on-surface-variant/80 space-y-0.5 leading-relaxed" style="scrollbar-width:thin;">
+              <div class="text-on-surface-variant/40">Ready to trigger. Click "Run Workflow" above. Drag blocks to reorder them in the pipeline.</div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- ═══════════ SCREEN: MODEL SETTINGS ═══════════ -->
+      <main id="screen-settings" class="screen flex-grow overflow-y-auto p-container-padding flex-col">
+        <div class="flex flex-col gap-lg max-w-[1200px] mx-auto w-full pb-xl">
+          <!-- Registry Header -->
+          <div class="flex items-center justify-between mb-sm">
+            <h3 class="font-mono text-xs font-bold text-on-surface flex items-center gap-xs"><span class="material-symbols-outlined text-[16px]">database</span> LOCAL_MODEL_REGISTRY</h3>
+            <button class="font-sans text-xs uppercase text-on-surface border border-outline-variant px-sm py-xs rounded hover:border-primary hover:text-primary transition-colors flex items-center gap-xs bg-surface-container-high"><span class="material-symbols-outlined text-[14px]">download</span> Pull Model</button>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+            <!-- Model 1 (Active) -->
+            <div class="model-card border-primary/50 relative overflow-hidden bg-primary/5">
+              <div class="absolute top-0 right-0 p-sm opacity-5 font-display-lg text-display-lg text-primary select-none pointer-events-none font-bold">01</div>
+              <div class="flex justify-between items-start mb-md relative z-10">
+                <div><div class="flex items-center gap-2 mb-1"><h4 class="font-headline-sm text-headline-sm text-on-surface">Llama-3 70B</h4><span class="font-label-caps text-[9px] bg-semantic-green/10 text-semantic-green border border-semantic-green/20 px-1.5 py-0.5 rounded uppercase flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-semantic-green"></span>LOCAL</span></div><div class="flex gap-xs mt-xs"><span class="font-mono text-[10px] bg-primary/20 text-primary px-xs py-[2px] rounded border border-primary/30">Active</span></div></div>
+              </div>
+              <div class="grid grid-cols-2 gap-sm border-t border-outline-variant pt-sm mt-auto relative z-10">
+                <div><span class="block font-sans text-xs uppercase text-on-surface-variant">SIZE</span><span class="block font-mono text-on-surface">40.2 GB</span></div>
+                <div><span class="block font-sans text-xs uppercase text-on-surface-variant">CONTEXT</span><span class="block font-mono text-on-surface">8192</span></div>
+              </div>
+            </div>
+            <!-- Model 2 -->
+            <div class="model-card hardware-accent relative overflow-hidden group cursor-pointer transition-all hover:border-primary hover:bg-surface-container-high bg-surface-container-low">
+              <div class="absolute top-0 right-0 p-sm opacity-5 font-display-lg text-display-lg text-on-surface-variant select-none pointer-events-none group-hover:text-primary transition-colors font-bold">02</div>
+              <div class="flex justify-between items-start mb-md relative z-10">
+                <div><div class="flex items-center gap-2 mb-1"><h4 class="font-headline-sm text-headline-sm text-on-surface">GPT-4o API</h4><span class="font-label-caps text-[9px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded uppercase flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>API</span></div></div>
+              </div>
+              <div class="grid grid-cols-2 gap-sm border-t border-outline-variant pt-sm mt-auto relative z-10">
+                <div><span class="block font-sans text-xs uppercase text-on-surface-variant">SIZE</span><span class="block font-mono text-on-surface">Cloud</span></div>
+                <div><span class="block font-sans text-xs uppercase text-on-surface-variant">CONTEXT</span><span class="block font-mono text-on-surface">128k</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+    </div><!-- end main-workspace-wrapper -->
+
+    <!-- ═══════════ GLOBAL CONTEXT PANEL (320px) ═══════════ -->
+    <aside class="w-[320px] border-l border-outline-variant bg-surface flex flex-col shrink-0 overflow-y-auto" id="global-context-panel">
+      
+      <!-- context-home -->
+      <div id="context-home" class="context-content p-6 flex flex-col gap-6">
+        <h3 class="font-mono text-xs text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-primary">memory</span> SYSTEM_STATUS</h3>
+        <div class="bg-surface2 border border-outline-variant p-3 rounded flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-xs font-semibold text-on-surface">Llama-3 70B</span>
+            <span class="font-mono text-[9px] px-2 py-[2px] bg-semantic-green/10 text-semantic-green border border-semantic-green/20 rounded uppercase">LOCAL</span>
+          </div>
+          <div class="flex items-center justify-between text-mono text-xs text-on-surface-variant">
+            <span>Speed:</span><span class="text-on-surface">65 tok/s</span>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between items-end mb-1">
+            <p class="font-sans text-xs text-on-surface-variant font-semibold uppercase">VRAM Usage</p>
+            <p class="font-mono text-xs text-on-surface">14.2GB <span class="text-on-surface-variant">/ 24GB</span></p>
+          </div>
+          <div class="w-full h-1.5 bg-surface2 rounded-full overflow-hidden"><div class="h-full bg-primary w-[60%]"></div></div>
+        </div>
+        <div>
+          <div class="flex justify-between items-end mb-1">
+            <p class="font-sans text-xs text-on-surface-variant font-semibold uppercase">System RAM</p>
+            <p class="font-mono text-xs text-on-surface">18.5GB <span class="text-on-surface-variant">/ 32GB</span></p>
+          </div>
+          <div class="w-full h-1.5 bg-surface2 rounded-full overflow-hidden"><div class="h-full bg-semantic-amber w-[58%]"></div></div>
+        </div>
+      </div>
+
+      <!-- context-chat (Artifacts Panel) -->
+      <div id="context-chat" class="context-content flex flex-col h-full hidden">
+        <div class="p-4 border-b border-outline-variant flex justify-between items-center bg-surface2/50">
+          <div class="flex flex-col">
+            <h2 class="font-sans text-xs text-on-surface-variant uppercase mb-1">Active Artifact</h2>
+            <div class="font-sans text-sm font-semibold text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-primary text-[18px]">code</span> redis_client.py</div>
+          </div>
+        </div>
+        <div class="flex-grow overflow-y-auto p-4 bg-[#09090c]">
+          <div class="font-mono text-xs text-on-surface-variant bg-surface p-3 rounded border border-outline-variant">
+            <div class="text-[#5e5e78] mb-4"># Optimized Redis Configuration</div>
+            <pre class="overflow-x-auto text-[11px] leading-relaxed"><code>import redis
+import os
+
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+
+def get_redis_pool():
+    return redis.ConnectionPool(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        db=0,
+        max_connections=500,
+        timeout=2.0
+    )</code></pre>
+          </div>
+        </div>
+        <div class="p-4 border-t border-outline-variant bg-surface2 flex justify-between items-center shrink-0">
+          <span class="font-sans text-xs text-on-surface-variant uppercase">Export:</span>
+          <div class="flex items-center gap-2">
+            <button class="p-1.5 text-on-surface-variant hover:text-primary transition-colors rounded" title="Markdown"><span class="material-symbols-outlined text-[18px]">markdown</span></button>
+            <button class="p-1.5 text-on-surface-variant hover:text-primary transition-colors rounded" title="PDF"><span class="material-symbols-outlined text-[18px]">picture_as_pdf</span></button>
+            <button class="p-1.5 text-on-surface-variant hover:text-primary transition-colors rounded" title="Copy"><span class="material-symbols-outlined text-[18px]">content_copy</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- context-research (Sources list) -->
+      <div id="context-research" class="context-content p-6 flex flex-col gap-6 hidden">
+        <h3 class="font-mono text-xs text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">library_books</span> CITATION_CONSENSUS</h3>
+        <div class="space-y-4">
+          <div class="bg-surface2 border border-outline-variant p-3 rounded-xl flex flex-col gap-1">
+            <span class="font-mono text-xs text-primary truncate">IEEE_Solid_State_Batteries_2024.pdf</span>
+            <div class="flex items-center gap-2 text-[10px] text-semantic-green mt-1">
+              <span class="material-symbols-outlined text-[12px]">verified</span>
+              <span>Verified energy retention rate</span>
+            </div>
+          </div>
+          <div class="bg-surface2 border border-outline-variant p-3 rounded-xl flex flex-col gap-1">
+            <span class="font-mono text-xs text-on-surface-variant truncate">tech-insider-blog.com/ev-recalls</span>
+            <div class="flex items-center gap-2 text-[10px] text-semantic-amber mt-1">
+              <span class="material-symbols-outlined text-[12px]">info</span>
+              <span>Disputed degradation anomalies</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- context-documents (Readability stats) -->
+      <div id="context-documents" class="context-content p-6 flex flex-col gap-6 hidden">
+        <h3 class="font-mono text-xs text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">analytics</span> DRAFT_LAYER_STATS</h3>
+        <div class="bg-surface2 border border-outline-variant p-3 rounded flex flex-col gap-3">
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-on-surface-variant">Readability score:</span>
+            <span class="font-bold text-semantic-green">87 / 100</span>
+          </div>
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-on-surface-variant">Tone analyzer:</span>
+            <span class="font-bold text-primary">Technical / Formal</span>
+          </div>
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-on-surface-variant">AI additions:</span>
+            <span class="font-mono text-primary font-bold">+184 words</span>
+          </div>
+        </div>
+        <div class="flex flex-col gap-2">
+          <span class="font-sans text-xs font-bold text-on-surface-variant uppercase">Tone instructions</span>
+          <button onclick="applyToneTemplate('academic')" class="p-2 bg-surface2 border border-outline-variant hover:border-primary text-left text-xs rounded transition-all">Academic Tone</button>
+          <button onclick="applyToneTemplate('marketing')" class="p-2 bg-surface2 border border-outline-variant hover:border-primary text-left text-xs rounded transition-all">Executive Summary Tone</button>
+        </div>
+      </div>
+
+      <!-- context-vault (Drawer representation inside Sidebar) -->
+      <div id="context-vault" class="context-content p-6 flex flex-col gap-6 hidden">
+        <h3 class="font-mono text-xs text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">shield</span> ROOM_SECURITY_POLICIES</h3>
+        <!-- Allowed models checkboxes -->
+        <div class="flex flex-col gap-2 border-b border-outline-variant pb-4">
+          <span class="font-sans text-xs font-semibold text-on-surface-variant uppercase">Allowed Models</span>
+          <label class="flex items-center gap-2 text-xs">
+            <input type="checkbox" checked class="bg-surface border-outline-variant text-primary rounded focus:ring-0"/>
+            <span>Llama-3 70B (Local)</span>
+          </label>
+          <label class="flex items-center gap-2 text-xs">
+            <input type="checkbox" class="bg-surface border-outline-variant text-primary rounded focus:ring-0"/>
+            <span>GPT-4o API (External)</span>
+          </label>
+        </div>
+        <!-- Memory policy -->
+        <div class="flex flex-col gap-2 border-b border-outline-variant pb-4">
+          <span class="font-sans text-xs font-semibold text-on-surface-variant uppercase">Memory Policy</span>
+          <select class="bg-surface2 border border-outline-variant rounded-lg p-1.5 text-xs text-on-surface focus:ring-0">
+            <option>Always store local logs</option>
+            <option>Ask before storing session details</option>
+            <option>Never retain context ledger</option>
+          </select>
+        </div>
+        <!-- Retention slider -->
+        <div class="flex flex-col gap-2 border-b border-outline-variant pb-4">
+          <div class="flex justify-between text-xs">
+            <span class="font-sans font-semibold text-on-surface-variant uppercase">Retention Period</span>
+            <span id="retention-val" class="font-mono font-bold text-primary">90 Days</span>
+          </div>
+          <input type="range" min="30" max="360" value="90" class="w-full accent-primary" id="retention-slider" oninput="document.getElementById('retention-val').textContent = this.value + ' Days'"/>
+        </div>
+        <!-- Agent access flags -->
+        <div class="flex flex-col gap-2">
+          <span class="font-sans text-xs font-semibold text-on-surface-variant uppercase">Agent privileges</span>
+          <label class="flex items-center gap-2 text-xs">
+            <input type="checkbox" checked class="bg-surface border-outline-variant text-primary rounded focus:ring-0"/>
+            <span>File read permissions</span>
+          </label>
+          <label class="flex items-center gap-2 text-xs">
+            <input type="checkbox" class="bg-surface border-outline-variant text-primary rounded focus:ring-0"/>
+            <span>Web Search tools</span>
+          </label>
+          <label class="flex items-center gap-2 text-xs">
+            <input type="checkbox" class="bg-surface border-outline-variant text-primary rounded focus:ring-0"/>
+            <span>Execute local compiler</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- context-agents (Flight Recorder) -->
+      <div id="context-agents" class="context-content flex flex-col h-full hidden bg-[#0a0a0e]">
+        <div class="px-4 py-2 border-b border-[#2a2a36] bg-[#0e0e12] flex justify-between items-center">
+          <h3 class="font-mono text-xs text-semantic-green flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">data_object</span> Flight Recorder</h3>
+        </div>
+        <div class="p-4 flex-grow overflow-y-auto font-mono text-[11px] leading-relaxed space-y-1 text-semantic-green" style="scrollbar-width:thin;">
+          <div>[14:02:01] SYS Initializing agent sandbox...</div>
+          <div>[14:02:03] API GET /api/v1/repo/structure HTTP 200</div>
+          <div>[14:02:04] LLM Prompt: 1245 | Comp: 402 | Latency: 1.2s</div>
+          <div>[14:02:05] FS Read: src/utils/auth.js</div>
+          <div class="animate-pulse">&gt; waiting_</div>
+        </div>
+      </div>
+
+      <!-- context-images (Canvas recipe selector) -->
+      <div id="context-images" class="context-content p-6 flex flex-col gap-6 hidden">
+        <h3 class="font-mono text-xs text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">menu_book</span> CREATIVE_RECIPES</h3>
+        <div class="grid grid-cols-1 gap-2" id="recipes-grid">
+          <button onclick="drawToCanvas('avatar')" class="p-3 bg-surface2 border border-outline-variant hover:border-primary text-left rounded-lg transition-all flex flex-col gap-1">
+            <span class="text-xs font-bold text-white">Profile Portrait</span>
+            <span class="text-[10px] text-on-surface-variant leading-tight">Optimized soft focus depth lighting.</span>
+          </button>
+          <button onclick="drawToCanvas('banner')" class="p-3 bg-surface2 border border-outline-variant hover:border-primary text-left rounded-lg transition-all flex flex-col gap-1">
+            <span class="text-xs font-bold text-white">Event Poster</span>
+            <span class="text-[10px] text-on-surface-variant leading-tight">Cyberpunk palette with bold typography.</span>
+          </button>
+          <button onclick="drawToCanvas('landscape')" class="p-3 bg-surface2 border border-outline-variant hover:border-primary text-left rounded-lg transition-all flex flex-col gap-1">
+            <span class="text-xs font-bold text-white">Website Hero</span>
+            <span class="text-[10px] text-on-surface-variant leading-tight">Sleek dark mode graphic assets.</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- context-voice (Speech logs) -->
+      <div id="context-voice" class="context-content p-6 flex flex-col gap-6 hidden">
+        <h3 class="font-mono text-xs text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">volume_up</span> AUDIO_LOGS</h3>
+        <div class="space-y-3 font-mono text-[11px] text-on-surface-variant">
+          <div>[14:38:01] Audio stream initialized.</div>
+          <div>[14:38:03] Whisper: local model loaded in 2.1s.</div>
+          <div>[14:38:05] Speaker-01 active.</div>
+        </div>
+      </div>
+
+      <!-- context-automation (Node parameters info) -->
+      <div id="context-automation" class="context-content p-6 flex flex-col gap-6 hidden">
+        <h3 class="font-mono text-xs text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">settings_suggest</span> PIPELINE_LOGIC</h3>
+        <div class="text-xs text-on-surface-variant space-y-3 leading-relaxed">
+          <p><strong class="text-white">Workflow Runner</strong> engine executing sequentially.</p>
+          <p>Upon reaching a <strong class="text-semantic-red">Human Approval Gate</strong>, execution pauses, triggers a WebSocket event, and highlights the confirmation node in red.</p>
+        </div>
+      </div>
+
+      <!-- context-settings (Hardware & Routing) -->
+      <div id="context-settings" class="context-content p-6 flex flex-col gap-6 hidden">
+        <div class="glass-panel py-3 px-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-mono text-xs uppercase text-on-surface">Telemetry</span>
+            <span class="text-[9px] bg-semantic-green/10 text-semantic-green px-1.5 py-0.5 rounded border border-semantic-green/20">LIVE</span>
+          </div>
+          <div class="text-xs text-on-surface-variant font-mono">GPU: NVIDIA RTX 4090</div>
+        </div>
+        <div class="glass-panel flex flex-col gap-3">
+          <span class="font-mono text-xs uppercase text-on-surface">Routing Mode</span>
+          <div class="space-y-1">
+            <label class="flex items-center gap-2 p-2 rounded border border-primary bg-primary/5 cursor-pointer text-xs">
+              <input checked name="privacy_mode" type="radio" class="bg-surface border-outline-variant text-primary focus:ring-primary"/>
+              <span>Local-Only</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 rounded border border-outline-variant bg-surface-container-low cursor-pointer text-xs">
+              <input name="privacy_mode" type="radio" class="bg-surface border-outline-variant text-primary focus:ring-primary"/>
+              <span>Hybrid</span>
+            </label>
+          </div>
+        </div>
+        <div class="glass-panel flex flex-col gap-3">
+          <span class="font-mono text-xs uppercase text-on-surface">API Keys</span>
+          <div class="flex flex-col gap-2 text-xs">
+            <label class="text-on-surface-variant font-mono">OpenAI Key</label>
+            <div class="flex gap-2">
+              <div class="relative flex-grow">
+                <input type="password" value="sk-proj-••••••••••••••••••••" id="openai-key" class="w-full bg-[#1b1b1f] border border-outline-variant rounded p-1.5 text-xs text-on-surface font-mono focus:border-primary focus:ring-0"/>
+                <button onclick="toggleKeyVisibility('openai-key')" class="absolute right-2 top-2 text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined text-[16px]">visibility</span></button>
+              </div>
+              <button onclick="saveKey('openai-key')" class="bg-primary text-background font-bold px-3 py-1 rounded text-xs hover:bg-primary/90">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+  </div><!-- end three-column body -->
+
+  <!-- ── BOTTOM STATUS BAR ── -->
+  <footer class="h-8 bg-surface border-t border-outline-variant flex items-center justify-between px-4 z-40 text-[11px] font-mono text-on-surface-variant shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity" onclick="togglePrivacyDetail(event)">
+        <span id="status-dot" class="w-2 h-2 rounded-full bg-semantic-green pulse-dot"></span>
+        <span id="status-text" class="text-semantic-green uppercase font-bold tracking-wider">LOCAL MODE</span>
+      </div>
+      <span class="text-outline-variant">|</span>
+      <span>Node-01 Nominal</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <span class="text-outline-variant">|</span>
+      <span id="status-model" class="text-primary font-semibold">Llama-3 70B</span>
+      <span class="text-outline-variant">|</span>
+      <div class="flex items-center gap-1.5">
+        <span id="status-vram-lbl">VRAM:</span>
+        <div class="w-16 h-1.5 bg-[#2a2a36] rounded-full overflow-hidden">
+          <div id="status-vram-bar" class="h-full bg-primary w-[65%]"></div>
+        </div>
+        <span id="status-speed">65 tok/s</span>
+      </div>
+      <span class="text-outline-variant">|</span>
+      <span id="status-ram">RAM: 18.5GB / 32GB</span>
+    </div>
+  </footer>
+
+  <!-- Privacy Radar Popover -->
+  <div id="privacy-detail-popover" class="fixed bottom-10 left-4 z-50 w-80 bg-surface border border-outline-variant rounded-panel p-4 shadow-[0_15px_40px_rgba(0,0,0,0.7)] hidden flex-col gap-3">
+    <div class="flex justify-between items-center border-b border-outline-variant pb-2">
+      <span class="font-sans text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1">
+        <span class="material-symbols-outlined text-[16px] text-primary">shield</span> Privacy Radar Details
+      </span>
+      <button onclick="togglePrivacyDetail(event)" class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[16px]">close</span></button>
+    </div>
+    <div class="flex flex-col gap-2 font-mono text-[11px] text-on-surface-variant">
+      <div class="flex justify-between">
+        <span>Security status:</span>
+        <span id="popover-sec-status" class="text-semantic-green font-bold">🟢 Secured</span>
+      </div>
+      <div class="flex justify-between">
+        <span>Data routing:</span>
+        <span id="popover-routing" class="text-white">Local-Only (Airgapped)</span>
+      </div>
+      <div class="flex justify-between">
+        <span>Local requests:</span>
+        <span id="popover-local-req" class="text-[#30c97e] font-bold">100% (Secured)</span>
+      </div>
+      <div class="flex justify-between">
+        <span>External requests:</span>
+        <span id="popover-external-req" class="text-semantic-red">0% (None)</span>
+      </div>
+    </div>
+    <div class="border-t border-outline-variant pt-2 text-[10px] text-on-surface-variant/80 leading-relaxed">
+      No private data or model queries are leaving your physical machine. Outbound networking is fully sandboxed.
+    </div>
+  </div>
+
+</div><!-- end main content wrapper -->
+
+<!-- ═══════════ CONTEXT ROOM SETTINGS DRAWER ═══════════ -->
+<div id="room-settings-drawer" class="fixed inset-0 z-50 bg-[#0c0c10]/60 backdrop-blur-sm hidden justify-end transition-all duration-300">
+  <div class="w-96 bg-surface border-l border-outline-variant h-full p-6 flex flex-col gap-6 transform translate-x-full transition-transform duration-300" id="drawer-panel">
+    <div class="flex justify-between items-center border-b border-outline-variant pb-3 shrink-0">
+      <h3 class="font-sans text-md font-bold text-on-surface">Room Settings</h3>
+      <button onclick="closeVaultDrawer()" class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="flex-grow overflow-y-auto space-y-6 pr-1" style="scrollbar-width:thin;">
+      <!-- Allowed models -->
+      <div class="flex flex-col gap-2">
+        <span class="font-sans text-xs font-bold text-on-surface-variant uppercase">Allowed Models</span>
+        <label class="flex items-center gap-2 text-xs">
+          <input type="checkbox" checked class="bg-surface border-outline-variant text-primary rounded focus:ring-0"/>
+          <span>Llama-3 70B (Local)</span>
+        </label>
+        <label class="flex items-center gap-2 text-xs">
+          <input type="checkbox" checked class="bg-surface border-outline-variant text-primary rounded focus:ring-0"/>
+          <span>Mistral 8x7B (Local)</span>
+        </label>
+        <label class="flex items-center gap-2 text-xs">
+          <input type="checkbox" class="bg-surface border-outline-variant text-primary rounded focus:ring-0"/>
+          <span>GPT-4o API (External)</span>
+        </label>
+      </div>
+      <!-- Retention Slider -->
+      <div class="flex flex-col gap-2">
+        <div class="flex justify-between text-xs">
+          <span class="font-sans font-bold text-on-surface-variant uppercase">Data Retention</span>
+          <span id="drawer-retention-val" class="font-mono font-bold text-primary">180 Days</span>
+        </div>
+        <input type="range" min="30" max="360" value="180" class="w-full accent-primary" id="drawer-retention-slider" oninput="document.getElementById('drawer-retention-val').textContent = this.value + ' Days'"/>
+      </div>
+      <!-- Memory policy selector -->
+      <div class="flex flex-col gap-2">
+        <span class="font-sans text-xs font-bold text-on-surface-variant uppercase">Memory Policy</span>
+        <select class="bg-surface2 border border-outline-variant rounded-lg p-2 text-xs text-on-surface focus:ring-0">
+          <option>Always store local logs</option>
+          <option>Ask before storing session details</option>
+          <option>Never retain context ledger</option>
+        </select>
+      </div>
+      <!-- Agent checkboxes -->
+      <div class="flex flex-col gap-2">
+        <span class="font-sans text-xs font-bold text-on-surface-variant uppercase">Agent Access Privileges</span>
+        <label class="flex items-center gap-2 text-xs">
+          <input type="checkbox" checked class="bg-surface border-outline-variant text-primary rounded focus:ring-0"/>
+          <span>File read operations</span>
+        </label>
+        <label class="flex items-center gap-2 text-xs">
+          <input type="checkbox" checked class="bg-surface border-outline-variant text-primary rounded focus:ring-0"/>
+          <span>Network lookup operations</span>
+        </label>
+        <label class="flex items-center gap-2 text-xs">
+          <input type="checkbox" class="bg-surface border-outline-variant text-primary rounded focus:ring-0"/>
+          <span>Execute local compiler</span>
+        </label>
+      </div>
+    </div>
+    <div class="border-t border-outline-variant pt-3 flex gap-2 shrink-0">
+      <button onclick="closeVaultDrawer()" class="flex-grow py-2 border border-outline-variant text-on-surface hover:bg-surface2 transition-all rounded-lg text-xs font-semibold">Cancel</button>
+      <button onclick="saveDrawerSettings()" class="flex-grow py-2 bg-primary text-background font-bold hover:bg-primary/95 transition-all rounded-lg text-xs">Save Room</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ COMMAND PALETTE (Cmd+K) ═══════════ -->
+<div id="command-palette" class="fixed inset-0 z-50 bg-[#0c0c10]/80 backdrop-blur-md hidden items-start justify-center pt-[15vh]">
+  <div class="bg-surface border border-outline-variant rounded-panel w-full max-w-lg shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden transform scale-95 opacity-0 transition-all duration-200" id="command-palette-modal">
+    <!-- Input Header -->
+    <div class="p-4 border-b border-outline-variant flex items-center gap-3 bg-surface2/50">
+      <span class="material-symbols-outlined text-on-surface-variant/50 text-[20px]">search</span>
+      <input type="text" id="command-palette-input" placeholder="Type a command or navigate..." class="flex-grow bg-transparent border-none outline-none text-on-surface placeholder:text-on-surface-variant/40 text-sm focus:ring-0" autocomplete="off"/>
+      <kbd class="px-2 py-0.5 bg-surface rounded border border-outline-variant text-[10px] text-on-surface-variant/70 font-mono">ESC</kbd>
+    </div>
+    <!-- Actions List -->
+    <div class="max-h-[300px] overflow-y-auto p-2 space-y-0.5" id="command-palette-list">
+      <!-- Renders dynamically -->
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ NAVIGATION & COMMAND PALETTE SCRIPT ═══════════ -->
+<script>
+const screenTitles = {
+  home: 'Command Center',
+  chat: 'Smart Chat',
+  research: 'Deep Research Studio',
+  documents: 'Document Studio',
+  vault: 'Knowledge Vault',
+  agents: 'Agent Lab',
+  images: 'Image Studio',
+  voice: 'Voice Mode',
+  automation: 'Automation Board',
+  settings: 'Model Settings & Hardware'
+};
+
+function navigate(screen) {
+  // Hide all screens
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  // Hide all context contents
+  document.querySelectorAll('.context-content').forEach(c => c.classList.add('hidden'));
+
+  // Show target screen
+  const targetScreen = document.getElementById('screen-' + screen);
+  if (targetScreen) targetScreen.classList.add('active');
+
+  // Show target context content
+  const targetContext = document.getElementById('context-' + screen);
+  if (targetContext) targetContext.classList.remove('hidden');
+
+  // Update nav active states
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.remove('active', 'bg-surface2', 'text-primary');
+    item.classList.add('text-on-surface-variant');
+  });
+  const activeNav = document.querySelector(`[data-screen="${screen}"]`);
+  if (activeNav) {
+    activeNav.classList.add('active', 'bg-surface2', 'text-primary');
+    activeNav.classList.remove('text-on-surface-variant');
+  }
+
+  // Update page title
+  document.getElementById('page-title').textContent = screenTitles[screen] || 'Asterion AI';
+}
+
+// Stop All button animation
+document.getElementById('stop-all-btn').addEventListener('click', function() {
+  this.textContent = '⬛ Stopped';
+  this.classList.add('opacity-60');
+  
+  // Pause any running automation workflow
+  if (automationWorkflowInterval) {
+    clearInterval(automationWorkflowInterval);
+    automationWorkflowInterval = null;
+    document.getElementById('run-workflow-btn').innerHTML = '<span class="material-symbols-outlined text-[16px]">play_arrow</span> Run Workflow';
+    const log = document.getElementById('workflow-log');
+    log.innerHTML += '<div class="text-semantic-red font-bold">[STOP] Execution halted manually.</div>';
+  }
+
+  setTimeout(() => {
+    this.innerHTML = '<span class="material-symbols-outlined text-[16px]">stop</span> Stop All';
+    this.classList.remove('opacity-60');
+  }, 2000);
+});
+
+// API Key UI Helpers
+function toggleKeyVisibility(id) {
+  const input = document.getElementById(id);
+  const btn = input.nextElementSibling;
+  const icon = btn.querySelector('.material-symbols-outlined');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.textContent = 'visibility_off';
+  } else {
+    input.type = 'password';
+    icon.textContent = 'visibility';
+  }
+}
+function saveKey(id) {
+  const btn = document.querySelector(`button[onclick="saveKey('${id}')"]`);
+  const originalText = btn.textContent;
+  btn.textContent = 'Saved ✓';
+  btn.classList.remove('bg-primary', 'text-surface');
+  btn.classList.add('bg-[#30c97e]', 'text-[#0c0c10]');
+  setTimeout(() => {
+    btn.textContent = originalText;
+    btn.classList.add('bg-primary', 'text-surface');
+    btn.classList.remove('bg-[#30c97e]', 'text-[#0c0c10]');
+  }, 2000);
+}
+
+// Drawer settings
+function openVaultDrawer() {
+  const drawer = document.getElementById('room-settings-drawer');
+  const panel = document.getElementById('drawer-panel');
+  drawer.classList.remove('hidden');
+  drawer.classList.add('flex');
+  setTimeout(() => {
+    panel.classList.remove('translate-x-full');
+  }, 10);
+}
+function closeVaultDrawer() {
+  const drawer = document.getElementById('room-settings-drawer');
+  const panel = document.getElementById('drawer-panel');
+  panel.classList.add('translate-x-full');
+  setTimeout(() => {
+    drawer.classList.add('hidden');
+    drawer.classList.remove('flex');
+  }, 300);
+}
+function saveDrawerSettings() {
+  closeVaultDrawer();
+  const log = document.getElementById('workflow-log');
+  if (log) {
+    log.innerHTML += '<div class="text-semantic-green">[SYSTEM] Room security policy updated.</div>';
+  }
+}
+
+// Document Studio Draft Layers logic
+const layerContent = {
+  original: `<p class="mb-4 font-serif text-lg font-bold text-white">Q3 Strategic Energy Deployment Initiative</p>
+             <p class="mb-4">This document delineates the operational roadmap for silicon-anode solid-state integration. We project a standard efficiency boost under normal discharge profiles.</p>`,
+  ai: `<p class="mb-4 font-serif text-lg font-bold text-white">Q3 Strategic Energy Deployment Initiative</p>
+       <p class="mb-4">This document delineates the operational roadmap for silicon-anode solid-state integration. <span class="bg-primary/20 border-b border-primary text-white" id="draft-highlight-block">Based on early testing of prototype B-49, we project a 28% efficiency boost under normal discharge profiles.</span></p>
+       <p class="mb-4">However, thermal runaway threshold tests must be strictly adhered to under local safety rooms protocol to secure regulatory clearance.</p>`,
+  factcheck: `<p class="mb-4 font-serif text-lg font-bold text-white">Q3 Strategic Energy Deployment Initiative</p>
+              <p class="mb-4">This document delineates the operational roadmap for silicon-anode solid-state integration. <span class="bg-semantic-green/20 border-b border-semantic-green text-white">Based on early testing of prototype B-49 [VERIFIED], we project a 28% efficiency boost under normal discharge profiles.</span></p>
+              <p class="mb-4">However, thermal runaway threshold tests must be strictly adhered to under local safety rooms protocol to secure regulatory clearance <span class="bg-semantic-amber/20 border-b border-semantic-amber text-white">[REQUIRES CONTEXT: OSHA Standards]</span>.</p>`,
+  final: `<p class="mb-4 font-serif text-lg font-bold text-white">Q3 Strategic Energy Deployment Initiative (Final Build)</p>
+          <p class="mb-4">This document delineates the operational roadmap for silicon-anode solid-state integration. Based on early testing of prototype B-49, we project a 28% efficiency boost under normal discharge profiles.</p>
+          <p class="mb-4">However, thermal runaway threshold tests must be strictly adhered to under local safety rooms protocol to secure regulatory clearance in accordance with OSHA requirements.</p>`
+};
+
+function setDraftLayer(layer) {
+  // Toggle buttons highlight
+  document.querySelectorAll('#screen-documents .bg-primary').forEach(el => {
+    el.classList.remove('bg-primary', 'text-background', 'font-semibold');
+    el.classList.add('text-on-surface-variant', 'hover:text-white');
+  });
+  const targetBtn = document.getElementById('layer-' + layer);
+  if (targetBtn) {
+    targetBtn.classList.add('bg-primary', 'text-background', 'font-semibold');
+    targetBtn.classList.remove('text-on-surface-variant', 'hover:text-white');
+  }
+  // Change document content
+  const editor = document.getElementById('document-editor');
+  if (editor && layerContent[layer]) {
+    editor.innerHTML = layerContent[layer];
+  }
+}
+
+function applyToneTemplate(template) {
+  const editor = document.getElementById('document-editor');
+  const log = document.getElementById('workflow-log');
+  if (template === 'academic') {
+    editor.innerHTML = `<p class="mb-4 font-serif text-lg font-bold text-white">A Quantitative Analysis of Q3 Solid-State Battery Integrations</p>
+                         <p class="mb-4">This study systematically explores the electrochemical metrics of silicon-anode configurations. Practical experiments conducted on cell B-49 yield a substantial 28% increase in discharge efficiency compared to industry benchmarks.</p>`;
+  } else {
+    editor.innerHTML = `<p class="mb-4 font-serif text-lg font-bold text-white">Executive Briefing: B-49 Battery Roadmap</p>
+                         <p class="mb-4">Asterion R&D has successfully validated B-49 solid-state cells, delivering 28% higher productivity. Recommended for Q3 product integration.</p>`;
+  }
+}
+
+// Image Studio Drawing Helpers
+function drawToCanvas(recipe) {
+  const canvas = document.getElementById('studio-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  if (recipe === 'avatar') {
+    // Gradient background
+    const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    grad.addColorStop(0, '#7c6dfa');
+    grad.addColorStop(1, '#2ec4a9');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Abstract face outline
+    ctx.fillStyle = '#131318';
+    ctx.beginPath();
+    ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#e4e1e7';
+    ctx.stroke();
+    
+    // Abstract eyes
+    ctx.fillStyle = '#2ec4a9';
+    ctx.beginPath();
+    ctx.arc(canvas.width/2 - 30, canvas.height/2 - 20, 10, 0, Math.PI * 2);
+    ctx.arc(canvas.width/2 + 30, canvas.height/2 - 20, 10, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (recipe === 'banner') {
+    // Tech landscape banner
+    ctx.fillStyle = '#1c1c24';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.strokeStyle = '#7c6dfa';
+    ctx.lineWidth = 2;
+    // Draw grid lines
+    for(let i=0; i<canvas.width; i+=40) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i, canvas.height);
+      ctx.stroke();
+    }
+    // Large neon circle
+    ctx.beginPath();
+    ctx.arc(canvas.width/2, canvas.height/2, 60, 0, Math.PI * 2);
+    ctx.strokeStyle = '#2ec4a9';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+  } else if (recipe === 'landscape') {
+    ctx.fillStyle = '#0c0c10';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Draw horizon
+    ctx.fillStyle = '#30c97e';
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height - 80);
+    ctx.quadraticCurveTo(canvas.width/2, canvas.height - 150, canvas.width, canvas.height - 80);
+    ctx.lineTo(canvas.width, canvas.height);
+    ctx.lineTo(0, canvas.height);
+    ctx.fill();
+    // Sun
+    ctx.beginPath();
+    ctx.arc(120, 100, 30, 0, Math.PI*2);
+    ctx.fillStyle = '#f5b831';
+    ctx.fill();
+  }
+}
+
+// Initial draw on load
+setTimeout(() => drawToCanvas('avatar'), 500);
+
+// Voice Mode Audio Recording Waveform simulation
+let voiceRecording = false;
+let voiceAnimationFrame = null;
+
+document.getElementById('voice-record-btn').addEventListener('click', function() {
+  const icon = document.getElementById('voice-record-icon');
+  const transcript = document.getElementById('voice-transcript');
+  const r1 = document.getElementById('voice-ripple-1');
+  const r2 = document.getElementById('voice-ripple-2');
+
+  voiceRecording = !voiceRecording;
+
+  if (voiceRecording) {
+    icon.textContent = 'pause';
+    this.classList.add('bg-semantic-red', 'shadow-[0_0_20px_rgba(242,106,106,0.5)]');
+    this.classList.remove('bg-primary', 'shadow-[0_0_20px_rgba(124,109,250,0.4)]');
+    
+    // Add ripple effects
+    r1.classList.remove('opacity-0', 'scale-100');
+    r1.classList.add('opacity-100', 'scale-125');
+    r2.classList.remove('opacity-0', 'scale-100');
+    r2.classList.add('opacity-100', 'scale-150');
+
+    transcript.textContent = "Listening to local speech input...";
+    simulateVoiceTranscript();
+    drawWaveform();
+  } else {
+    icon.textContent = 'mic';
+    this.classList.remove('bg-semantic-red', 'shadow-[0_0_20px_rgba(242,106,106,0.5)]');
+    this.classList.add('bg-primary', 'shadow-[0_0_20px_rgba(124,109,250,0.4)]');
+    
+    // Reset ripples
+    r1.classList.add('opacity-0', 'scale-100');
+    r1.classList.remove('opacity-100', 'scale-125');
+    r2.classList.add('opacity-0', 'scale-100');
+    r2.classList.remove('opacity-100', 'scale-150');
+
+    cancelAnimationFrame(voiceAnimationFrame);
+    clearWaveform();
+  }
+});
+
+// Transcript simulation
+const transcriptSentences = [
+  "Testing local voice models... connection nominal.",
+  "Analyzing the RAG pipeline integration specs.",
+  "Finalizing local Whisper transcript blocks.",
+  "Secure vault rooms successfully loaded."
+];
+function simulateVoiceTranscript() {
+  if (!voiceRecording) return;
+  const tr = document.getElementById('voice-transcript');
+  const sentence = transcriptSentences[Math.floor(Math.random() * transcriptSentences.length)];
+  tr.innerHTML = `<span class="text-white">${sentence}</span>`;
+  setTimeout(simulateVoiceTranscript, 3000);
+}
+
+// Waveform draw
+function drawWaveform() {
+  const canvas = document.getElementById('voice-waveform');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#7c6dfa';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    const time = Date.now() * 0.005;
+    for (let x = 0; x < canvas.width; x++) {
+      const y = canvas.height/2 + Math.sin(x * 0.03 + time) * 15 * Math.sin(x * 0.005);
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    voiceAnimationFrame = requestAnimationFrame(render);
+  }
+  render();
+}
+
+function clearWaveform() {
+  const canvas = document.getElementById('voice-waveform');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#2a2a36';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, canvas.height/2);
+  ctx.lineTo(canvas.width, canvas.height/2);
+  ctx.stroke();
+}
+
+// Voice modes interactive toggling
+document.getElementById('voice-mode-note').addEventListener('click', function() { toggleVoiceMode(this); });
+document.getElementById('voice-mode-meeting').addEventListener('click', function() { toggleVoiceMode(this); });
+document.getElementById('voice-mode-lecture').addEventListener('click', function() { toggleVoiceMode(this); });
+
+function toggleVoiceMode(btn) {
+  document.querySelectorAll('#screen-voice .bg-primary').forEach(el => {
+    el.classList.remove('bg-primary', 'text-background', 'font-semibold');
+    el.classList.add('text-on-surface-variant', 'hover:text-on-surface');
+  });
+  btn.classList.add('bg-primary', 'text-background', 'font-semibold');
+  btn.classList.remove('text-on-surface-variant', 'hover:text-on-surface');
+}
+
+// Automation Board Simulation Engine
+let automationWorkflowInterval = null;
+let currentWorkflowIndex = 0;
+const workflowSteps = ['Trigger', 'Context', 'Model', 'Tools', 'Review', 'Output'];
+
+document.getElementById('run-workflow-btn').addEventListener('click', function() {
+  if (automationWorkflowInterval) {
+    // Toggle/Stop execution
+    clearInterval(automationWorkflowInterval);
+    automationWorkflowInterval = null;
+    this.innerHTML = '<span class="material-symbols-outlined text-[16px]">play_arrow</span> Run Workflow';
+    return;
+  }
+  
+  currentWorkflowIndex = 0;
+  this.innerHTML = '<span class="material-symbols-outlined text-[16px]">pause</span> Pause Runner';
+  const log = document.getElementById('workflow-log');
+  log.innerHTML = '<div class="text-primary font-bold">[START] Initiating workflow execution...</div>';
+  
+  resetFlowNodes();
+  runNextWorkflowStep();
+});
+
+function runNextWorkflowStep() {
+  if (currentWorkflowIndex >= workflowSteps.length) {
+    clearInterval(automationWorkflowInterval);
+    automationWorkflowInterval = null;
+    document.getElementById('run-workflow-btn').innerHTML = '<span class="material-symbols-outlined text-[16px]">play_arrow</span> Run Workflow';
+    return;
+  }
+
+  const step = workflowSteps[currentWorkflowIndex];
+  const node = document.getElementById('flow-' + step);
+  const log = document.getElementById('workflow-log');
+  
+  if (step === 'Review') {
+    // Pause on Human Approval Gate
+    node.classList.add('border-semantic-red', 'bg-semantic-red/10', 'shadow-[0_0_15px_rgba(242,106,106,0.3)]');
+    log.innerHTML += `<div class="text-semantic-amber font-bold">[GATE] Reached Human Approval Gate. Paused. Requires confirmation...</div>`;
+    document.getElementById('workflow-confirm-btn').classList.remove('hidden');
+    
+    // Pause runner execution interval
+    clearInterval(automationWorkflowInterval);
+    automationWorkflowInterval = null;
+    document.getElementById('run-workflow-btn').innerHTML = '<span class="material-symbols-outlined text-[16px]">play_arrow</span> Run Workflow';
+  } else {
+    // standard node processing
+    node.classList.add('border-primary', 'bg-primary/5', 'shadow-[0_0_15px_rgba(124,109,250,0.2)]');
+    log.innerHTML += `<div>[RUN] Executed block: <span class="text-white">${step}</span> successfully.</div>`;
+    currentWorkflowIndex++;
+    
+    automationWorkflowInterval = setTimeout(runNextWorkflowStep, 1500);
+  }
+}
+
+document.getElementById('workflow-confirm-btn').addEventListener('click', function() {
+  this.classList.add('hidden');
+  const node = document.getElementById('flow-Review');
+  const log = document.getElementById('workflow-log');
+  
+  // Highlight node as confirmed/green
+  node.classList.remove('border-semantic-red', 'bg-semantic-red/10', 'shadow-[0_0_15px_rgba(242,106,106,0.3)]');
+  node.classList.add('border-semantic-green', 'bg-semantic-green/5');
+  log.innerHTML += `<div class="text-semantic-green font-bold">[GATE] Action confirmed by WebSocket review payload. Resuming...</div>`;
+  
+  currentWorkflowIndex++;
+  // Resume loop
+  automationWorkflowInterval = setTimeout(runNextWorkflowStep, 1000);
+});
+
+function resetFlowNodes() {
+  workflowSteps.forEach(step => {
+    const node = document.getElementById('flow-' + step);
+    node.classList.remove('border-primary', 'bg-primary/5', 'shadow-[0_0_15px_rgba(124,109,250,0.2)]', 'border-semantic-green', 'bg-semantic-green/5');
+    if (step === 'Review') {
+      node.classList.add('border-semantic-red', 'bg-semantic-red/5');
+      node.classList.remove('border-semantic-red', 'bg-semantic-red/10', 'shadow-[0_0_15px_rgba(242,106,106,0.3)]');
+      document.getElementById('workflow-confirm-btn').classList.add('hidden');
+    }
+  });
+}
+
+// Drag & Drop interactive events for Automation Board
+let dragSourceElement = null;
+
+function handleDragStart(e) {
+  dragSourceElement = this;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/html', this.innerHTML);
+  e.dataTransfer.setData('text/plain', this.id);
+  this.classList.add('opacity-40');
+  
+  const log = document.getElementById('workflow-log');
+  log.innerHTML += `<div class="text-[#7c6dfa]">[DRAG] Started dragging block: ${this.id.replace('flow-', '')}</div>`;
+}
+
+function handleDragOver(e) {
+  if (e.preventDefault) {
+    e.preventDefault();
+  }
+  e.dataTransfer.dropEffect = 'move';
+  return false;
+}
+
+function handleDragLeave(e) {
+  this.classList.remove('bg-surface2');
+}
+
+function handleDrop(e) {
+  e.stopPropagation();
+  e.preventDefault();
+  
+  if (dragSourceElement !== this) {
+    // Swap HTML contents
+    const sourceId = e.dataTransfer.getData('text/plain');
+    const sourceNode = document.getElementById(sourceId);
+    
+    // Swap inner content
+    const tempHTML = this.innerHTML;
+    const tempClassList = [...this.classList];
+    const tempId = this.id;
+    
+    this.innerHTML = sourceNode.innerHTML;
+    this.id = sourceNode.id;
+    this.classList.value = sourceNode.classList.value;
+    
+    sourceNode.innerHTML = tempHTML;
+    sourceNode.id = tempId;
+    sourceNode.classList.value = tempClassList.join(' ');
+    
+    const log = document.getElementById('workflow-log');
+    log.innerHTML += `<div class="text-[#2ec4a9]">[DROP] Reordered blocks in pipeline chain.</div>`;
+    
+    // Rebind workflow review button event if needed
+    const confirmBtn = document.getElementById('workflow-confirm-btn');
+    if (confirmBtn) {
+      confirmBtn.replaceWith(confirmBtn.cloneNode(true));
+      document.getElementById('workflow-confirm-btn').addEventListener('click', function() {
+        this.classList.add('hidden');
+        const node = document.getElementById('flow-Review');
+        const log = document.getElementById('workflow-log');
+        node.classList.remove('border-semantic-red', 'bg-semantic-red/10', 'shadow-[0_0_15px_rgba(242,106,106,0.3)]');
+        node.classList.add('border-semantic-green', 'bg-semantic-green/5');
+        log.innerHTML += `<div class="text-semantic-green font-bold">[GATE] Action confirmed by WebSocket review payload. Resuming...</div>`;
+        currentWorkflowIndex++;
+        automationWorkflowInterval = setTimeout(runNextWorkflowStep, 1000);
+      });
+    }
+  }
+  return false;
+}
+
+function handleDragEnd(e) {
+  this.classList.remove('opacity-40');
+  document.querySelectorAll('#workflow-chain-container [draggable="true"]').forEach(el => {
+    el.classList.remove('opacity-40');
+  });
+}
+
+function setupDragAndDrop() {
+  const items = document.querySelectorAll('#workflow-chain-container [draggable="true"]');
+  items.forEach(item => {
+    item.addEventListener('dragstart', handleDragStart, false);
+    item.addEventListener('dragover', handleDragOver, false);
+    item.addEventListener('dragleave', handleDragLeave, false);
+    item.addEventListener('drop', handleDrop, false);
+    item.addEventListener('dragend', handleDragEnd, false);
+  });
+}
+
+setTimeout(setupDragAndDrop, 1000);
+
+// Command Palette Actions list
+const commandActions = [
+  { id: 'go-home', title: 'Go to Command Center (Home)', icon: 'home', action: () => navigate('home') },
+  { id: 'go-chat', title: 'Open Smart Chat', icon: 'chat_bubble', action: () => navigate('chat') },
+  { id: 'go-research', title: 'Open Research Studio', icon: 'science', action: () => navigate('research') },
+  { id: 'go-documents', title: 'Open Document Studio', icon: 'description', action: () => navigate('documents') },
+  { id: 'go-vault', title: 'Open Knowledge Vault', icon: 'lock', action: () => navigate('vault') },
+  { id: 'go-agents', title: 'Open Agent Lab', icon: 'smart_toy', action: () => navigate('agents') },
+  { id: 'go-images', title: 'Open Image Studio', icon: 'image', action: () => navigate('images') },
+  { id: 'go-voice', title: 'Open Voice Mode', icon: 'settings_voice', action: () => navigate('voice') },
+  { id: 'go-automation', title: 'Open Automation Board', icon: 'bolt', action: () => navigate('automation') },
+  { id: 'go-settings', title: 'Open Settings', icon: 'settings', action: () => navigate('settings') },
+  { id: 'stop-all', title: 'Trigger Red Button (Stop All)', icon: 'stop', action: () => {
+    document.getElementById('stop-all-btn').click();
+  }}
+];
+
+let activePaletteIndex = 0;
+let filteredActions = [...commandActions];
+
+function openCommandPalette() {
+  const palette = document.getElementById('command-palette');
+  const modal = document.getElementById('command-palette-modal');
+  const input = document.getElementById('command-palette-input');
+  
+  palette.classList.remove('hidden');
+  palette.classList.add('flex');
+  setTimeout(() => {
+    modal.classList.remove('scale-95', 'opacity-0');
+    modal.classList.add('scale-100', 'opacity-100');
+  }, 10);
+  
+  input.value = '';
+  input.focus();
+  activePaletteIndex = 0;
+  filterActions('');
+}
+
+function closeCommandPalette() {
+  const palette = document.getElementById('command-palette');
+  const modal = document.getElementById('command-palette-modal');
+  
+  modal.classList.remove('scale-100', 'opacity-100');
+  modal.classList.add('scale-95', 'opacity-0');
+  setTimeout(() => {
+    palette.classList.add('hidden');
+    palette.classList.remove('flex');
+  }, 200);
+}
+
+function filterActions(query) {
+  const q = query.toLowerCase();
+  filteredActions = commandActions.filter(action => action.title.toLowerCase().includes(q));
+  activePaletteIndex = Math.min(activePaletteIndex, Math.max(0, filteredActions.length - 1));
+  renderActions();
+}
+
+function renderActions() {
+  const list = document.getElementById('command-palette-list');
+  list.innerHTML = '';
+  if (filteredActions.length === 0) {
+    list.innerHTML = '<div class="p-4 text-center text-xs text-on-surface-variant/50 font-sans">No actions found.</div>';
+    return;
+  }
+  
+  filteredActions.forEach((action, idx) => {
+    const item = document.createElement('button');
+    item.className = `w-full text-left p-3 rounded-lg flex items-center gap-3 text-sm font-semibold transition-colors ${idx === activePaletteIndex ? 'bg-primary text-background' : 'text-on-surface-variant hover:bg-surface2'}`;
+    item.innerHTML = `
+      <span class="material-symbols-outlined text-[18px]">${action.icon}</span>
+      <span class="flex-grow">${action.title}</span>
+    `;
+    item.onclick = () => {
+      action.action();
+      closeCommandPalette();
+    };
+    list.appendChild(item);
+  });
+}
+
+// Keybindings
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    openCommandPalette();
+  }
+  
+  // Cmd+F or Ctrl+F focuses semantic search in Knowledge Vault
+  if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+    e.preventDefault();
+    navigate('vault');
+    setTimeout(() => {
+      const searchInput = document.getElementById('vault-search-bar');
+      if (searchInput) searchInput.focus();
+    }, 50);
+  }
+  
+  const palette = document.getElementById('command-palette');
+  if (!palette.classList.contains('hidden')) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeCommandPalette();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activePaletteIndex = (activePaletteIndex + 1) % filteredActions.length;
+      renderActions();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activePaletteIndex = (activePaletteIndex - 1 + filteredActions.length) % filteredActions.length;
+      renderActions();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filteredActions[activePaletteIndex]) {
+        filteredActions[activePaletteIndex].action();
+        closeCommandPalette();
+      }
+    }
+  }
+});
+
+document.getElementById('command-palette-input').addEventListener('input', (e) => {
+  filterActions(e.target.value);
+});
+
+document.getElementById('command-palette').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('command-palette')) {
+    closeCommandPalette();
+  }
+});
+
+document.getElementById('cmd-k-trigger').addEventListener('click', () => {
+  openCommandPalette();
+});
+
+// === NEW INTERACTIVE SIMULATION LOGIC ===
+
+// Model Autopilot Configuration Data
+const autopilotData = {
+  private: {
+    badge: '<span class="w-2 h-2 rounded-full bg-semantic-green animate-pulse"></span><span class="font-mono text-[9px] text-semantic-green font-bold">LOCAL</span>',
+    badgeClass: 'bg-semantic-green/10 border-semantic-green/20 text-semantic-green',
+    dotColor: 'bg-semantic-green',
+    textColor: 'text-semantic-green',
+    modeText: 'LOCAL MODE',
+    model: 'Llama-3 70B',
+    speed: '65 tok/s',
+    vram: '60%',
+    ram: 'RAM: 18.5GB / 32GB',
+    popoverSec: '🟢 Secured',
+    popoverRouting: 'Local-Only (Airgapped)',
+    popoverLocal: '100% (Secured)',
+    popoverExternal: '0% (None)',
+    popoverInfo: 'No private data or model queries are leaving your physical machine. Outbound networking is fully sandboxed.'
+  },
+  balanced: {
+    badge: '<span class="w-2 h-2 rounded-full bg-semantic-amber animate-pulse"></span><span class="font-mono text-[9px] text-semantic-amber font-bold">HYBRID</span>',
+    badgeClass: 'bg-semantic-amber/10 border-semantic-amber/20 text-semantic-amber',
+    dotColor: 'bg-semantic-amber',
+    textColor: 'text-semantic-amber',
+    modeText: 'HYBRID MODE',
+    model: 'Mistral 8x7B',
+    speed: '45 tok/s',
+    vram: '40%',
+    ram: 'RAM: 12.1GB / 32GB',
+    popoverSec: '🟡 Guarded',
+    popoverRouting: 'Hybrid Routing (Selective)',
+    popoverLocal: '85% (Vault Queries)',
+    popoverExternal: '15% (External APIs)',
+    popoverInfo: 'Sensitive search indexes are kept local. Complex reasoning queries are securely piped to external models with telemetry stripped.'
+  },
+  fast: {
+    badge: '<span class="w-2 h-2 rounded-full bg-semantic-red animate-pulse"></span><span class="font-mono text-[9px] text-semantic-red font-bold">EXTERNAL</span>',
+    badgeClass: 'bg-semantic-red/10 border-semantic-red/20 text-semantic-red',
+    dotColor: 'bg-semantic-red',
+    textColor: 'text-semantic-red',
+    modeText: 'API MODE',
+    model: 'GPT-4o API',
+    speed: '110 tok/s',
+    vram: '0%',
+    ram: 'RAM: 4.8GB / 32GB',
+    popoverSec: '🔴 Shared',
+    popoverRouting: 'Cloud Provider API (Direct)',
+    popoverLocal: '0% (Direct Pipe)',
+    popoverExternal: '100% (Cloud API)',
+    popoverInfo: 'Data is transmitted to cloud APIs. Privacy controls are restricted. Telemetry is active. Avoid uploading confidential files in this mode.'
+  }
+};
+
+function setAutopilotMode(mode) {
+  // Toggle buttons styling in composer
+  ['private', 'balanced', 'fast'].forEach(m => {
+    const btn = document.getElementById('ap-' + m);
+    if (btn) {
+      if (m === mode) {
+        btn.className = 'px-2 py-0.5 bg-primary text-background font-bold rounded transition-all';
+      } else {
+        btn.className = 'px-2 py-0.5 text-on-surface-variant hover:text-white rounded transition-all';
+      }
+    }
+  });
+
+  const data = autopilotData[mode];
+  if (!data) return;
+
+  // Update composer badge
+  const badge = document.getElementById('composer-privacy-badge');
+  if (badge) {
+    badge.innerHTML = data.badge;
+    badge.className = `flex items-center gap-1.5 px-2.5 py-1 rounded border ${data.badgeClass}`;
+  }
+
+  // Update status bar
+  const dot = document.getElementById('status-dot');
+  if (dot) {
+    dot.className = `w-2 h-2 rounded-full ${data.dotColor} pulse-dot`;
+  }
+  const text = document.getElementById('status-text');
+  if (text) {
+    text.innerText = data.modeText;
+    text.className = `${data.textColor} uppercase font-bold tracking-wider`;
+  }
+  const model = document.getElementById('status-model');
+  if (model) {
+    model.innerText = data.model;
+  }
+  const vramBar = document.getElementById('status-vram-bar');
+  if (vramBar) {
+    vramBar.style.width = data.vram;
+  }
+  const speed = document.getElementById('status-speed');
+  if (speed) {
+    speed.innerText = data.speed;
+  }
+  const ram = document.getElementById('status-ram');
+  if (ram) {
+    ram.innerText = data.ram;
+  }
+
+  // Update popover content
+  const popSec = document.getElementById('popover-sec-status');
+  if (popSec) {
+    popSec.className = `${data.textColor} font-bold`;
+    popSec.innerText = data.popoverSec;
+  }
+  const popRoute = document.getElementById('popover-routing');
+  if (popRoute) popRoute.innerText = data.popoverRouting;
+
+  const popLocal = document.getElementById('popover-local-req');
+  if (popLocal) {
+    popLocal.className = `${data.textColor} font-bold`;
+    popLocal.innerText = data.popoverLocal;
+  }
+  const popExt = document.getElementById('popover-external-req');
+  if (popExt) popExt.innerText = data.popoverExternal;
+
+  const popover = document.getElementById('privacy-detail-popover');
+  if (popover) {
+    popover.querySelector('.border-t').innerText = data.popoverInfo;
+  }
+}
+
+// Privacy Radar Popover Toggle
+function togglePrivacyDetail(e) {
+  if (e) e.stopPropagation();
+  const popover = document.getElementById('privacy-detail-popover');
+  if (!popover) return;
+  if (popover.classList.contains('hidden')) {
+    popover.classList.remove('hidden');
+    popover.classList.add('flex');
+  } else {
+    popover.classList.add('hidden');
+    popover.classList.remove('flex');
+  }
+}
+
+// Close popover when clicking outside
+document.addEventListener('click', function(e) {
+  const popover = document.getElementById('privacy-detail-popover');
+  const trigger = document.getElementById('status-dot');
+  const triggerText = document.getElementById('status-text');
+  if (popover && !popover.classList.contains('hidden') && !popover.contains(e.target) && e.target !== trigger && e.target !== triggerText) {
+    popover.classList.add('hidden');
+    popover.classList.remove('flex');
+  }
+});
+
+// Dynamic Chat Composer Handler
+function handleSendMessage() {
+  const input = document.getElementById('chat-composer-input');
+  if (!input) return;
+  const query = input.value.trim();
+  if (!query) return;
+
+  // Clear input
+  input.value = '';
+
+  // Append user message
+  const container = document.getElementById('chat-messages-container');
+  if (!container) return;
+  
+  const userMsgHtml = `
+    <div class="flex gap-4 max-w-3xl mx-auto w-full" style="animation: fadeIn 0.2s ease-out;">
+      <div class="w-8 h-8 rounded-full bg-surface2 border border-outline-variant flex items-center justify-center shrink-0 mt-1"><span class="text-xs text-on-surface">U</span></div>
+      <div class="flex-1 space-y-1">
+        <div class="inline-block px-2 py-0.5 rounded bg-surface2 border border-outline-variant font-mono text-[10px] text-on-surface-variant">USER</div>
+        <div class="font-sans text-sm text-on-surface">${escapeHtml(query)}</div>
+      </div>
+    </div>
+  `;
+  container.innerHTML += userMsgHtml;
+  container.scrollTop = container.scrollHeight;
+
+  // Simulate thinking state
+  const thinkingId = 'thinking-' + Date.now();
+  const thinkingHtml = `
+    <div id="${thinkingId}" class="flex gap-4 max-w-3xl mx-auto w-full animate-pulse">
+      <div class="w-8 h-8 rounded bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0 mt-1"><span class="material-symbols-outlined text-primary text-[20px]">smart_toy</span></div>
+      <div class="flex-1 space-y-1">
+        <div class="inline-block px-2 py-0.5 rounded bg-primary/10 border border-primary/20 font-mono text-[10px] text-primary">ASTERION</div>
+        <div class="text-xs text-on-surface-variant italic">Asterion is formulating response...</div>
+      </div>
+    </div>
+  `;
+  container.innerHTML += thinkingHtml;
+  container.scrollTop = container.scrollHeight;
+
+  setTimeout(() => {
+    // Remove thinking indicator
+    const thinkingNode = document.getElementById(thinkingId);
+    if (thinkingNode) thinkingNode.remove();
+
+    // Generate assistant blocks based on query
+    let assistantBlocks = '';
+    const qLower = query.toLowerCase();
+
+    // Check currently selected autopilot mode to add context to response
+    let modeLabel = 'LOCAL';
+    let modeColor = 'text-semantic-green';
+    const activeApBtn = document.querySelector('[id^="ap-"].bg-primary');
+    if (activeApBtn) {
+      if (activeApBtn.id === 'ap-balanced') {
+        modeLabel = 'HYBRID';
+        modeColor = 'text-semantic-amber';
+      } else if (activeApBtn.id === 'ap-fast') {
+        modeLabel = 'EXTERNAL';
+        modeColor = 'text-semantic-red';
+      }
+    }
+
+    if (qLower.includes('code') || qLower.includes('redis') || qLower.includes('config') || qLower.includes('python')) {
+      // CODE RESPONSE BLOCK
+      assistantBlocks = `
+        <div class="border border-outline-variant rounded-lg bg-surface/50 p-4 space-y-3">
+          <div class="font-sans text-[11px] font-bold text-on-surface-variant uppercase flex items-center justify-between border-b border-outline-variant pb-2">
+            <span>Optimized Cache Configuration</span>
+            <span class="${modeColor}">${modeLabel} EXECUTED</span>
+          </div>
+          <p class="text-sm text-on-surface leading-relaxed">Here is the proposed configuration to resolve Redis connection leaks in your service:</p>
+          <div class="font-mono text-xs text-on-surface-variant bg-background p-3 rounded border border-outline-variant relative group">
+            <button onclick="copyCodeText(this)" class="absolute right-2 top-2 bg-surface border border-outline-variant hover:border-primary text-on-surface px-2 py-0.5 rounded text-[10px] transition-all flex items-center gap-1">
+              <span class="material-symbols-outlined text-[12px]">content_copy</span>Copy
+            </button>
+            <pre class="overflow-x-auto text-[11px] leading-relaxed"><code># optimized_redis.py
+import redis
+
+pool = redis.ConnectionPool(
+    host='localhost',
+    port=6379,
+    max_connections=100,
+    socket_timeout=3.0,
+    retry_on_timeout=True
+)
+r = redis.Redis(connection_pool=pool)</code></pre>
+          </div>
+        </div>
+      `;
+    } else if (qLower.includes('compare') || qLower.includes('metric') || qLower.includes('table')) {
+      // TABLE RESPONSE BLOCK
+      assistantBlocks = `
+        <div class="border border-outline-variant rounded-lg bg-surface/50 p-4 space-y-3">
+          <div class="font-sans text-[11px] font-bold text-on-surface-variant uppercase flex items-center justify-between border-b border-outline-variant pb-2">
+            <span>Model Performance Benchmarks</span>
+            <span class="${modeColor}">${modeLabel} ANALYZED</span>
+          </div>
+          <p class="text-sm text-on-surface leading-relaxed">A comparison of inference response speed and VRAM overheads for local deployments:</p>
+          <div class="overflow-x-auto border border-outline-variant rounded-lg bg-surface2/30">
+            <table class="w-full text-left font-mono text-xs">
+              <thead class="bg-surface border-b border-outline-variant">
+                <tr>
+                  <th class="p-2">Model</th>
+                  <th class="p-2">VRAM</th>
+                  <th class="p-2 text-right">Tokens/sec</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b border-outline-variant/50">
+                  <td class="p-2">Llama-3 8B</td>
+                  <td class="p-2">5.4 GB</td>
+                  <td class="p-2 text-right text-semantic-green">75 tok/s</td>
+                </tr>
+                <tr class="border-b border-outline-variant/50">
+                  <td class="p-2">Llama-3 70B</td>
+                  <td class="p-2">40.2 GB</td>
+                  <td class="p-2 text-right text-semantic-amber">25 tok/s</td>
+                </tr>
+                <tr>
+                  <td class="p-2">Mistral 7B</td>
+                  <td class="p-2">4.8 GB</td>
+                  <td class="p-2 text-right text-semantic-green">82 tok/s</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    } else if (qLower.includes('source') || qLower.includes('document') || qLower.includes('vault') || qLower.includes('pdf')) {
+      // SOURCE CARD RESPONSE BLOCK
+      assistantBlocks = `
+        <div class="border border-outline-variant rounded-lg bg-surface/50 p-4 space-y-3">
+          <div class="font-sans text-[11px] font-bold text-on-surface-variant uppercase flex items-center justify-between border-b border-outline-variant pb-2">
+            <span>RAG Document Retrieval</span>
+            <span class="${modeColor}">${modeLabel} RAG</span>
+          </div>
+          <p class="text-sm text-on-surface leading-relaxed">I have successfully queried your <strong>General Room</strong> and retrieved matching references:</p>
+          <div class="bg-surface border border-outline-variant rounded-xl p-3 flex flex-col gap-2">
+            <div class="flex justify-between items-start">
+              <div>
+                <h5 class="text-xs font-semibold text-white">Q3_Battery_Data.pdf</h5>
+                <span class="text-[9px] text-on-surface-variant font-mono">Location: /Vault/General | Page: 12</span>
+              </div>
+              <span class="px-2 py-0.5 rounded bg-semantic-green/10 border border-semantic-green/20 text-semantic-green font-mono text-[9px] font-bold">🟢 98% Relevance</span>
+            </div>
+            <p class="text-xs text-on-surface-variant italic">"Capacity loss for cells tested under 45C accelerated cycles stays within nominal boundaries."</p>
+          </div>
+        </div>
+      `;
+    } else if (qLower.includes('agent') || qLower.includes('run') || qLower.includes('sim') || qLower.includes('test')) {
+      // ACTION CARD RESPONSE BLOCK
+      assistantBlocks = `
+        <div class="border border-outline-variant rounded-lg bg-surface/50 p-4 space-y-3">
+          <div class="font-sans text-[11px] font-bold text-on-surface-variant uppercase flex items-center justify-between border-b border-outline-variant pb-2">
+            <span>Agent Simulation Offer</span>
+            <span class="text-primary">AGENT GATE</span>
+          </div>
+          <p class="text-sm text-on-surface leading-relaxed">I can deploy an autonomous agent to scan your workspace directories and locate matching configuration files.</p>
+          <button onclick="navigate('agents')" class="w-full py-2 bg-primary text-background font-bold text-xs rounded-lg hover:bg-primary/95 transition-all flex items-center justify-center gap-1">
+            <span class="material-symbols-outlined text-[16px]">smart_toy</span> Deploy Agent in Simulator
+          </button>
+        </div>
+      `;
+    } else {
+      // DEFAULT RESPONSE BLOCK
+      assistantBlocks = `
+        <div class="border border-outline-variant rounded-lg bg-surface/50 p-4 space-y-2">
+          <div class="font-sans text-[11px] font-bold text-on-surface-variant uppercase flex items-center justify-between border-b border-outline-variant pb-2 mb-2">
+            <span>Response</span>
+            <span class="${modeColor}">${modeLabel}</span>
+          </div>
+          <p class="text-sm text-on-surface leading-relaxed">I am running in ${modeLabel.toLowerCase()} mode. I can help you search files in your Knowledge Vault, draft documents in Document Studio, run simulations in Agent Lab, or draw artwork in Image Studio.</p>
+          <p class="text-xs text-on-surface-variant">Try asking me about <strong>code</strong>, <strong>compare metrics</strong>, <strong>sources</strong>, or <strong>deploying an agent</strong> to see different rich UI block rendering.</p>
+        </div>
+      `;
+    }
+
+    const aiMsgHtml = `
+      <div class="flex gap-4 max-w-3xl mx-auto w-full" style="animation: fadeIn 0.2s ease-out;">
+        <div class="w-8 h-8 rounded bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0 mt-1"><span class="material-symbols-outlined text-primary text-[20px]">smart_toy</span></div>
+        <div class="flex-1 space-y-4">
+          <div class="inline-block px-2 py-0.5 rounded bg-primary/10 border border-primary/20 font-mono text-[10px] text-primary">ASTERION</div>
+          ${assistantBlocks}
+        </div>
+      </div>
+    `;
+    container.innerHTML += aiMsgHtml;
+    container.scrollTop = container.scrollHeight;
+  }, 1000);
+}
+
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function copyCodeText(btn) {
+  const pre = btn.nextElementSibling;
+  const code = pre.querySelector('code');
+  navigator.clipboard.writeText(code.textContent);
+  
+  const originalHtml = btn.innerHTML;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[12px]">check</span>Copied!';
+  btn.classList.add('border-semantic-green', 'text-semantic-green');
+  setTimeout(() => {
+    btn.innerHTML = originalHtml;
+    btn.classList.remove('border-semantic-green', 'text-semantic-green');
+  }, 2000);
+}
+
+// Knowledge Vault Fuzzy Filter Event
+document.getElementById('vault-search-bar').addEventListener('input', function(e) {
+  const query = e.target.value.toLowerCase().trim();
+  const fileGrid = document.querySelector('#screen-vault .grid');
+  if (!fileGrid) return;
+  const cards = fileGrid.querySelectorAll('.bento-card');
+
+  cards.forEach(card => {
+    const title = card.querySelector('span.font-mono').textContent.toLowerCase();
+    const summary = card.querySelector('p').textContent.toLowerCase();
+    
+    if (title.includes(query) || summary.includes(query)) {
+      card.style.display = 'flex';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+});
+
+// Image Studio Custom Generator
+document.getElementById('image-generate-btn').addEventListener('click', generateStudioImage);
+
+function generateStudioImage() {
+  const promptInput = document.getElementById('image-prompt-input');
+  if (!promptInput) return;
+  const prompt = promptInput.value.trim();
+  if (!prompt) return;
+
+  const canvas = document.getElementById('studio-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  
+  // Clear and draw pattern
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  let color1 = '#7c6dfa';
+  let color2 = '#2ec4a9';
+  let color3 = '#30c97e';
+  
+  const pLower = prompt.toLowerCase();
+  if (pLower.includes('neon') || pLower.includes('cyber') || pLower.includes('city')) {
+    color1 = '#f5b831';
+    color2 = '#f26a6a';
+    color3 = '#7c6dfa';
+  } else if (pLower.includes('dark') || pLower.includes('space') || pLower.includes('star')) {
+    color1 = '#131318';
+    color2 = '#7c6dfa';
+    color3 = '#0c0c10';
+  } else if (pLower.includes('green') || pLower.includes('nature') || pLower.includes('plant')) {
+    color1 = '#30c97e';
+    color2 = '#2ec4a9';
+    color3 = '#1c1c24';
+  }
+
+  // Draw gradient background
+  const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  grad.addColorStop(0, color1);
+  grad.addColorStop(0.5, color2);
+  grad.addColorStop(1, color3);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Draw geometry
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < 10; i++) {
+    ctx.beginPath();
+    ctx.arc(canvas.width / 2, canvas.height / 2, 20 + i * 18, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.beginPath();
+  ctx.moveTo(canvas.width / 2, 60);
+  ctx.lineTo(canvas.width - 120, canvas.height - 80);
+  ctx.lineTo(120, canvas.height - 80);
+  ctx.closePath();
+  ctx.fill();
+
+  // Draw title overlay
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '11px JetBrains Mono';
+  ctx.fillText(prompt.substring(0, 35) + (prompt.length > 35 ? '...' : ''), 20, canvas.height - 20);
+
+  // Add item to timeline
+  const timeline = document.getElementById('image-history-timeline');
+  if (timeline) {
+    const shortTitle = prompt.substring(0, 8) + (prompt.length > 8 ? '..' : '');
+    const newCard = document.createElement('div');
+    newCard.className = "w-20 h-14 bg-surface2 border border-outline-variant rounded flex items-center justify-center cursor-pointer hover:border-primary shrink-0 relative overflow-hidden";
+    newCard.innerHTML = `<div class="w-full h-full flex items-center justify-center text-[10px] font-semibold text-[#7c6dfa] bg-[#7c6dfa]/10 truncate px-1">${shortTitle}</div>`;
+    newCard.onclick = () => {
+      promptInput.value = prompt;
+      generateStudioImage();
+    };
+    timeline.insertBefore(newCard, timeline.firstChild);
+  }
+  
+  promptInput.value = '';
+}
+
+// Bind Chat inputs
+document.getElementById('chat-send-btn').addEventListener('click', handleSendMessage);
+document.getElementById('chat-composer-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    handleSendMessage();
+  }
+});
+
+// Setup default screen
+navigate('home');
+</script>
+</body>
+</html>

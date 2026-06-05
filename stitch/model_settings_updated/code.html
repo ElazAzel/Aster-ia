@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asterion AI - Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#ffb86e",
+                        "surface-dim": "#0c0c10",
+                        "on-primary": "#ffffff",
+                        "error-container": "#4a0005",
+                        "surface-container": "#131318",
+                        "on-primary-container": "#ffffff",
+                        "secondary-container": "#004023",
+                        "surface-container-lowest": "#060608",
+                        "on-surface": "#e4e1e7",
+                        "inverse-surface": "#e4e1e7",
+                        "surface-container-high": "#1c1c24",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed": "#e4dfff",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed-variant": "#3f29bc",
+                        "on-surface-variant": "#928ea0",
+                        "surface-container-low": "#131318",
+                        "outline": "#2a2a36",
+                        "secondary-fixed-dim": "#4edf92",
+                        "on-primary-fixed": "#160066",
+                        "tertiary-fixed": "#ffdcbd",
+                        "on-secondary-fixed-variant": "#00522e",
+                        "on-secondary-container": "#4edf92",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary-container": "#ffb86e",
+                        "error": "#ffb4ab",
+                        "secondary-fixed": "#6efdac",
+                        "surface-tint": "#7c6dfa",
+                        "surface-bright": "#2a2a36",
+                        "on-secondary-fixed": "#002110",
+                        "surface-variant": "#1c1c24",
+                        "surface-container-highest": "#2a2a36",
+                        "primary-fixed-dim": "#c6bfff",
+                        "inverse-on-surface": "#131318",
+                        "on-tertiary-fixed": "#2c1600",
+                        "on-background": "#e4e1e7",
+                        "outline-variant": "#2a2a36",
+                        "secondary": "#4edf92",
+                        "on-tertiary": "#492900",
+                        "tertiary-container": "#693c00",
+                        "inverse-primary": "#5846d4",
+                        "tertiary": "#ffb86e",
+                        "on-tertiary-fixed-variant": "#693c00",
+                        "background": "#0c0c10",
+                        "surface": "#0c0c10",
+                        "primary": "#7c6dfa",
+                        "primary-container": "#5846d4",
+                        "semantic-green": "#4edf92",
+                        "semantic-amber": "#ffb86e",
+                        "semantic-red": "#ffb4ab"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "8px",
+                        "xl": "14px",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-tight": "8px",
+                        "element-gap": "20px",
+                        "container-padding": "24px",
+                        "stack-loose": "12px",
+                        "lg": "24px",
+                        "gutter": "12px",
+                        "base": "4px",
+                        "md": "16px",
+                        "margin-desktop": "24px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "body-base": ["DM Sans"],
+                        "mono-base": ["JetBrains Mono"],
+                        "headline-sm": ["DM Sans"],
+                        "label-caps": ["DM Sans"],
+                        "mono-sm": ["JetBrains Mono"],
+                        "body-secondary": ["DM Sans"],
+                        "headline-md": ["DM Sans"],
+                        "body-sm": ["DM Sans"],
+                        "display-lg": ["DM Sans"],
+                        "code-mono": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-base": ["15px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "mono-base": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "mono-sm": ["11px", { "lineHeight": "16px", "fontWeight": "400" }],
+                        "body-secondary": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-sm": ["12px", { "lineHeight": "1.4", "letterSpacing": "0", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "code-mono": ["13px", { "lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #0c0c10; } /* Base dark */
+        .glass-panel {
+            background-color: #131318; /* Surface Tier 1 */
+            border: 1px solid #2a2a36;
+            border-radius: 14px;
+            padding: 24px;
+        }
+        .model-card {
+            background-color: #1c1c24;
+            border: 1px solid #2a2a36;
+            border-radius: 8px;
+            padding: 24px;
+        }
+        .hardware-accent {
+            border: 1px solid #2a2a36;
+        }
+        .hardware-accent:hover {
+            border-color: #7c6dfa; /* primary */
+        }
+        /* Custom Scrollbar for inner elements */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2a2a36; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: #7c6dfa; }
+    </style>
+</head>
+<body class="text-on-surface antialiased h-screen overflow-hidden flex font-body-base">
+<!-- SideNavBar (Shared Component JSON) -->
+<nav class="h-screen w-64 fixed left-0 top-0 bg-surface dark:bg-surface border-r border-outline-variant dark:border-outline-variant flat no shadows flex flex-col py-lg px-md z-40">
+<div class="mb-xl">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary tracking-tight">Asterion AI</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-sm uppercase">V 2.1.0-Stable</p>
+</div>
+<ul class="flex-1 space-y-sm">
+<li>
+<a class="flex items-center gap-md px-sm py-xs rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant font-body-base text-body-base" href="#">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+                    Command Center
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-md px-sm py-xs rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant font-body-base text-body-base" href="#">
+<span class="material-symbols-outlined text-[18px]">chat_bubble</span>
+                    Chat
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-md px-sm py-xs rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant font-body-base text-body-base" href="#">
+<span class="material-symbols-outlined text-[18px]">science</span>
+                    Research
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-md px-sm py-xs rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant font-body-base text-body-base" href="#">
+<span class="material-symbols-outlined text-[18px]">smart_toy</span>
+                    Agent Lab
+                </a>
+</li>
+<li>
+<!-- Active State -->
+<a class="flex items-center gap-md px-sm py-xs text-primary dark:text-primary font-bold border-l-2 border-primary bg-surface-container-high font-body-base text-body-base" href="#">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+                    Settings
+                </a>
+</li>
+</ul>
+<div class="mt-auto border-t border-outline-variant pt-md">
+<a class="flex items-center gap-md px-sm py-xs rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors text-on-surface-variant dark:text-on-surface-variant font-body-base text-body-base" href="#">
+<span class="material-symbols-outlined text-[18px]">memory</span>
+                Hardware Status
+            </a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="ml-64 flex-1 flex flex-col h-screen relative">
+<!-- TopNavBar (Shared Component JSON) -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] z-50 bg-surface/90 dark:bg-surface/90 border-b border-outline-variant dark:border-outline-variant flat no shadows flex justify-between items-center h-16 px-margin-desktop">
+<nav class="flex gap-lg">
+<a class="font-label-caps text-label-caps uppercase text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-all" href="#">Workspace</a>
+<a class="font-label-caps text-label-caps uppercase text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-all" href="#">Smart Chat</a>
+</nav>
+<div class="flex items-center gap-md">
+<button class="font-label-caps text-label-caps uppercase bg-transparent border border-outline-variant text-on-surface hover:border-primary hover:text-primary px-sm py-xs rounded transition-all flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-semantic-green inline-block"></span>
+                    Llama-3 70B (Local)
+                </button>
+<button class="font-label-caps text-label-caps uppercase bg-surface-container-high text-on-surface px-sm py-xs border border-outline-variant rounded hover:bg-surface-container-highest transition-all font-bold">
+                    Stop All
+                </button>
+<div class="flex gap-sm ml-sm text-on-surface-variant">
+<button class="hover:text-primary transition-colors"><span class="material-symbols-outlined text-[20px]">notifications</span></button>
+<button class="hover:text-primary transition-colors"><span class="material-symbols-outlined text-[20px]">help</span></button>
+</div>
+</div>
+</header>
+<!-- Canvas / Workspace -->
+<main class="flex-1 overflow-y-auto mt-16 p-margin-desktop relative z-0">
+<div class="max-w-[1400px] mx-auto grid grid-cols-12 gap-lg pb-xl">
+<!-- Page Header -->
+<div class="col-span-12 mb-sm">
+<h2 class="font-headline-md text-headline-md text-on-surface tracking-tight mb-xs">Model Settings &amp; Hardware</h2>
+<p class="font-body-base text-body-base text-on-surface-variant">Configure AI runtime environment, manage local models, and monitor hardware telemetry.</p>
+</div>
+<!-- Hardware Scan Results (Bento Block 1) -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-md">
+<div class="glass-panel relative overflow-hidden group">
+<!-- Top Progress Bar indicator -->
+<div class="absolute top-0 left-0 h-[2px] bg-primary w-full"></div>
+<div class="flex items-center justify-between mb-md">
+<h3 class="font-code-mono text-code-mono text-on-surface flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px] text-primary">memory</span>
+                                HARDWARE_TELEMETRY
+                            </h3>
+<span class="font-label-caps text-label-caps bg-semantic-green/10 text-semantic-green px-xs py-[2px] rounded uppercase">LIVE</span>
+</div>
+<!-- GPU Stats -->
+<div class="mb-md">
+<div class="flex justify-between font-body-sm text-body-sm text-on-surface-variant mb-xs">
+<span>Primary GPU</span>
+<span class="text-on-surface font-semibold">NVIDIA RTX 4090</span>
+</div>
+<div class="flex justify-between font-label-caps text-label-caps uppercase text-on-surface-variant mb-xs">
+<span>VRAM USAGE</span>
+<span class="text-semantic-green font-mono-base">14.2 GB / 24.0 GB</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden border border-outline">
+<div class="bg-semantic-green h-full w-[60%]"></div>
+</div>
+</div>
+<!-- System RAM Stats -->
+<div class="mb-sm">
+<div class="flex justify-between font-label-caps text-label-caps uppercase text-on-surface-variant mb-xs">
+<span>SYSTEM RAM</span>
+<span class="font-mono-base">32 GB / 128 GB</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden border border-outline">
+<div class="bg-primary h-full w-[25%] opacity-70"></div>
+</div>
+</div>
+<!-- Compute Load -->
+<div>
+<div class="flex justify-between font-label-caps text-label-caps uppercase text-on-surface-variant mb-xs">
+<span>COMPUTE LOAD</span>
+<span class="font-mono-base">12%</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden border border-outline">
+<div class="bg-semantic-amber h-full w-[12%] opacity-70"></div>
+</div>
+</div>
+</div>
+<!-- Privacy Mode Selector -->
+<div class="glass-panel">
+<h3 class="font-code-mono text-code-mono text-on-surface mb-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">shield_lock</span>
+                            DATA_ROUTING_MODE
+                        </h3>
+<div class="space-y-xs">
+<!-- Option 1: Local Only -->
+<label class="flex items-start gap-sm p-sm rounded border border-primary bg-primary/5 cursor-pointer hardware-accent">
+<input checked="" class="mt-[2px] bg-surface border-outline text-primary focus:ring-primary focus:ring-offset-surface" name="privacy_mode" type="radio"/>
+<div>
+<span class="block font-body-sm text-body-sm text-primary font-semibold flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-semantic-green inline-block"></span>
+                                        Local-Only
+                                    </span>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant mt-[2px]">Forces all inference to run on local hardware. Zero telemetry.</span>
+</div>
+</label>
+<!-- Option 2: Airgap -->
+<label class="flex items-start gap-sm p-sm rounded border border-outline bg-surface-container cursor-pointer hardware-accent hover:bg-surface-container-high transition-colors">
+<input class="mt-[2px] bg-surface border-outline text-primary focus:ring-primary focus:ring-offset-surface" name="privacy_mode" type="radio"/>
+<div>
+<span class="block font-body-sm text-body-sm text-on-surface font-semibold flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-semantic-red inline-block"></span>
+                                        Airgap Mode
+                                        <span class="font-label-caps text-label-caps uppercase bg-semantic-red/10 text-semantic-red px-xs py-[1px] rounded text-[9px]">MAX SECURITY</span>
+</span>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant mt-[2px]">Disables network adapters for Asterion processes.</span>
+</div>
+</label>
+<!-- Option 3: Hybrid -->
+<label class="flex items-start gap-sm p-sm rounded border border-outline bg-surface-container cursor-pointer hardware-accent hover:bg-surface-container-high transition-colors">
+<input class="mt-[2px] bg-surface border-outline text-primary focus:ring-primary focus:ring-offset-surface" name="privacy_mode" type="radio"/>
+<div>
+<span class="block font-body-sm text-body-sm text-on-surface font-semibold flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-semantic-amber inline-block"></span>
+                                        Hybrid (Smart Routing)
+                                    </span>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant mt-[2px]">Routes simple queries locally, complex to cloud API.</span>
+</div>
+</label>
+</div>
+</div>
+</div>
+<!-- Model Catalog (Bento Block 2) -->
+<div class="col-span-12 lg:col-span-8 flex flex-col">
+<div class="flex items-center justify-between mb-sm">
+<h3 class="font-code-mono text-code-mono text-on-surface flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">database</span>
+                            LOCAL_MODEL_REGISTRY
+                        </h3>
+<button class="font-label-caps text-label-caps uppercase text-on-surface border border-outline px-sm py-xs rounded hover:border-primary hover:text-primary transition-colors flex items-center gap-xs bg-surface-container-high">
+<span class="material-symbols-outlined text-[14px]">download</span>
+                            Pull Model
+                        </button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- Model Card 1 (Active) -->
+<div class="model-card border-primary/50 relative overflow-hidden bg-primary/5">
+<div class="absolute top-0 right-0 p-sm opacity-10 font-display-lg text-display-lg text-primary select-none pointer-events-none">01</div>
+<div class="flex justify-between items-start mb-md relative z-10">
+<div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Llama-3 70B</h4>
+<div class="flex gap-xs mt-xs">
+<span class="font-code-mono text-code-mono text-[10px] bg-primary/10 text-primary px-xs py-[2px] rounded border border-primary/20">Active</span>
+<span class="font-code-mono text-code-mono text-[10px] bg-surface text-on-surface-variant px-xs py-[2px] rounded border border-outline">GGUF</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary">stop_circle</span>
+</div>
+<div class="grid grid-cols-2 gap-sm border-t border-outline pt-sm mt-auto relative z-10">
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">SIZE</span>
+<span class="block font-code-mono text-code-mono text-on-surface">40.2 GB</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">REQ VRAM</span>
+<span class="block font-code-mono text-code-mono text-on-surface">~24 GB</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">EST. SPEED</span>
+<span class="block font-code-mono text-code-mono text-semantic-green">15 tok/s</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">CONTEXT</span>
+<span class="block font-code-mono text-code-mono text-on-surface">8192</span>
+</div>
+</div>
+</div>
+<!-- Model Card 2 -->
+<div class="model-card hardware-accent relative overflow-hidden group cursor-pointer transition-all hover:border-primary hover:bg-surface-container-high">
+<div class="absolute top-0 right-0 p-sm opacity-10 font-display-lg text-display-lg text-on-surface-variant select-none pointer-events-none group-hover:text-primary transition-colors">02</div>
+<div class="flex justify-between items-start mb-md relative z-10">
+<div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Mistral 8x7B</h4>
+<div class="flex gap-xs mt-xs">
+<span class="font-code-mono text-code-mono text-[10px] bg-surface text-on-surface-variant px-xs py-[2px] rounded border border-outline">Idle</span>
+<span class="font-code-mono text-code-mono text-[10px] bg-surface text-on-surface-variant px-xs py-[2px] rounded border border-outline">MoE</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">play_circle</span>
+</div>
+<div class="grid grid-cols-2 gap-sm border-t border-outline pt-sm mt-auto relative z-10">
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">SIZE</span>
+<span class="block font-code-mono text-code-mono text-on-surface">26.4 GB</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">REQ VRAM</span>
+<span class="block font-code-mono text-code-mono text-on-surface">~16 GB</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">EST. SPEED</span>
+<span class="block font-code-mono text-code-mono text-on-surface">32 tok/s</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">CONTEXT</span>
+<span class="block font-code-mono text-code-mono text-on-surface">32768</span>
+</div>
+</div>
+</div>
+<!-- Model Card 3 -->
+<div class="model-card hardware-accent relative overflow-hidden group cursor-pointer transition-all hover:border-primary hover:bg-surface-container-high">
+<div class="absolute top-0 right-0 p-sm opacity-10 font-display-lg text-display-lg text-on-surface-variant select-none pointer-events-none group-hover:text-primary transition-colors">03</div>
+<div class="flex justify-between items-start mb-md relative z-10">
+<div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">CodeLlama 34B</h4>
+<div class="flex gap-xs mt-xs">
+<span class="font-code-mono text-code-mono text-[10px] bg-surface text-on-surface-variant px-xs py-[2px] rounded border border-outline">Idle</span>
+<span class="font-code-mono text-code-mono text-[10px] bg-surface text-on-surface-variant px-xs py-[2px] rounded border border-outline">AWQ</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">play_circle</span>
+</div>
+<div class="grid grid-cols-2 gap-sm border-t border-outline pt-sm mt-auto relative z-10">
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">SIZE</span>
+<span class="block font-code-mono text-code-mono text-on-surface">19.8 GB</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">REQ VRAM</span>
+<span class="block font-code-mono text-code-mono text-on-surface">~12 GB</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">EST. SPEED</span>
+<span class="block font-code-mono text-code-mono text-on-surface">24 tok/s</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps uppercase text-on-surface-variant">CONTEXT</span>
+<span class="block font-code-mono text-code-mono text-on-surface">16384</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

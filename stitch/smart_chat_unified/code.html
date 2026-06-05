@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asterion AI Smart Chat</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "surface": "#131317",
+                "inverse-surface": "#e4e1e7",
+                "on-tertiary-fixed-variant": "#693c00",
+                "on-secondary-container": "#003e22",
+                "on-primary-fixed": "#160066",
+                "inverse-on-surface": "#303034",
+                "primary-container": "#8c80ff",
+                "secondary-fixed": "#6efdac",
+                "on-error-container": "#ffdad6",
+                "surface-container-low": "#1b1b1f",
+                "outline-variant": "#474554",
+                "on-tertiary-container": "#402300",
+                "surface-tint": "#c6bfff",
+                "surface-dim": "#131317",
+                "surface-container-high": "#2a292e",
+                "primary-fixed-dim": "#c6bfff",
+                "primary": "#c6bfff",
+                "secondary": "#4edf92",
+                "inverse-primary": "#5846d4",
+                "tertiary-fixed-dim": "#ffb86e",
+                "on-surface-variant": "#c8c4d7",
+                "surface-bright": "#39393d",
+                "background": "#0c0c10",
+                "tertiary-fixed": "#ffdcbd",
+                "surface-container-highest": "#353439",
+                "outline": "#928ea0",
+                "on-background": "#e4e1e7",
+                "primary-fixed": "#e4dfff",
+                "surface-container-lowest": "#0e0e12",
+                "on-secondary-fixed-variant": "#00522e",
+                "on-secondary": "#00391e",
+                "secondary-container": "#00b56c",
+                "on-surface": "#e4e1e7",
+                "on-error": "#690005",
+                "error-container": "#93000a",
+                "on-tertiary": "#492900",
+                "secondary-fixed-dim": "#4edf92",
+                "on-primary-container": "#22008d",
+                "on-secondary-fixed": "#002110",
+                "on-primary-fixed-variant": "#3f29bc",
+                "on-primary": "#2800a0",
+                "on-tertiary-fixed": "#2c1600",
+                "tertiary-container": "#ce7e17",
+                "surface-variant": "#353439",
+                "error": "#ffb4ab",
+                "tertiary": "#ffb86e",
+                "surface-container": "#1f1f23"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "container-padding": "24px",
+                "stack-loose": "12px",
+                "element-gap": "20px",
+                "stack-tight": "8px"
+        },
+        "fontFamily": {
+                "label-caps": [
+                        "DM Sans"
+                ],
+                "headline-sm": [
+                        "DM Sans"
+                ],
+                "body-secondary": [
+                        "DM Sans"
+                ],
+                "body-base": [
+                        "DM Sans"
+                ],
+                "mono-sm": [
+                        "JetBrains Mono"
+                ],
+                "mono-base": [
+                        "JetBrains Mono"
+                ]
+        },
+        "fontSize": {
+                "label-caps": [
+                        "11px",
+                        {
+                                "lineHeight": "16px",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-sm": [
+                        "20px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-secondary": [
+                        "13px",
+                        {
+                                "lineHeight": "18px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-base": [
+                        "15px",
+                        {
+                                "lineHeight": "22px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "mono-sm": [
+                        "11px",
+                        {
+                                "lineHeight": "16px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "mono-base": [
+                        "13px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        /* Custom scrollbar for a sleeker look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2a36;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #353439;
+        }
+        
+        .streaming-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background-color: #c6bfff;
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+            margin-left: 4px;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-[#0c0c10] text-on-background h-screen overflow-hidden flex font-body-base text-body-base selection:bg-primary/20 selection:text-primary">
+<!-- Narrow Sidebar Component -->
+<nav class="bg-surface font-body-base text-body-base border-r border-outline-variant flex flex-col h-full py-container-padding items-center h-screen w-16 fixed left-0 top-0 z-40 shrink-0">
+<div class="h-8 w-8 rounded bg-primary flex items-center justify-center shrink-0 mb-8 cursor-pointer hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined text-on-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">terminal</span>
+</div>
+<div class="flex-1 flex flex-col gap-4 w-full px-2">
+<a class="flex items-center justify-center p-2 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors group" href="#" title="Home">
+<span class="material-symbols-outlined text-[20px]">home</span>
+</a>
+<a class="flex items-center justify-center p-2 rounded-DEFAULT bg-surface-container border border-outline-variant text-primary transition-colors group" href="#" title="Chat">
+<span class="material-symbols-outlined text-[20px]">chat</span>
+</a>
+<a class="flex items-center justify-center p-2 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors group" href="#" title="Research">
+<span class="material-symbols-outlined text-[20px]">science</span>
+</a>
+<a class="flex items-center justify-center p-2 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors group" href="#" title="Documents">
+<span class="material-symbols-outlined text-[20px]">description</span>
+</a>
+<a class="flex items-center justify-center p-2 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors group" href="#" title="Vault">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+</a>
+<a class="flex items-center justify-center p-2 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors group" href="#" title="Agents">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+</a>
+<a class="flex items-center justify-center p-2 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors group" href="#" title="Images">
+<span class="material-symbols-outlined text-[20px]">image</span>
+</a>
+<a class="flex items-center justify-center p-2 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors group" href="#" title="Automations">
+<span class="material-symbols-outlined text-[20px]">bolt</span>
+</a>
+<a class="flex items-center justify-center p-2 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors group" href="#" title="Models">
+<span class="material-symbols-outlined text-[20px]">memory</span>
+</a>
+</div>
+<div class="mt-auto pt-4 border-t border-outline-variant w-full flex justify-center">
+<a class="flex items-center justify-center p-2 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors group" href="#" title="Settings">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area with TopNav -->
+<div class="flex-1 ml-16 flex flex-col relative h-full bg-[#0c0c10]">
+<!-- TopNavBar Component -->
+<header class="bg-surface font-label-caps text-label-caps uppercase border-b border-outline-variant flex justify-between items-center h-16 px-container-padding fixed top-0 right-0 w-[calc(100%-64px)] z-50">
+<div class="flex items-center gap-element-gap">
+<div class="flex items-center gap-stack-tight border border-secondary/30 bg-secondary/10 px-3 py-1.5 rounded-full">
+<div class="w-2 h-2 rounded-full bg-secondary animate-pulse"></div>
+<span class="text-secondary font-bold tracking-wider">LOCAL ENVIRONMENT</span>
+</div>
+<div class="flex items-center gap-stack-tight px-3 py-1.5 border border-outline-variant bg-surface-container rounded-DEFAULT">
+<span class="material-symbols-outlined text-primary text-[16px]">memory</span>
+<span class="text-on-surface font-semibold">Llama-3 70B Instruct</span>
+</div>
+</div>
+<div class="flex items-center gap-stack-loose">
+<div class="flex items-center gap-stack-tight w-48">
+<div class="flex-1">
+<div class="flex justify-between text-on-surface-variant mb-1 text-[10px]">
+<span>VRAM</span>
+<span>22.4 / 24 GB</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5">
+<div class="bg-primary h-1.5 rounded-full" style="width: 93%"></div>
+</div>
+</div>
+</div>
+<div class="h-6 w-[1px] bg-outline-variant mx-stack-tight"></div>
+<button class="bg-surface text-error border border-error hover:bg-error/10 px-stack-loose py-stack-tight rounded-DEFAULT font-label-caps text-label-caps transition-colors flex items-center gap-stack-tight">
+<span class="material-symbols-outlined text-[16px]">stop_circle</span>
+                Stop All
+            </button>
+</div>
+</header>
+<!-- Two Column Layout -->
+<main class="flex-1 mt-16 flex overflow-hidden">
+<!-- Center Chat Area -->
+<section class="flex-1 flex flex-col relative min-w-0">
+<!-- Chat Scrollable -->
+<div class="flex-1 overflow-y-auto p-container-padding flex flex-col gap-container-padding">
+<!-- User Message -->
+<div class="flex gap-stack-loose max-w-3xl mx-auto w-full">
+<div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center shrink-0 mt-1">
+<span class="font-label-caps text-label-caps text-on-surface">U</span>
+</div>
+<div class="flex-1 space-y-stack-tight">
+<div class="inline-block px-stack-tight py-1 rounded bg-surface-container border border-outline-variant font-label-caps text-label-caps text-on-surface-variant">USER</div>
+<div class="font-body-base text-body-base text-on-surface">Analyze the latency issues we're seeing in the `user_auth` service. Look at the logs from the last 24 hours and suggest optimizations for the Redis cache connection pooling.</div>
+</div>
+</div>
+<!-- AI Response Block -->
+<div class="flex gap-stack-loose max-w-3xl mx-auto w-full">
+<div class="w-8 h-8 rounded bg-primary-container border border-outline-variant flex items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-on-primary-container text-[20px]">smart_toy</span>
+</div>
+<div class="flex-1 space-y-stack-loose">
+<div class="inline-block px-stack-tight py-1 rounded bg-primary-container/20 border border-primary/30 font-label-caps text-label-caps text-primary">ASTERION</div>
+<!-- SUMMARY Block -->
+<div class="border border-outline-variant/50 rounded-DEFAULT bg-surface/50 p-stack-loose space-y-stack-tight">
+<div class="font-label-caps text-label-caps text-on-surface-variant uppercase flex items-center justify-between border-b border-outline-variant/50 pb-stack-tight mb-stack-tight">
+<div class="flex items-center gap-stack-tight">
+<span class="material-symbols-outlined text-[16px]">short_text</span>
+                SUMMARY
+            </div>
+<span class="flex items-center gap-1 text-secondary font-bold tracking-wider"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> LOCAL</span>
+</div>
+<div class="font-body-base text-body-base text-on-surface leading-relaxed">
+                I've analyzed the logs for the <code class="font-mono-base text-mono-base bg-surface-container px-1 py-0.5 rounded border border-outline-variant text-primary">user_auth</code> service over the last 24 hours. The primary latency spikes correlate strongly with bursts of incoming authentication requests overwhelming the current Redis connection pool configuration.
+            </div>
+</div>
+<!-- SOURCE Block -->
+<div class="border border-outline-variant/50 rounded-DEFAULT bg-surface/50 p-stack-loose space-y-stack-tight">
+<div class="font-label-caps text-label-caps text-on-surface-variant uppercase flex items-center justify-between border-b border-outline-variant/50 pb-stack-tight mb-stack-tight">
+<div class="flex items-center gap-stack-tight">
+<span class="material-symbols-outlined text-[16px]">source</span>
+                SOURCE
+            </div>
+<span class="flex items-center gap-1 text-secondary font-bold tracking-wider"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> LOCAL</span>
+</div>
+<div class="grid grid-cols-2 gap-stack-tight">
+<div class="bg-surface-container border border-outline-variant rounded-DEFAULT p-stack-tight hover:border-primary transition-colors cursor-pointer group flex items-start gap-stack-tight">
+<span class="material-symbols-outlined text-outline group-hover:text-primary text-[18px]">description</span>
+<div>
+<div class="font-body-secondary text-body-secondary font-semibold text-on-surface">prod-auth-cluster.log</div>
+<div class="font-label-caps text-label-caps text-outline mt-1 uppercase">1,240 lines analyzed</div>
+</div>
+</div>
+<div class="bg-surface-container border border-outline-variant rounded-DEFAULT p-stack-tight hover:border-primary transition-colors cursor-pointer group flex items-start gap-stack-tight">
+<span class="material-symbols-outlined text-outline group-hover:text-primary text-[18px]">database</span>
+<div>
+<div class="font-body-secondary text-body-secondary font-semibold text-on-surface">redis-config-v2.yml</div>
+<div class="font-label-caps text-label-caps text-outline mt-1 uppercase">Pool settings</div>
+</div>
+</div>
+</div>
+</div>
+<!-- CODE Block -->
+<div class="border border-outline-variant/50 rounded-DEFAULT bg-surface/50 p-stack-loose space-y-stack-tight">
+<div class="font-label-caps text-label-caps text-on-surface-variant uppercase flex items-center justify-between border-b border-outline-variant/50 pb-stack-tight mb-stack-tight">
+<div class="flex items-center gap-stack-tight">
+<span class="material-symbols-outlined text-[16px]">code</span>
+                    CODE (redis_client.py)
+                </div>
+<div class="flex items-center gap-4">
+<span class="flex items-center gap-1 text-secondary font-bold tracking-wider"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> LOCAL</span>
+<button class="text-outline hover:text-on-surface transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+<span>Copy</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<pre class="font-mono-base text-mono-base text-on-surface-variant"><code><span class="text-tertiary">def</span> <span class="text-secondary">get_redis_pool</span>():
+    <span class="text-tertiary">return</span> redis.ConnectionPool(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        db=<span class="text-primary">0</span>,
+        <span class="text-outline"># Optimization: Increase max_connections and add timeout</span>
+        max_connections=<span class="text-primary">500</span>, <span class="text-outline"># Increased from 50</span>
+        timeout=<span class="text-primary">2.0</span>,
+        socket_timeout=<span class="text-primary">5.0</span>
+    )<span class="streaming-cursor"></span></code></pre>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom spacer so input doesn't cover last message -->
+<div class="h-40"></div>
+</div>
+<!-- Input Area -->
+<div class="absolute bottom-0 left-0 w-full p-container-padding bg-[#0c0c10]/90 backdrop-blur-sm z-10 border-t border-outline-variant">
+<div class="max-w-3xl mx-auto relative">
+<!-- Main Input -->
+<div class="bg-surface border border-outline-variant focus-within:border-primary rounded-xl flex flex-col transition-all">
+<textarea class="w-full bg-transparent border-none outline-none resize-none p-stack-loose text-body-base font-body-base text-on-surface placeholder:text-on-surface-variant/50 focus:ring-0 min-h-[80px]" placeholder="Message Asterion AI or type / for commands..."></textarea>
+<div class="flex justify-between items-center p-stack-tight border-t border-outline-variant bg-surface-container rounded-b-xl">
+<div class="flex items-center gap-stack-tight">
+<button class="p-stack-tight text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors rounded-DEFAULT" title="Attach files">
+<span class="material-symbols-outlined text-[20px]">attach_file</span>
+</button>
+<div class="flex items-center gap-2 bg-secondary/10 px-3 py-1.5 rounded-DEFAULT border border-secondary/30">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary animate-pulse"></span>
+<span class="font-label-caps text-label-caps text-secondary font-bold tracking-wider">LOCAL</span>
+</div>
+</div>
+<button class="bg-primary text-on-primary hover:bg-primary/90 px-stack-loose py-stack-tight rounded-DEFAULT font-body-base font-semibold transition-all flex items-center gap-stack-tight">
+                                Send
+                                <span class="material-symbols-outlined text-[16px]">send</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Artifact Panel -->
+<aside class="w-[320px] border-l border-outline-variant bg-surface flex flex-col z-30 shrink-0 hidden lg:flex">
+<div class="p-stack-loose border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+<div class="flex flex-col">
+<h2 class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-1">Active Artifact</h2>
+<div class="font-body-base text-body-base font-semibold text-on-surface flex items-center gap-stack-tight">
+<span class="material-symbols-outlined text-primary text-[18px]">code</span>
+            redis_client.py
+        </div>
+</div>
+<div class="flex gap-1">
+<span class="w-2 h-2 rounded-full bg-outline-variant"></span>
+<span class="w-2 h-2 rounded-full bg-outline-variant"></span>
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-stack-loose bg-surface-container-lowest">
+<!-- Code Editor Artifact Content -->
+<div class="font-mono-base text-mono-base text-on-surface-variant bg-surface-container-low p-stack-loose rounded-DEFAULT border border-outline-variant h-full">
+<div class="text-outline mb-4"># Updated Redis Configuration with optimized pooling</div>
+<pre><code><span class="text-tertiary">import</span> redis
+<span class="text-tertiary">import</span> os
+
+REDIS_HOST = os.environ.get(<span class="text-secondary-fixed">'REDIS_HOST'</span>, <span class="text-secondary-fixed">'localhost'</span>)
+REDIS_PORT = <span class="text-primary">int</span>(os.environ.get(<span class="text-secondary-fixed">'REDIS_PORT'</span>, <span class="text-primary">6379</span>))
+
+<span class="text-tertiary">def</span> <span class="text-secondary">get_redis_pool</span>():
+    <span class="text-tertiary">return</span> redis.ConnectionPool(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        db=<span class="text-primary">0</span>,
+        max_connections=<span class="text-primary">500</span>,
+        timeout=<span class="text-primary">2.0</span>,
+        socket_timeout=<span class="text-primary">5.0</span>,
+        socket_connect_timeout=<span class="text-primary">2.0</span>,
+        retry_on_timeout=<span class="text-tertiary">True</span>
+    )
+
+redis_client = redis.Redis(connection_pool=get_redis_pool())</code></pre>
+</div>
+</div>
+<div class="p-stack-loose border-t border-outline-variant bg-surface-container-low flex justify-between items-center">
+<div class="font-label-caps text-label-caps text-on-surface-variant uppercase">Export As:</div>
+<div class="flex items-center gap-stack-tight">
+<button class="p-stack-tight text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors rounded-DEFAULT flex items-center gap-1" title="Markdown">
+<span class="material-symbols-outlined text-[18px]">markdown</span>
+</button>
+<button class="p-stack-tight text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors rounded-DEFAULT flex items-center gap-1" title="PDF">
+<span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+</button>
+<button class="p-stack-tight text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors rounded-DEFAULT flex items-center gap-1" title="Copy">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+</div>
+</div>
+</aside>
+</main>
+</div>
+</body></html>

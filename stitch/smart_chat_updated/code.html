@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asterion AI Smart Chat</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed-dim": "#ffb86e",
+                      "surface-dim": "#0c0c10",
+                      "on-primary": "#ffffff",
+                      "error-container": "#ffb4ab",
+                      "surface-container": "#1c1c24",
+                      "on-primary-container": "#e4e1e7",
+                      "secondary-container": "#00b56c",
+                      "surface-container-lowest": "#0c0c10",
+                      "on-surface": "#e4e1e7",
+                      "inverse-surface": "#e4e1e7",
+                      "surface-container-high": "#1c1c24",
+                      "on-secondary": "#00391e",
+                      "primary-fixed": "#e4dfff",
+                      "on-error": "#690005",
+                      "on-primary-fixed-variant": "#3f29bc",
+                      "on-surface-variant": "#c8c4d7",
+                      "surface-container-low": "#131318",
+                      "outline": "#928ea0",
+                      "secondary-fixed-dim": "#4edf92",
+                      "on-primary-fixed": "#160066",
+                      "tertiary-fixed": "#ffdcbd",
+                      "on-secondary-fixed-variant": "#00522e",
+                      "on-secondary-container": "#003e22",
+                      "on-error-container": "#ffdad6",
+                      "on-tertiary-container": "#402300",
+                      "error": "#ffb4ab",
+                      "secondary-fixed": "#6efdac",
+                      "surface-tint": "#c6bfff",
+                      "surface-bright": "#39393d",
+                      "on-secondary-fixed": "#002110",
+                      "surface-variant": "#353439",
+                      "surface-container-highest": "#353439",
+                      "primary-fixed-dim": "#c6bfff",
+                      "inverse-on-surface": "#303034",
+                      "on-tertiary-fixed": "#2c1600",
+                      "on-background": "#e4e1e7",
+                      "outline-variant": "#2a2a36",
+                      "secondary": "#4edf92",
+                      "on-tertiary": "#492900",
+                      "tertiary-container": "#ce7e17",
+                      "inverse-primary": "#5846d4",
+                      "tertiary": "#ffb86e",
+                      "on-tertiary-fixed-variant": "#693c00",
+                      "background": "#0c0c10",
+                      "surface": "#131318",
+                      "primary": "#7c6dfa",
+                      "primary-container": "#7c6dfa"
+              },
+              "borderRadius": {
+                      "DEFAULT": "8px",
+                      "lg": "8px",
+                      "xl": "14px",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "stack-tight": "8px",
+                      "element-gap": "20px",
+                      "container-padding": "24px",
+                      "stack-loose": "12px",
+                      "lg": "24px",
+                      "gutter": "12px",
+                      "base": "4px",
+                      "md": "16px",
+                      "margin-desktop": "24px",
+                      "sm": "8px",
+                      "xs": "4px",
+                      "xl": "32px"
+              },
+              "fontFamily": {
+                      "body-base": [
+                              "DM Sans"
+                      ],
+                      "mono-base": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-sm": [
+                              "DM Sans"
+                      ],
+                      "label-caps": [
+                              "DM Sans"
+                      ],
+                      "mono-sm": [
+                              "JetBrains Mono"
+                      ],
+                      "body-secondary": [
+                              "DM Sans"
+                      ],
+                      "code-mono": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-md": [
+                              "DM Sans"
+                      ]
+              },
+              "fontSize": {
+                      "body-base": [
+                              "15px",
+                              {
+                                      "lineHeight": "22px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "mono-base": [
+                              "13px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-caps": [
+                              "11px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "mono-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-secondary": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "code-mono": [
+                              "13px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "letterSpacing": "0",
+                                      "fontWeight": "450"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        /* Custom scrollbar for a sleeker look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2a36;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #353439;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background h-screen overflow-hidden flex font-body-base text-body-base selection:bg-primary/20 selection:text-primary">
+<!-- SideNavBar Component -->
+<nav class="bg-surface font-body-base text-body-base border-r border-outline-variant flex flex-col h-full py-container-padding px-md h-screen w-64 fixed left-0 top-0 z-40">
+<div class="flex items-center gap-sm mb-xl px-xs">
+<div class="h-8 w-8 rounded bg-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">terminal</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary leading-none tracking-tight">Asterion AI</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-1 uppercase">V 2.1.0-Stable</p>
+</div>
+</div>
+<ul class="flex flex-col gap-base flex-grow">
+<li>
+<a class="flex items-center gap-sm px-sm py-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors group" href="#">
+<span class="material-symbols-outlined text-[18px] group-hover:text-primary transition-colors">terminal</span>
+<span class="font-body-base text-body-base">Command Center</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-sm px-sm py-sm rounded-DEFAULT text-primary font-bold border-l-2 border-primary bg-surface-container-low transition-all" href="#">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">chat_bubble</span>
+<span class="font-body-base text-body-base">Chat</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-sm px-sm py-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors group" href="#">
+<span class="material-symbols-outlined text-[18px] group-hover:text-primary transition-colors">science</span>
+<span class="font-body-base text-body-base">Research</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-sm px-sm py-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors group" href="#">
+<span class="material-symbols-outlined text-[18px] group-hover:text-primary transition-colors">smart_toy</span>
+<span class="font-body-base text-body-base">Agent Lab</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-sm px-sm py-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors group" href="#">
+<span class="material-symbols-outlined text-[18px] group-hover:text-primary transition-colors">settings</span>
+<span class="font-body-base text-body-base">Settings</span>
+</a>
+</li>
+</ul>
+<div class="mt-auto pt-md border-t border-outline-variant">
+<a class="flex items-center gap-sm px-sm py-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors group" href="#">
+<span class="material-symbols-outlined text-[18px] group-hover:text-primary transition-colors">memory</span>
+<span class="font-body-base text-body-base">Hardware Status</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area with TopNav -->
+<div class="flex-1 ml-64 flex flex-col relative h-full">
+<!-- TopNavBar Component -->
+<header class="bg-surface-dim font-label-caps text-label-caps uppercase border-b border-outline-variant flex justify-between items-center h-16 px-container-padding ml-64 fixed top-0 right-0 w-[calc(100%-16rem)] z-50">
+<nav class="flex items-center gap-lg">
+<a class="text-on-surface-variant hover:text-primary transition-all" href="#">Workspace</a>
+<a class="text-on-surface font-semibold relative after:content-[''] after:absolute after:-bottom-[20px] after:left-0 after:w-full after:h-[2px] after:bg-primary" href="#">Smart Chat</a>
+</nav>
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-sm text-on-surface-variant">
+<button class="p-xs hover:text-primary transition-colors rounded-DEFAULT hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<button class="p-xs hover:text-primary transition-colors rounded-DEFAULT hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-[20px]">help</span>
+</button>
+</div>
+<div class="h-6 w-[1px] bg-outline-variant mx-sm"></div>
+<div class="flex items-center gap-sm bg-surface-container px-sm py-xs rounded border border-outline-variant">
+<span class="w-2 h-2 rounded-full bg-secondary-container"></span>
+<span class="font-label-caps text-label-caps text-on-surface">Llama-3 70B (Local)</span>
+</div>
+<button class="bg-surface text-error border border-error hover:bg-error/10 px-md py-sm rounded-DEFAULT font-label-caps text-label-caps transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">stop_circle</span>
+                Stop All
+            </button>
+</div>
+</header>
+<!-- Three Column Layout -->
+<main class="flex-1 mt-16 flex overflow-hidden">
+<!-- Context Rooms (Secondary Sidebar) -->
+<aside class="w-72 border-r border-outline-variant bg-surface-container-lowest flex flex-col z-30 shrink-0">
+<div class="p-container-padding border-b border-outline-variant">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+<input class="w-full bg-surface border border-outline-variant rounded-DEFAULT py-sm pl-xl pr-sm text-body-secondary focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-on-surface-variant/50 text-on-surface" placeholder="Search context..." type="text"/>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-sm flex flex-col gap-sm">
+<div class="text-label-caps font-label-caps text-on-surface-variant uppercase px-sm pt-sm pb-xs">Active Rooms</div>
+<button class="flex items-start gap-sm p-sm rounded-DEFAULT bg-surface-container border border-outline-variant hover:border-primary transition-colors text-left group">
+<span class="material-symbols-outlined text-primary text-[20px] mt-0.5">folder_special</span>
+<div>
+<div class="font-body-base text-body-base text-on-surface font-semibold group-hover:text-primary transition-colors">Project Nexus Optimization</div>
+<div class="font-body-secondary text-body-secondary text-on-surface-variant line-clamp-1 mt-0.5">Focus: Core algorithmic efficiency and DB indexing.</div>
+</div>
+</button>
+<button class="flex items-start gap-sm p-sm rounded-DEFAULT hover:bg-surface-container transition-colors text-left group border border-transparent">
+<span class="material-symbols-outlined text-outline text-[20px] mt-0.5">folder</span>
+<div>
+<div class="font-body-base text-body-base text-on-surface font-semibold group-hover:text-primary transition-colors">Q3 Security Audit</div>
+<div class="font-body-secondary text-body-secondary text-on-surface-variant line-clamp-1 mt-0.5">Reviewing auth middleware vulnerabilities.</div>
+</div>
+</button>
+<div class="text-label-caps font-label-caps text-on-surface-variant uppercase px-sm pt-md pb-xs mt-md border-t border-outline-variant">Recent History</div>
+<button class="flex items-start gap-sm p-sm rounded-DEFAULT hover:bg-surface-container transition-colors text-left group">
+<span class="material-symbols-outlined text-outline text-[18px] mt-1">history</span>
+<div>
+<div class="font-body-secondary text-body-secondary text-on-surface">Refactoring User Model</div>
+<div class="font-label-caps text-label-caps text-outline mt-1 uppercase">2h ago</div>
+</div>
+</button>
+<button class="flex items-start gap-sm p-sm rounded-DEFAULT hover:bg-surface-container transition-colors text-left group">
+<span class="material-symbols-outlined text-outline text-[18px] mt-1">history</span>
+<div>
+<div class="font-body-secondary text-body-secondary text-on-surface">Dependency Updates</div>
+<div class="font-label-caps text-label-caps text-outline mt-1 uppercase">Yesterday</div>
+</div>
+</button>
+</div>
+<div class="p-container-padding border-t border-outline-variant">
+<button class="w-full flex items-center justify-center gap-xs py-sm bg-surface hover:bg-surface-container border border-outline-variant rounded-DEFAULT text-body-base font-semibold transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    New Room
+                </button>
+</div>
+</aside>
+<!-- Center Chat Area -->
+<section class="flex-1 flex flex-col bg-surface-dim relative min-w-0">
+<!-- Chat Scrollable -->
+<div class="flex-1 overflow-y-auto p-container-padding flex flex-col gap-xl">
+<!-- User Message -->
+<div class="flex gap-md max-w-4xl mx-auto w-full justify-end">
+<div class="bg-surface border border-outline-variant rounded-xl rounded-tr-none p-container-padding max-w-[80%]">
+<p class="font-body-base text-body-base text-on-surface">Analyze the latency issues we're seeing in the `user_auth` service. Look at the logs from the last 24 hours and suggest optimizations for the Redis cache connection pooling.</p>
+</div>
+</div>
+<!-- AI Response Block -->
+<div class="flex gap-md max-w-4xl mx-auto w-full">
+<div class="w-8 h-8 rounded bg-surface border border-outline-variant flex items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-primary text-[20px]">smart_toy</span>
+</div>
+<div class="flex-1 space-y-md">
+<!-- Rich Text -->
+<div class="font-body-base text-body-base text-on-surface leading-relaxed">
+                            I've analyzed the logs for the <code class="font-code-mono text-code-mono bg-surface px-1 py-0.5 rounded border border-outline-variant text-primary">user_auth</code> service over the last 24 hours. The primary latency spikes correlate strongly with bursts of incoming authentication requests overwhelming the current Redis connection pool configuration.
+                        </div>
+<!-- Confidence/Processing Gauge -->
+<div class="flex items-center gap-sm bg-surface p-sm rounded border border-outline-variant w-max">
+<span class="material-symbols-outlined text-secondary-container text-[16px]">check_circle</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Analysis Confidence</span>
+<div class="w-24 h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="w-[92%] h-full bg-secondary-container"></div>
+</div>
+<span class="font-label-caps text-label-caps text-secondary-container uppercase">92%</span>
+</div>
+<!-- Source Cards -->
+<div class="grid grid-cols-2 gap-sm">
+<div class="bg-surface border border-outline-variant rounded-DEFAULT p-sm hover:border-primary transition-colors cursor-pointer group flex items-start gap-sm">
+<span class="material-symbols-outlined text-outline group-hover:text-primary text-[18px]">description</span>
+<div>
+<div class="font-body-secondary text-body-secondary font-semibold text-on-surface">prod-auth-cluster.log</div>
+<div class="font-label-caps text-label-caps text-outline mt-1 uppercase">1,240 lines analyzed</div>
+</div>
+</div>
+<div class="bg-surface border border-outline-variant rounded-DEFAULT p-sm hover:border-primary transition-colors cursor-pointer group flex items-start gap-sm">
+<span class="material-symbols-outlined text-outline group-hover:text-primary text-[18px]">database</span>
+<div>
+<div class="font-body-secondary text-body-secondary font-semibold text-on-surface">redis-config-v2.yml</div>
+<div class="font-label-caps text-label-caps text-outline mt-1 uppercase">Pool settings</div>
+</div>
+</div>
+</div>
+<!-- Code Block -->
+<div class="rounded-DEFAULT overflow-hidden border border-outline-variant bg-surface">
+<div class="flex justify-between items-center px-sm py-xs bg-surface-container border-b border-outline-variant">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">python (redis_client.py)</span>
+<button class="text-outline hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+<div class="p-sm overflow-x-auto">
+<pre class="font-code-mono text-code-mono text-on-surface-variant"><code><span class="text-[#ffb86e]">def</span> <span class="text-[#4edf92]">get_redis_pool</span>():
+    <span class="text-[#ffb86e]">return</span> redis.ConnectionPool(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        db=<span class="text-[#7c6dfa]">0</span>,
+        <span class="text-outline"># Optimization: Increase max_connections and add timeout</span>
+        max_connections=<span class="text-[#7c6dfa]">500</span>, <span class="text-outline"># Increased from 50</span>
+        timeout=<span class="text-[#7c6dfa]">2.0</span>,
+        socket_timeout=<span class="text-[#7c6dfa]">5.0</span>
+    )</code></pre>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Processing State -->
+<div class="flex gap-md max-w-4xl mx-auto w-full opacity-70">
+<div class="w-8 h-8 rounded bg-surface border border-outline-variant flex items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px] animate-spin">sync</span>
+</div>
+<div class="flex-1 space-y-2 pt-2">
+<div class="h-2 w-1/3 bg-surface rounded animate-pulse"></div>
+<div class="h-2 w-1/4 bg-surface rounded animate-pulse"></div>
+</div>
+</div>
+<!-- Bottom spacer so input doesn't cover last message -->
+<div class="h-32"></div>
+</div>
+<!-- Input Area -->
+<div class="absolute bottom-0 left-0 w-full p-container-padding bg-surface-dim z-10 border-t border-outline-variant">
+<div class="max-w-4xl mx-auto relative">
+<!-- Toolbar above input -->
+<div class="flex items-center gap-sm mb-xs px-xs">
+<div class="flex gap-1 bg-surface px-1 py-0.5 rounded border border-outline-variant">
+<button class="px-2 py-1 rounded text-label-caps font-label-caps uppercase bg-primary text-on-primary">Precise</button>
+<button class="px-2 py-1 rounded text-label-caps font-label-caps uppercase text-on-surface-variant hover:bg-surface-container transition-colors">Balanced</button>
+<button class="px-2 py-1 rounded text-label-caps font-label-caps uppercase text-on-surface-variant hover:bg-surface-container transition-colors">Creative</button>
+</div>
+<div class="h-4 w-[1px] bg-outline-variant mx-xs"></div>
+<span class="font-label-caps text-label-caps text-outline flex items-center gap-1 uppercase">
+<span class="material-symbols-outlined text-[14px]">token</span>
+                            24k / 128k ctx
+                        </span>
+</div>
+<!-- Main Input -->
+<div class="bg-surface border border-outline-variant focus-within:border-primary rounded-xl flex flex-col transition-all">
+<textarea class="w-full bg-transparent border-none outline-none resize-none p-md text-body-base font-body-base text-on-surface placeholder:text-on-surface-variant/50 focus:ring-0" placeholder="Message Asterion AI or type / for commands..." rows="3"></textarea>
+<div class="flex justify-between items-center p-sm border-t border-outline-variant bg-surface-container rounded-b-xl">
+<div class="flex items-center gap-xs">
+<button class="p-xs text-on-surface-variant hover:text-primary hover:bg-surface transition-colors rounded" title="Attach files">
+<span class="material-symbols-outlined text-[20px]">attach_file</span>
+</button>
+<button class="p-xs text-on-surface-variant hover:text-primary hover:bg-surface transition-colors rounded" title="Search web">
+<span class="material-symbols-outlined text-[20px]">travel_explore</span>
+</button>
+</div>
+<button class="bg-primary text-on-primary hover:bg-primary/90 px-md py-sm rounded-DEFAULT font-body-base font-semibold transition-all flex items-center gap-xs">
+                                Send
+                                <span class="material-symbols-outlined text-[16px]">send</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Artifact Panel -->
+<aside class="w-80 border-l border-outline-variant bg-surface-container-lowest flex flex-col z-30 shrink-0 hidden lg:flex">
+<div class="p-container-padding border-b border-outline-variant flex justify-between items-center">
+<h2 class="font-body-base text-body-base font-semibold text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">inventory_2</span>
+                    Session Artifacts
+                </h2>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-container-padding flex flex-col gap-md">
+<!-- File Artifact -->
+<div class="bg-surface border border-outline-variant rounded-DEFAULT overflow-hidden">
+<div class="p-sm flex items-start gap-sm border-b border-outline-variant bg-surface-container">
+<span class="material-symbols-outlined text-primary text-[24px]">code_blocks</span>
+<div class="flex-1">
+<div class="font-body-secondary text-body-secondary font-semibold text-on-surface">redis_pool_config.py</div>
+<div class="font-label-caps text-label-caps text-outline mt-1 uppercase">Generated Script • 2.4kb</div>
+</div>
+<button class="text-outline hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</div>
+<div class="p-xs bg-surface-container-highest">
+<div class="font-label-caps text-label-caps text-on-surface-variant text-center opacity-70 uppercase">Ready to deploy</div>
+</div>
+</div>
+<!-- Data Table Artifact Preview -->
+<div class="bg-surface border border-outline-variant rounded-DEFAULT overflow-hidden group cursor-pointer hover:border-primary transition-colors">
+<div class="p-sm flex items-start gap-sm border-b border-outline-variant bg-surface-container">
+<span class="material-symbols-outlined text-primary text-[24px]">table_chart</span>
+<div class="flex-1">
+<div class="font-body-secondary text-body-secondary font-semibold text-on-surface">Latency Metrics DB</div>
+<div class="font-label-caps text-label-caps text-outline mt-1 uppercase">Extracted Data • 42 rows</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors text-[18px]">open_in_new</span>
+</div>
+<!-- Mini visual representation of table -->
+<div class="p-sm bg-surface flex flex-col gap-1">
+<div class="flex gap-1 h-2">
+<div class="bg-outline-variant w-1/3 rounded-[1px]"></div>
+<div class="bg-outline-variant w-1/3 rounded-[1px]"></div>
+<div class="bg-outline-variant w-1/3 rounded-[1px]"></div>
+</div>
+<div class="flex gap-1 h-2">
+<div class="bg-outline-variant/50 w-1/3 rounded-[1px]"></div>
+<div class="bg-outline-variant/50 w-1/3 rounded-[1px]"></div>
+<div class="bg-outline-variant/50 w-1/3 rounded-[1px]"></div>
+</div>
+<div class="flex gap-1 h-2">
+<div class="bg-outline-variant/50 w-1/3 rounded-[1px]"></div>
+<div class="bg-outline-variant/50 w-1/3 rounded-[1px]"></div>
+<div class="bg-outline-variant/50 w-1/3 rounded-[1px]"></div>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</main>
+</div>
+</body></html>

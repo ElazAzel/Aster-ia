@@ -1,0 +1,37 @@
+[project]
+name = "asterion-api"
+version = "0.1.0"
+description = "Local-first FastAPI sidecar for Asterion AI"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "duckdb>=1.1.0",
+  "fastapi>=0.115.0",
+  "httpx>=0.28.0",
+  "keyring>=25.0.0",
+  "lancedb>=0.17.0",
+  "numpy>=2.0.0",
+  "pandas>=2.2.0",
+  "pydantic>=2.9.0",
+  "pylance>=0.23.0",
+  "pypdf>=5.0.0",
+  "sqlcipher3-binary>=0.6.0; sys_platform != 'win32'",
+  "sqlcipher3-wheels>=0.5.7; sys_platform == 'win32'",
+  "uvicorn[standard]>=0.32.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.0",
+  "pytest-asyncio>=0.24.0",
+  "ruff>=0.8.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
