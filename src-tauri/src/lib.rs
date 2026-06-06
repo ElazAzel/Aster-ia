@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use serde::Serialize;
@@ -12,9 +12,9 @@ use tauri_plugin_shell::ShellExt;
 const BACKEND_PORT: u16 = 8000;
 const BACKEND_HOST: &str = "127.0.0.1";
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 struct BackendProcess {
-    child: Mutex<Option<CommandChild>>,
+    child: Arc<Mutex<Option<CommandChild>>>,
 }
 
 #[derive(Serialize)]
@@ -126,6 +126,13 @@ async fn start_fastapi_sidecar(
     app: AppHandle,
     state: State<'_, BackendProcess>,
 ) -> Result<BackendStatus, String> {
+    start_fastapi_sidecar_inner(app, state.inner().clone()).await
+}
+
+async fn start_fastapi_sidecar_inner(
+    app: AppHandle,
+    state: BackendProcess,
+) -> Result<BackendStatus, String> {
     let already_running = {
         let child = state
             .child
@@ -187,6 +194,10 @@ async fn fastapi_health_check() -> Result<BackendStatus, String> {
 async fn shutdown_fastapi_sidecar(
     state: State<'_, BackendProcess>,
 ) -> Result<BackendStatus, String> {
+    shutdown_fastapi_sidecar_inner(state.inner().clone()).await
+}
+
+async fn shutdown_fastapi_sidecar_inner(state: BackendProcess) -> Result<BackendStatus, String> {
     let maybe_child = {
         let mut child = state
             .child
@@ -266,9 +277,9 @@ fn setup_tray(app: &tauri::App) -> Result<(), tauri::Error> {
             "restart" => {
                 let app_clone = app.clone();
                 tauri::async_runtime::spawn(async move {
-                    let state = app_clone.state::<BackendProcess>();
-                    let _ = shutdown_fastapi_sidecar(state.clone()).await;
-                    let _ = start_fastapi_sidecar(app_clone, state).await;
+                    let state = app_clone.state::<BackendProcess>().inner().clone();
+                    let _ = shutdown_fastapi_sidecar_inner(state.clone()).await;
+                    let _ = start_fastapi_sidecar_inner(app_clone, state).await;
                 });
             }
             "exit" => {
@@ -305,9 +316,9 @@ pub fn run() {
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
-            let state = app_handle.state::<BackendProcess>();
+            let state = app.state::<BackendProcess>().inner().clone();
             tauri::async_runtime::spawn(async move {
-                let start_res = start_fastapi_sidecar(app_handle.clone(), state).await;
+                let start_res = start_fastapi_sidecar_inner(app_handle.clone(), state).await;
                 if let Some(splash) = app_handle.get_webview_window("splashscreen") {
                     let _ = splash.close();
                 }
