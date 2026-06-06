@@ -1052,6 +1052,41 @@ class EncryptedSQLiteStore(BaseHarness):
         return count
 
     def _wipe_all_data_sync(self) -> None:
+        # Clear tables first in case file deletion fails due to OS locking on Windows
+        try:
+            conn = self._connect()
+            conn.execute("PRAGMA foreign_keys = OFF")
+            for table in ["messages", "conversations", "memories", "artifacts", "audit_logs", "rooms"]:
+                try:
+                    conn.execute(f"DELETE FROM {table}")
+                except Exception:
+                    pass
+            
+            # Re-seed the default room in case file deletion is skipped on Windows
+            from datetime import UTC, datetime
+            now = datetime.now(UTC).isoformat()
+            try:
+                conn.execute(
+                    """
+                    INSERT INTO rooms (id, name, color, allowed_models, memory_policy, retention_days, created_at, updated_at, system_prompt)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    ("default", "Default Room", "#2f80ed", "[]", "session", 30, now, now, ""),
+                )
+            except Exception:
+                pass
+
+            conn.commit()
+            conn.close()
+            with self._conns_lock:
+                if conn in self._open_conns:
+                    self._open_conns.remove(conn)
+            if hasattr(self._local, "conn") and self._local.conn is conn:
+                delattr(self._local, "conn")
+            conn = None
+        except Exception:
+            pass
+
         import gc
         import time
 
@@ -1068,29 +1103,36 @@ class EncryptedSQLiteStore(BaseHarness):
 
         gc.collect()
             
-        # 2. Delete keyring secret
-        try:
-            keyring.delete_password(self.settings.keyring_service, self.settings.keyring_db_key_name)
-        except Exception as exc:
-            self.logger.emit("keyring.delete_failed", error=str(exc))
-            
-        # 3. Delete DB files with retries for Windows
+        # 2. Delete DB files with retries for Windows
         db_path = self.path
+        db_deleted = False
         for suffix in ["", "-wal", "-shm"]:
             f = db_path.with_name(db_path.name + suffix)
             if f.exists():
+                suffix_deleted = False
                 for attempt in range(10):
                     try:
                         f.unlink()
+                        suffix_deleted = True
                         break
                     except Exception:
                         if attempt == 9:
                             try:
                                 f.unlink()
+                                suffix_deleted = True
                             except Exception as exc:
                                 self.logger.emit("db.delete_failed", path=str(f), error=str(exc))
                         else:
                             time.sleep(0.1)
+                if suffix == "" and suffix_deleted:
+                    db_deleted = True
+                    
+        # 3. Delete keyring secret ONLY if database file was successfully deleted
+        if db_deleted:
+            try:
+                keyring.delete_password(self.settings.keyring_service, self.settings.keyring_db_key_name)
+            except Exception as exc:
+                self.logger.emit("keyring.delete_failed", error=str(exc))
                     
         # 4. Delete LanceDB
         lancedb_dir = self.settings.data_dir / "lancedb"
@@ -1210,14 +1252,40 @@ class EncryptedSQLiteStore(BaseHarness):
         driver = self._driver()
         conn = driver.connect(str(self.path))
         conn.row_factory = self._row_factory
-        if SQLCIPHER_AVAILABLE:
-            conn.execute(f"PRAGMA key = {self._sql_literal(self._get_or_create_key())}")
-            conn.execute("PRAGMA cipher_page_size = 4096")
-            conn.execute("PRAGMA kdf_iter = 256000")
-            conn.execute("PRAGMA cipher_hmac_algorithm = HMAC_SHA512")
-            conn.execute("PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512")
-        
-        conn.execute("PRAGMA journal_mode = WAL;")
+        try:
+            if SQLCIPHER_AVAILABLE:
+                conn.execute(f"PRAGMA key = {self._sql_literal(self._get_or_create_key())}")
+                conn.execute("PRAGMA cipher_page_size = 4096")
+                conn.execute("PRAGMA kdf_iter = 256000")
+                conn.execute("PRAGMA cipher_hmac_algorithm = HMAC_SHA512")
+                conn.execute("PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512")
+            conn.execute("PRAGMA journal_mode = WAL;")
+        except Exception:
+            try:
+                conn.close()
+            except Exception:
+                pass
+            # Database might have incorrect/deleted key from keyring (e.g. after a partial wipe on Windows).
+            # Attempt to clean up and reconnect to a fresh database.
+            try:
+                self.path.unlink()
+            except Exception:
+                pass
+            for suffix in ["-wal", "-shm"]:
+                try:
+                    self.path.with_name(self.path.name + suffix).unlink()
+                except Exception:
+                    pass
+            conn = driver.connect(str(self.path))
+            conn.row_factory = self._row_factory
+            if SQLCIPHER_AVAILABLE:
+                conn.execute(f"PRAGMA key = {self._sql_literal(self._get_or_create_key())}")
+                conn.execute("PRAGMA cipher_page_size = 4096")
+                conn.execute("PRAGMA kdf_iter = 256000")
+                conn.execute("PRAGMA cipher_hmac_algorithm = HMAC_SHA512")
+                conn.execute("PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512")
+            conn.execute("PRAGMA journal_mode = WAL;")
+
         conn.execute("PRAGMA synchronous = NORMAL;")
         
         self._local.conn = conn

@@ -215,11 +215,42 @@ async def test_system_backup_restore_and_wipe(test_app):
         assert len(backup_str) > 0
         
         # 2. Wipe data
+        with store._conns_lock:
+            for conn in store._open_conns:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+            store._open_conns.clear()
+
+        if hasattr(store._local, "conn"):
+            try:
+                store._local.conn.close()
+            except Exception:
+                pass
+            delattr(store._local, "conn")
+
+        import asyncio
+        loop = asyncio.get_running_loop()
+        if getattr(loop, "_default_executor", None) is not None:
+            loop._default_executor.shutdown(wait=True)
+            loop._default_executor = None
+
+        # Clear dependency caches and garbage collect to release references holding file locks
+        from asterion_api import dependencies
+        dependencies.get_store.cache_clear()
+        dependencies.get_chat_service.cache_clear()
+        dependencies.get_memory_ledger.cache_clear()
+        dependencies.get_agent_executor.cache_clear()
+        import gc
+        gc.collect()
+
         res = await ac.post("/api/system/wipe")
         assert res.status_code == 200
         assert res.json()["ok"] is True
         
         # Check files/keys deleted. Re-ensure schema will create a fresh blank DB
+        store = get_store()
         await store.ensure_schema()
         rooms = await store.list_rooms()
         # Fresh DB only has 'default' room, no 'room_sec'

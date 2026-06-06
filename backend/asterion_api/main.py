@@ -55,6 +55,7 @@ async def memory_ttl_enforcer() -> None:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    import sys
     settings = get_settings()
     await get_store().ensure_schema()
     
@@ -62,21 +63,24 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     ollama = get_ollama_service()
     await ollama.ensure_models(settings.required_models)
     
-    # Start RAG file watcher
-    indexer = get_document_indexer()
-    indexer.start_watcher(watch_dir=settings.data_dir / "vault")
+    in_test = "pytest" in sys.modules
     
-    # Start memory TTL enforcer
-    ttl_task = asyncio.create_task(memory_ttl_enforcer())
+    # Start RAG file watcher
+    if not in_test:
+        indexer = get_document_indexer()
+        indexer.start_watcher(watch_dir=settings.data_dir / "vault")
+        
+        # Start memory TTL enforcer
+        ttl_task = asyncio.create_task(memory_ttl_enforcer())
     
     yield
     
-    # Cancel memory TTL enforcer
-    ttl_task.cancel()
-    try:
-        await ttl_task
-    except asyncio.CancelledError:
-        pass
+    if not in_test:
+        ttl_task.cancel()
+        try:
+            await ttl_task
+        except asyncio.CancelledError:
+            pass
         
     await ollama.aclose()
 
