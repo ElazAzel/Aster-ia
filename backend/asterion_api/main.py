@@ -30,6 +30,7 @@ from asterion_api.routers import (
     rooms,
     system,
     telemetry,
+    voice,
     workflows,
 )
 
@@ -165,3 +166,4 @@ app.include_router(analytics.router)
 app.include_router(audit.router)
 app.include_router(system.router)
 app.include_router(telemetry.router)
+app.include_router(voice.router)

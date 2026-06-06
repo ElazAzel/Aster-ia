@@ -16,6 +16,7 @@ from asterion_api.services.ollama_service import OllamaService
 from asterion_api.services.plugin_manager import PluginManager
 from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
 from asterion_api.services.rag import DocumentIndexer
+from asterion_api.services.voice_service import VoiceService
 from asterion_api.services.workflow_runner import WorkflowRunner
 from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
 
@@ -93,6 +94,11 @@ def get_agent_executor() -> AgentExecutor:
 @lru_cache(maxsize=1)
 def get_comfyui_service() -> ComfyUIService:
     return ComfyUIService()
+
+
+@lru_cache(maxsize=1)
+def get_voice_service() -> VoiceService:
+    return VoiceService()
 
 
 @lru_cache(maxsize=1)

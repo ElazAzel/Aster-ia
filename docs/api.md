@@ -144,6 +144,65 @@ Response:
 
 If `mode=api`, Privacy Radar must treat the route as red until approved.
 
+## Voice
+
+`GET /api/voice/status`
+
+Returns the local voice engine state:
+
+```json
+{
+  "ok": true,
+  "privacy_level": "local",
+  "engine": "faster-whisper",
+  "whisper_available": true,
+  "model_name": "base",
+  "device": "cpu",
+  "supported_formats": [".flac", ".m4a", ".mp3", ".ogg", ".wav", ".webm"],
+  "note": "Transcription runs locally when faster-whisper is installed."
+}
+```
+
+`POST /api/voice/transcribe`
+
+Multipart form fields:
+
+- `file`: `.mp3`, `.wav`, `.m4a`, `.webm`, `.ogg`, or `.flac`
+- `mode`: `note` or `meeting`
+- `language`: optional language hint such as `ru` or `en`
+- `diarize`: optional boolean; diarization is currently reported as unavailable
+
+Response:
+
+```json
+{
+  "text": "transcript",
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 2.4,
+      "text": "transcript segment"
+    }
+  ],
+  "language": "ru",
+  "duration": 12.5,
+  "privacy_level": "local",
+  "engine": "faster-whisper"
+}
+```
+
+When `faster-whisper` is not installed, the endpoint remains local and returns
+`engine=fallback` plus a setup hint instead of calling an external transcription API.
+
+`POST /api/voice/transcribe/text`
+
+Multipart form fields:
+
+- `text`: transcript or voice note text
+- `mode`: `notes` or `meeting`
+
+Returns structured `summary`, `action_items`, `decisions`, `questions`, and markdown.
+
 ## Privacy
 
 `POST /api/privacy/analyze`

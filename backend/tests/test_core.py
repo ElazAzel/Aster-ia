@@ -102,6 +102,88 @@ def test_all_services_implement_harness():
 
 # ── Workflow Runner ───────────────────────────────────────────────────────────
 
+def test_voice_service_implements_harness():
+    from asterion_api.harness import BaseHarness
+    from asterion_api.services.voice_service import VoiceService
+    assert issubclass(VoiceService, BaseHarness)
+
+
+def test_voice_status_has_local_privacy():
+    from asterion_api.services.voice_service import VoiceService
+    status = VoiceService().status()
+    assert status["privacy_level"] == "local"
+    assert ".wav" in status["supported_formats"]
+
+
+@pytest.mark.asyncio
+async def test_voice_transcribe_fallback_without_whisper(tmp_path):
+    from asterion_api.services.voice_service import VoiceService
+    audio = tmp_path / "sample.wav"
+    audio.write_bytes(b"not real audio")
+    service = VoiceService()
+    service.set_state({"whisper_available": False})
+    result = await service.transcribe(audio)
+    assert result["engine"] == "fallback"
+    assert result["privacy_level"] == "local"
+
+
+@pytest.mark.asyncio
+async def test_voice_transcribe_rejects_unsupported_format(tmp_path):
+    from asterion_api.services.voice_service import VoiceService
+    audio = tmp_path / "sample.exe"
+    audio.write_bytes(b"bad")
+    service = VoiceService()
+    with pytest.raises(ValueError, match="Unsupported audio format"):
+        await service.transcribe(audio)
+
+
+def test_voice_meeting_extracts_actions_questions_and_decisions():
+    from asterion_api.services.voice_service import VoiceService
+    text = (
+        "We decided to keep local mode. Нужно сделать тесты завтра. "
+        "Who owns the release?"
+    )
+    result = VoiceService().analyze_meeting({"text": text})
+    assert result["decisions"]
+    assert result["action_items"]
+    assert result["questions"] == ["Who owns the release?"]
+
+
+def test_voice_structure_text_returns_markdown():
+    from asterion_api.services.voice_service import VoiceService
+    result = VoiceService().structure_text(
+        "Decision: local first. Нужно сделать release checklist.",
+        mode="meeting",
+    )
+    assert "# Voice Meeting" in result["markdown"]
+    assert "Action Items" in result["markdown"]
+
+
+@pytest.mark.asyncio
+async def test_voice_execute_status():
+    from asterion_api.services.voice_service import VoiceService
+    result = await VoiceService().execute({"action": "status"})
+    assert result["ok"] is True
+
+
+@pytest.mark.asyncio
+async def test_voice_execute_requires_file_path():
+    from asterion_api.services.voice_service import VoiceService
+    with pytest.raises(ValueError, match="file_path"):
+        await VoiceService().execute({"action": "transcribe"})
+
+
+@pytest.mark.asyncio
+async def test_voice_execute_structure():
+    from asterion_api.services.voice_service import VoiceService
+    result = await VoiceService().execute({
+        "action": "structure",
+        "text": "Нужно проверить privacy radar.",
+        "mode": "notes",
+    })
+    assert result["action_items"]
+
+
 @pytest.mark.asyncio
 async def test_workflow_runner_completes():
     from asterion_api.services.workflow_runner import WorkflowRunner
@@ -467,6 +549,7 @@ def test_analytics_and_report_export(tmp_path):
     dependencies.get_agent_registry.cache_clear()
     dependencies.get_agent_executor.cache_clear()
     dependencies.get_comfyui_service.cache_clear()
+    dependencies.get_voice_service.cache_clear()
     dependencies.get_workflow_runner.cache_clear()
     dependencies.get_plugin_manager.cache_clear()
 

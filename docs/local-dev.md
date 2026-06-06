@@ -123,6 +123,42 @@ cd frontend
 npm run build
 ```
 
+## Docker Dev Loop
+
+The repository includes a local development Docker profile:
+
+```powershell
+docker compose up --build
+```
+
+Services:
+
+- FastAPI backend on `http://127.0.0.1:8000`
+- Svelte/Vite frontend on `http://127.0.0.1:5173`
+- SearXNG on `http://127.0.0.1:8080`
+
+The backend container reads Ollama from the host at:
+
+```text
+http://host.docker.internal:11434
+```
+
+Docker mode sets `ASTERION_ALLOW_PLAINTEXT_SQLITE_FOR_DEV=1` because generic Linux
+containers do not have reliable OS keychain access. Desktop and normal local runs still
+use SQLCipher + `keyring` by default.
+
+## Voice Mode
+
+Voice Mode works without external services. For real local transcription, install the
+optional backend extra:
+
+```powershell
+cd backend
+uv sync --extra dev --extra voice
+```
+
+Without the extra, `/api/voice/transcribe` stays local and returns a fallback setup hint.
+
 ## Offline Manifest Check
 
 Run without starting FastAPI:

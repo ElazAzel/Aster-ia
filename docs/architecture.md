@@ -91,6 +91,7 @@ http://127.0.0.1:8000
 | `WorkflowRunner` | workflow steps and approval gates | local |
 | `PluginManager` | local plugin manifest loading | local |
 | `AgentRegistry` | manifest loading and validation | local |
+| `VoiceService` | local audio transcription and voice-note structuring | local |
 
 ## MVP Data Contracts
 
@@ -172,6 +173,26 @@ sequenceDiagram
     API->>RAG: dense + BM25 search
     RAG-->>UI: scored RagChunk[]
 ```
+
+## Voice Flow
+
+```mermaid
+sequenceDiagram
+    participant UI as VoiceTab
+    participant API as FastAPI /api/voice
+    participant Voice as VoiceService
+    participant Whisper as faster-whisper
+
+    UI->>API: multipart audio upload
+    API->>Voice: validate local format
+    Voice->>Whisper: local transcription when installed
+    Whisper-->>Voice: segments + language + duration
+    Voice-->>API: transcript + privacy_level=local
+    API-->>UI: structured voice result
+```
+
+If `faster-whisper` is not installed, `VoiceService` returns a local fallback response
+with setup instructions and does not call any external speech API.
 
 ## Desktop Shell
 

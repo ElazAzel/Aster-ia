@@ -24,6 +24,7 @@
   } from './stores';
   import { getGpuInfo, installOllama } from './tauri';
   import { exportSystemData, importSystemData, wipeSystemData } from './api';
+  import ModelCookbook from './ModelCookbook.svelte';
 
   let detectedGpus: Array<{ name: string; vram_gb: number }> = [];
   let ollamaInstallStatus = '';
@@ -204,6 +205,8 @@
         </div>
       {/if}
     </section>
+
+    <ModelCookbook />
 
     <!-- Keyboard shortcuts & Onboarding -->
     <section class="panel">

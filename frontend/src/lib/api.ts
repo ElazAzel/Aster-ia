@@ -24,6 +24,34 @@ export type ModelsResponse = {
   privacy_level: 'local';
 };
 
+export type VoiceStatus = {
+  ok: boolean;
+  privacy_level: 'local';
+  engine: string;
+  whisper_available: boolean;
+  model_name: string;
+  device: string;
+  supported_formats: string[];
+  note: string;
+};
+
+export type VoiceTranscriptResponse = {
+  text: string;
+  segments: Array<{ start: number; end: number; text: string }>;
+  language?: string | null;
+  duration?: number | null;
+  diarization?: string | null;
+  privacy_level: 'local';
+  engine: string;
+  error?: string | null;
+  meeting?: Record<string, unknown>;
+  summary?: string[];
+  action_items?: string[];
+  decisions?: string[];
+  questions?: string[];
+  markdown?: string;
+};
+
 export type PrivacyReport = {
   level: RiskLevel;
   items: Array<{
@@ -249,6 +277,82 @@ export function getHealth(apiBase: string) {
 
 export function getModels(apiBase: string) {
   return request<ModelsResponse>(apiBase, '/api/models');
+}
+
+export function getVoiceStatus(apiBase: string) {
+  return request<VoiceStatus>(apiBase, '/api/voice/status');
+}
+
+export async function transcribeVoice(
+  apiBase: string,
+  file: File,
+  mode = 'note',
+  language = '',
+  diarize = false
+) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('mode', mode);
+  formData.append('diarize', diarize ? 'true' : 'false');
+  if (language.trim()) formData.append('language', language.trim());
+
+  const response = await fetch(`${apiBase}/api/voice/transcribe`, {
+    method: 'POST',
+    body: formData
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `${response.status} ${response.statusText}`);
+  }
+  return response.json() as Promise<VoiceTranscriptResponse>;
+}
+
+export async function structureVoiceText(apiBase: string, text: string, mode = 'notes') {
+  const formData = new FormData();
+  formData.append('text', text);
+  formData.append('mode', mode);
+  const response = await fetch(`${apiBase}/api/voice/transcribe/text`, {
+    method: 'POST',
+    body: formData
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `${response.status} ${response.statusText}`);
+  }
+  return response.json() as Promise<VoiceTranscriptResponse>;
+}
+
+export async function* pullModel(
+  apiBase: string,
+  model: string
+): AsyncGenerator<Record<string, unknown>, void> {
+  const response = await fetch(`${apiBase}/api/models/pull`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model })
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `${response.status} ${response.statusText}`);
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) return;
+  const decoder = new TextDecoder();
+  let buffer = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const raw = line.slice(6).trim();
+      if (!raw) continue;
+      yield JSON.parse(raw) as Record<string, unknown>;
+    }
+  }
 }
 
 export function listChatConversations(apiBase: string, roomId?: string) {

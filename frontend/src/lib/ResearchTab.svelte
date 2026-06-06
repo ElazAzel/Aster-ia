@@ -6,6 +6,7 @@
     exportedReport,
     exportResearchArtifact
   } from './stores';
+  import ResearchCanvas from './ResearchCanvas.svelte';
 </script>
 
 <div class="tab-content">
@@ -51,4 +52,5 @@
       {/if}
     </section>
   </div>
+  <ResearchCanvas />
 </div>

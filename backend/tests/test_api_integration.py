@@ -36,6 +36,7 @@ async def test_app(tmp_path):
     dependencies.get_agent_registry.cache_clear()
     dependencies.get_agent_executor.cache_clear()
     dependencies.get_comfyui_service.cache_clear()
+    dependencies.get_voice_service.cache_clear()
     dependencies.get_workflow_runner.cache_clear()
     dependencies.get_plugin_manager.cache_clear()
     
@@ -80,6 +81,24 @@ async def test_models_endpoints(test_app, monkeypatch):
         data = res.json()
         assert len(data["models"]) == 1
         assert data["models"][0]["name"] == "llama3.2:latest"
+
+
+@pytest.mark.asyncio
+async def test_voice_endpoints(test_app):
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
+        res = await ac.get("/api/voice/status")
+        assert res.status_code == 200
+        assert res.json()["privacy_level"] == "local"
+
+        res = await ac.post(
+            "/api/voice/transcribe/text",
+            data={"text": "Нужно проверить release. Who owns QA?", "mode": "meeting"},
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["privacy_level"] == "local"
+        assert data["action_items"]
+        assert data["questions"] == ["Who owns QA?"]
 
 
 @pytest.mark.asyncio

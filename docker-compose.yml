@@ -1,0 +1,48 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      ASTERION_API_HOST: 0.0.0.0
+      ASTERION_API_PORT: 8000
+      ASTERION_DATA_DIR: /data
+      ASTERION_ALLOW_PLAINTEXT_SQLITE_FOR_DEV: "1"
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8000:8000"
+    volumes:
+      - asterion-data:/data
+    depends_on:
+      - searxng
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      VITE_ASTERION_API_BASE: http://127.0.0.1:8000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules:/app/node_modules
+    depends_on:
+      - backend
+
+  searxng:
+    image: searxng/searxng:latest
+    environment:
+      BASE_URL: http://127.0.0.1:8080/
+      SEARXNG_SECRET_KEY: ${SEARXNG_SECRET_KEY:-asterion-local-dev-change-me}
+    ports:
+      - "8080:8080"
+    volumes:
+      - searxng-data:/etc/searxng
+
+volumes:
+  asterion-data:
+  frontend-node-modules:
+  searxng-data:

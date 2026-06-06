@@ -4,26 +4,29 @@
     activeWorkbenchTab,
     flightLogs,
     agentTask,
-    selectedAgent,
-    selectedAgentId,
     agentPlan,
-    agentRun,
     exportedReport,
     simulatePlan,
     createPlannedAgentRun
   } from './stores';
+  import FlightRecorder from './FlightRecorder.svelte';
 
   const PERMISSION_PRESETS = [
     { label: 'Минимальные', permissions: { allowed_folders: [], network: false, shell: false } },
-    { label: 'Чтение файлов', permissions: { allowed_folders: ['~/documents'], network: false, shell: false } },
+    {
+      label: 'Чтение файлов',
+      permissions: { allowed_folders: ['~/documents'], network: false, shell: false }
+    },
     { label: 'Веб-доступ', permissions: { allowed_folders: [], network: true, shell: false } },
-    { label: 'Полный доступ', permissions: { allowed_folders: ['~'], network: true, shell: true } },
+    {
+      label: 'Полный доступ',
+      permissions: { allowed_folders: ['~'], network: true, shell: true }
+    }
   ];
   let permissionPreset = PERMISSION_PRESETS[0];
 </script>
 
 <aside class="right-panel" class:hidden={!$showRightPanel} aria-label="Workbench панель">
-  <!-- Workbench Tabs -->
   <div class="workbench-tabs">
     <button
       type="button"
@@ -57,21 +60,33 @@
     </button>
   </div>
 
-  <!-- Workbench Content -->
   <div class="workbench-content">
     {#if $activeWorkbenchTab === 'plan'}
       <div class="workbench-plan-section">
         <div style="display: flex; flex-direction: column; gap: 8px;">
-          <p style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Конструктор задач (Agent Lab)</p>
+          <p style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">
+            Конструктор задач (Agent Lab)
+          </p>
           <form on:submit|preventDefault={simulatePlan} class="stack-form" style="gap: 8px;">
-            <textarea bind:value={$agentTask} rows="3" placeholder="Опишите задачу для агента..." style="font-size: 12px; padding: 8px 10px;"></textarea>
+            <textarea
+              bind:value={$agentTask}
+              rows="3"
+              placeholder="Опишите задачу для агента..."
+              style="font-size: 12px; padding: 8px 10px;"
+            ></textarea>
             <div style="display:flex;gap:8px;align-items:center">
               <select bind:value={permissionPreset} style="flex:1;font-size:11px;padding:6px 8px">
                 {#each PERMISSION_PRESETS as preset}
                   <option value={preset}>{preset.label}</option>
                 {/each}
               </select>
-              <button type="submit" disabled={!$agentTask.trim()} style="min-height: 32px; font-size: 12px; padding: 0 14px;">Собрать AgentPlan</button>
+              <button
+                type="submit"
+                disabled={!$agentTask.trim()}
+                style="min-height: 32px; font-size: 12px; padding: 0 14px;"
+              >
+                Собрать AgentPlan
+              </button>
             </div>
           </form>
         </div>
@@ -80,7 +95,13 @@
           <div class="plan-box" style="padding: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <strong style="font-size: 12px;">~{$agentPlan.estimated_tokens} токенов</strong>
-              <button type="button" class="text-button" on:click={() => createPlannedAgentRun(permissionPreset.permissions)}>Запустить</button>
+              <button
+                type="button"
+                class="text-button"
+                on:click={() => createPlannedAgentRun(permissionPreset.permissions)}
+              >
+                Запустить
+              </button>
             </div>
             <ol style="font-size: 12px; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; color: var(--text-secondary);">
               {#each $agentPlan.steps as step}
@@ -102,35 +123,7 @@
       </div>
 
     {:else if $activeWorkbenchTab === 'logs'}
-      {#if $agentRun}
-        <div style="display: flex; flex-direction: column; gap: 4px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color);">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <strong style="font-size: 12px;">{$agentRun.agent_id}</strong>
-            <span class="count" style="font-size: 10px;">{$agentRun.status}</span>
-          </div>
-          <small style="font-size: 10px; color: var(--text-muted); font-family: var(--font-mono);">Run: {$agentRun.id}</small>
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-          {#each $flightLogs as log}
-            <div class="workbench-log-entry">
-              <div class="log-header">
-                <span class="log-action">{log.action}</span>
-                <span class="log-meta">{log.tool} · {log.privacy_level}</span>
-              </div>
-              {#if log.output}
-                <div class="log-output">{log.output}</div>
-              {/if}
-            </div>
-          {:else}
-            <p class="empty" style="font-size: 12px;">Логи выполнения отсутствуют.</p>
-          {/each}
-        </div>
-      {:else}
-        <div class="empty-state">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-          <p>Запустите задачу агента для просмотра логов</p>
-        </div>
-      {/if}
+      <FlightRecorder />
 
     {:else if $activeWorkbenchTab === 'artifacts'}
       {#if $exportedReport}
@@ -140,9 +133,13 @@
             <span class="artifact-kind">{$exportedReport.artifact.kind}</span>
           </div>
           <div class="artifact-preview">
-            <span style="font-size: 11px; color: var(--text-muted);">ID: {$exportedReport.artifact.id}</span>
+            <span style="font-size: 11px; color: var(--text-muted);">
+              ID: {$exportedReport.artifact.id}
+            </span>
             <br>
-            <span style="font-size: 11px; color: var(--text-muted);">Фактов: {$exportedReport.receipts_count}</span>
+            <span style="font-size: 11px; color: var(--text-muted);">
+              Фактов: {$exportedReport.receipts_count}
+            </span>
           </div>
           <div style="background: var(--bg-input); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px; line-height: 1.5; font-family: var(--font-mono); color: var(--text-secondary); max-height: 200px; overflow-y: auto;">
             {$exportedReport.artifact.source}

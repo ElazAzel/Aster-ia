@@ -8,6 +8,9 @@
     {#if $activeTab === 'chat'}
       <p class="eyebrow">Окружение диалога</p>
       <h1>Интерактивный чат</h1>
+    {:else if $activeTab === 'voice'}
+      <p class="eyebrow">Локальная речь и заметки</p>
+      <h1>Voice Mode</h1>
     {:else if $activeTab === 'agents'}
       <p class="eyebrow">Манифесты процессов</p>
       <h1>Каталог Агентов</h1>

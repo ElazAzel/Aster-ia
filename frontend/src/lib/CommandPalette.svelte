@@ -18,6 +18,7 @@
 
   // Base navigation commands
   const baseCommands = [
+    { id: 'nav-voice', title: 'Открыть Voice Mode', category: 'Навигация', action: () => { $activeTab = 'voice'; } },
     { id: 'nav-chat', title: 'Перейти в Чат', category: 'Навигация', action: () => { $activeTab = 'chat'; } },
     { id: 'nav-agents', title: 'Открыть Лабораторию агентов', category: 'Навигация', action: () => { $activeTab = 'agents'; } },
     { id: 'nav-vault', title: 'Открыть Хранилище (RAG Vault)', category: 'Навигация', action: () => { $activeTab = 'vault'; } },

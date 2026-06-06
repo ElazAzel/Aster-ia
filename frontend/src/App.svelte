@@ -32,6 +32,7 @@
   import Workbench from './lib/Workbench.svelte';
   import StreamingChat from './lib/StreamingChat.svelte';
   import ToastContainer from './lib/ToastContainer.svelte';
+  import VoiceTab from './lib/VoiceTab.svelte';
 
   // Import Tab Components
   import AgentLabTab from './lib/AgentLabTab.svelte';
@@ -50,6 +51,7 @@
 
   const TAB_TABS = [
     'chat',
+    'voice',
     'agents',
     'vault',
     'research',
@@ -160,6 +162,9 @@
 
       {:else if $activeTab === 'agents'}
         <AgentLabTab />
+
+      {:else if $activeTab === 'voice'}
+        <VoiceTab />
 
       {:else if $activeTab === 'vault'}
         <VaultTab />

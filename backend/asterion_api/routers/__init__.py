@@ -12,6 +12,7 @@ from asterion_api.routers import (
     rag,
     research,
     rooms,
+    voice,
     workflows,
 )
 
@@ -29,5 +30,6 @@ __all__ = [
     "rag",
     "research",
     "rooms",
+    "voice",
     "workflows",
 ]

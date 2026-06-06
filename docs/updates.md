@@ -2,6 +2,18 @@
 
 ## 2026-06-06
 
+### Phase 3 Completion: Voice, Cookbook, Docker, Release Docs
+
+- Added local-first Voice Mode backend: `VoiceService`, `/api/voice/status`, `/api/voice/transcribe`, `/api/voice/meeting`, and `/api/voice/transcribe/text`. The service implements `BaseHarness` and returns a local fallback setup hint when `faster-whisper` is not installed.
+- Added Svelte Voice Mode UI with browser microphone recording, local audio upload, transcript display, meeting summary, action items, decisions, and questions.
+- Added `ModelCookbook.svelte` with eight Ollama recipes and streaming model pull progress via existing `/api/models/pull`.
+- Added `ResearchCanvas.svelte` and `FlightRecorder.svelte` for clearer research artifact and agent log surfaces.
+- Added local development infrastructure: `docker-compose.yml`, `backend/Dockerfile`, `frontend/Dockerfile.dev`, `Makefile`, `.github/dependabot.yml`, `SECURITY.md`, and `CONTRIBUTING.md`.
+- Extended Meta-Harness source contracts to cover Voice Mode, frontend Phase 3 components, and devops/community files.
+- Updated API, architecture, and local development docs for Voice Mode and Docker.
+
+## 2026-06-06
+
 ### Phase 5: UX/UI Polish and E2E Testing (Block 7)
 
 - **Release Entry Point Repair**: Added `backend/main.py` as a PyInstaller-compatible sidecar entrypoint that delegates to `asterion_api.__main__.main`, fixing the release workflow path expected by `.github/workflows/release.yml`.
