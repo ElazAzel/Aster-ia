@@ -75,7 +75,7 @@ class DocumentIndexer(BaseHarness):
 
     async def hybrid_search(self, *, query: str, room_id: str, limit: int) -> list[RagChunk]:
         query_vector = (await self.ollama.embed(model=self.embedding_model, input_texts=[query]))[0]
-        rows = self._all_rows(room_id)
+        rows = self._all_rows_paginated(room_id, max_rows=2000)
         dense = self._dense_scores(query_vector, rows)
         bm25 = self._bm25_scores(query, rows)
         merged = []
@@ -104,15 +104,29 @@ class DocumentIndexer(BaseHarness):
         elif rows:
             db.create_table(self.table_name, data=rows)
 
-    def _all_rows(self, room_id: str) -> list[dict[str, Any]]:
+    def _all_rows_paginated(self, room_id: str, max_rows: int = 2000) -> list[dict[str, Any]]:
         import lancedb
 
         self.db_path.mkdir(parents=True, exist_ok=True)
         db = lancedb.connect(str(self.db_path))
         if self.table_name not in db.table_names():
             return []
-        records = db.open_table(self.table_name).to_pandas().to_dict("records")
-        return [row for row in records if row.get("room_id") == room_id]
+        table = db.open_table(self.table_name)
+        count = min(table.count_rows(), max_rows)
+        if count == 0:
+            return []
+        reader = table.to_batches(batch_size=500)
+        rows = []
+        for batch in reader:
+            pdf = batch.to_pandas()
+            for record in pdf.to_dict("records"):
+                if record.get("room_id") == room_id and len(rows) < max_rows:
+                    rows.append(record)
+                if len(rows) >= max_rows:
+                    break
+            if len(rows) >= max_rows:
+                break
+        return rows
 
     @staticmethod
     def _chunk(text: str, size: int = 1200, overlap: int = 160) -> list[str]:

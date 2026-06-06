@@ -1,7 +1,7 @@
 {
   "metrics": {
     "task_success_rate": 1.0,
-    "avg_latency_ms": 40.41171073913574,
+    "avg_latency_ms": 40.102243423461914,
     "privacy_score": 1.0,
     "harness_efficiency": 0.98,
     "ui_contracts_passed": 8,
@@ -9,7 +9,7 @@
     "source_contracts_passed": 84,
     "source_contracts_total": 84,
     "phase": 1,
-    "iterations_completed": 3
+    "iterations_completed": 1
   },
   "ui_contracts": {
     "Left Sidebar (240px)": true,
@@ -111,19 +111,7 @@
     {
       "run": 1,
       "startup_success": true,
-      "chat_latency_seconds": 0.040719032287597656,
-      "status": "PASS"
-    },
-    {
-      "run": 2,
-      "startup_success": true,
-      "chat_latency_seconds": 0.04022717475891113,
-      "status": "PASS"
-    },
-    {
-      "run": 3,
-      "startup_success": true,
-      "chat_latency_seconds": 0.04028892517089844,
+      "chat_latency_seconds": 0.040102243423461914,
       "status": "PASS"
     }
   ]

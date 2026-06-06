@@ -56,7 +56,8 @@ class ChatService(BaseHarness):
             content=request.message,
             model=model,
         )
-        text = await self.ollama.generate(model=model, prompt=request.message)
+        prompt = await self._build_prompt(conv_id, request.message)
+        text = await self.ollama.generate(model=model, prompt=prompt)
         artifact = await self._persist_response_artifact(
             room_id=request.room_id,
             prompt=request.message,
@@ -96,9 +97,10 @@ class ChatService(BaseHarness):
             content=request.message,
             model=model,
         )
+        prompt = await self._build_prompt(conv_id, request.message)
         parts: list[str] = []
         started = time.perf_counter()
-        async for chunk in self.ollama.stream_generate(model=model, prompt=request.message):
+        async for chunk in self.ollama.stream_generate(model=model, prompt=prompt):
             token = str(chunk.get("response", ""))
             if token:
                 parts.append(token)
@@ -132,6 +134,21 @@ class ChatService(BaseHarness):
             "latency_ms": (time.perf_counter() - started) * 1000,
             "privacy_level": self.privacy_level,
         }
+
+    async def _build_prompt(self, conv_id: str, current_message: str, max_chars: int = 8000) -> str:
+        history = await self.store.list_messages(conv_id)
+        parts = [f"User: {current_message}"]
+        used = len(parts[0])
+        for msg in reversed(history):
+            role = msg.get("role", "user")
+            content = str(msg.get("content", ""))
+            line = f"\n{'User' if role == 'user' else 'Assistant'}: {content}"
+            if used + len(line) > max_chars:
+                break
+            parts.append(line)
+            used += len(line)
+        parts.reverse()
+        return "".join(parts)
 
     async def _persist_response_artifact(
         self,
