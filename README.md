@@ -1,5 +1,7 @@
 # Asterion AI
 
+[![CI](https://github.com/ElazAzel/Aster-ia/actions/workflows/ci.yml/badge.svg)](https://github.com/ElazAzel/Aster-ia/actions/workflows/ci.yml)
+
 Asterion AI is a local-first desktop AI workspace.
 
 The current scaffold contains:
@@ -10,7 +12,7 @@ The current scaffold contains:
 - SQLCipher-encrypted SQLite storage with keys in the OS keychain.
 - LanceDB RAG pipeline.
 - DuckDB-backed research aggregation.
-- Runtime Agent Registry with 10 agents and 16 skills.
+- Runtime Agent Registry with 10 agents and 20 skills.
 - Agent catalog validation through `/api/agents/catalog/validate`.
 - Workflow, plugin, sandbox, and privacy contracts.
 - Svelte/Vite frontend shell wired to the FastAPI sidecar.
