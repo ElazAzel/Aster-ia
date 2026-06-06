@@ -42,7 +42,26 @@ class ChatResponse(BaseModel):
     model: str
     response: str
     latency_ms: float
+    artifact_id: str | None = None
     privacy_level: Literal["local"] = "local"
+    ts: datetime
+
+
+class ChatConversationRecord(BaseModel):
+    id: str
+    room_id: str
+    created_at: datetime
+    message_count: int = 0
+    latest_ts: datetime | None = None
+
+
+class ChatMessageRecord(BaseModel):
+    id: str
+    conv_id: str
+    role: Literal["system", "user", "assistant", "tool"]
+    content: str
+    model: str | None = None
+    artifact_id: str | None = None
     ts: datetime
 
 

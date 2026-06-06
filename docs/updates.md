@@ -2,6 +2,28 @@
 
 ## 2026-06-06
 
+### UX/UI Редизайн: Трехколоночный Workbench + Умный ввод
+
+- **Трехколоночный интерфейс Workbench**: Левая панель (контекстные комнаты + Memory Ledger), центр (чат), правая панель Workbench с вкладками (План, Логи, Артефакты). Все три колонки можно сворачивать через кнопки в шапке.
+- **Умные команды `/` и контекст `@`**: В поле ввода чата интегрирован выпадающий список автозаполнения. `/` открывает команды (`/simulate`, `/search`, `/privacy`, `/clear`), `@` — выбор комнаты или модели. Навигация стрелками, выбор Enter/Tab, закрытие Escape.
+- **Workbench**: Правая панель с тремя вкладками. Вкладка «План» содержит Agent Lab. Вкладка «Логи» показывает Flight Recorder. Вкладка «Артефакты» отображает экспортированные Research Receipts и AgentPlan. Автоматическое переключение при генерации артефактов.
+- **Source Cards (Perplexity-style)**: Микро-карточки источников с иконками и ссылками, рендерятся в сообщениях ассистента через `[source:title](url)`.
+- **Стиль "Wow"**: Фоновые светящиеся градиентные сферы (mesh gradients), `backdrop-filter` для плавающих элементов, анимированные индикаторы стриминга (три пульсирующие точки), плавные анимации появления сообщений.
+- **Левая панель контекста**: Список комнат с цветовыми индикаторами, быстрый выбор модели, Memory Ledger с добавлением/удалением записей.
+- Created interactive autocomplete (slasher/mention) popover in the chat composer with keyboard navigation.
+- Refactored sliding drawer into the right-aligned Workbench panel with three tabs (Plan, Logs, Artifacts).
+- Verified: `npm run build` clean, Meta-Harness 100% pass (40.4ms avg latency).
+
+- Проведен полный UX/UI аудит и редизайн интерфейса: монолитный дашборд переработан во фреймворк с вкладками (Чат, Агенты, База знаний, Исследования, Настройки системы).
+- Стилизован «Умный чат» по аналогии с Claude: сообщения выровнены по центру, добавлена плавающая строка ввода с автовысотой, кнопки управления генерацией и встроенный markdown-парсер с кнопками быстрого копирования кода.
+- Реализована интерактивная выдвижная панель «Артефакты» (artifacts-drawer) для отображения симуляций задач и логов Flight Recorder во время выполнения агентов.
+- Встроен интерактивный всплывающий попап радара приватности (Privacy Radar) прямо в панель управления чатом.
+- Структурирован раздел «База знаний» на удобные подвкладки для управления комнатами контекста, Ledger-памятью и Vault RAG-документами.
+- Обновлена цветовая схема в `app.css` — внедрена премиальная темная тема с использованием шрифтов Outfit и JetBrains Mono, эффектами глассморфизма и плавными анимациями переходов.
+- Успешно пройдена верификация мета-тестов (Meta-Harness) со 100% успехом проверок.
+- Added Chat History API with `GET /api/chat/conversations` and `GET /api/chat/conversations/{conversation_id}/messages`.
+- Linked assistant messages to Adaptive Artifacts through `messages.artifact_id`; chat responses now create block artifacts before final SSE `done`.
+- Updated the Svelte streaming chat component with conversation reload, conversation continuity, new-chat reset, and visible artifact receipts.
 - Added MVP backend contracts for Context Rooms, Adaptive Artifacts, Research Receipts, AgentRun persistence, and Flight Recorder logs.
 - Added `GET/POST/PATCH/DELETE /api/rooms`, `POST/GET /api/artifacts`, `GET/DELETE /api/rag/documents`, `POST /api/research/report/export`, and AgentRun log/event endpoints.
 - Added Svelte UI controls for Context Rooms, Vault document metadata, Research Receipt export, and AgentRun/Flight Recorder preview.

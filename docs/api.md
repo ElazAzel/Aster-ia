@@ -45,10 +45,40 @@ Response:
   "model": "llama3.2",
   "response": "...",
   "latency_ms": 1200.0,
+  "artifact_id": "uuid",
   "privacy_level": "local",
   "ts": "2026-06-06T00:00:00Z"
 }
 ```
+
+Assistant responses are persisted twice:
+
+- as plain chat messages in SQLCipher for history reload;
+- as `chat` artifacts with block-level `text` and `code` records.
+
+### Chat History
+
+`GET /api/chat/conversations`
+
+`GET /api/chat/conversations?room_id=default`
+
+Returns conversation metadata:
+
+```json
+[
+  {
+    "id": "uuid",
+    "room_id": "default",
+    "created_at": "2026-06-06T00:00:00Z",
+    "message_count": 2,
+    "latest_ts": "2026-06-06T00:00:02Z"
+  }
+]
+```
+
+`GET /api/chat/conversations/{conversation_id}/messages`
+
+Returns ordered messages. Assistant messages include `artifact_id` when an Adaptive Artifact was created from the response.
 
 ### Streaming Chat
 
@@ -59,6 +89,12 @@ Streams `text/event-stream` from a JSON body.
 `GET /api/chat/stream?message=Привет&room_id=default&model=llama3.2`
 
 Browser-friendly `EventSource` endpoint.
+
+Optional `conversation_id` keeps subsequent messages inside the same conversation:
+
+```text
+GET /api/chat/stream?message=Next&room_id=default&conversation_id=uuid&model=llama3.2
+```
 
 Token event payload:
 
@@ -74,6 +110,8 @@ Token event payload:
 ```
 
 Final event has `done=true`.
+
+Final event payload includes `artifact_id` after the assistant response has been saved.
 
 ## Models
 

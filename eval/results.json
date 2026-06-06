@@ -1,13 +1,13 @@
 {
   "metrics": {
     "task_success_rate": 1.0,
-    "avg_latency_ms": 43.88054211934408,
+    "avg_latency_ms": 40.370782216389976,
     "privacy_score": 1.0,
     "harness_efficiency": 0.98,
     "ui_contracts_passed": 8,
     "ui_contracts_total": 8,
-    "source_contracts_passed": 80,
-    "source_contracts_total": 80,
+    "source_contracts_passed": 84,
+    "source_contracts_total": 84,
     "phase": 1,
     "iterations_completed": 3
   },
@@ -36,6 +36,9 @@
     "Keyring secret source": true,
     "Conversations schema": true,
     "Messages schema": true,
+    "Message artifact link": true,
+    "Chat history API": true,
+    "Chat message history API": true,
     "Tauri start command": true,
     "Tauri health command": true,
     "Tauri shutdown command": true,
@@ -46,6 +49,7 @@
     "Svelte EventSource client": true,
     "Frontend Vite package": true,
     "Frontend app shell": true,
+    "Frontend chat history": true,
     "Frontend API client": true,
     "Frontend Tauri bridge": true,
     "Frontend CSS": true,
@@ -107,19 +111,19 @@
     {
       "run": 1,
       "startup_success": true,
-      "chat_latency_seconds": 0.045412540435791016,
+      "chat_latency_seconds": 0.04055953025817871,
       "status": "PASS"
     },
     {
       "run": 2,
       "startup_success": true,
-      "chat_latency_seconds": 0.04015302658081055,
+      "chat_latency_seconds": 0.04015064239501953,
       "status": "PASS"
     },
     {
       "run": 3,
       "startup_success": true,
-      "chat_latency_seconds": 0.046076059341430664,
+      "chat_latency_seconds": 0.04040217399597168,
       "status": "PASS"
     }
   ]

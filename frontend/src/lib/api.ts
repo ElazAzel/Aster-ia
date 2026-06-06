@@ -157,6 +157,24 @@ export type ArtifactRecord = {
   created_at: string;
 };
 
+export type ChatConversationRecord = {
+  id: string;
+  room_id: string;
+  created_at: string;
+  message_count: number;
+  latest_ts?: string | null;
+};
+
+export type ChatMessageRecord = {
+  id: string;
+  conv_id: string;
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string;
+  model?: string | null;
+  artifact_id?: string | null;
+  ts: string;
+};
+
 export type ResearchReceipt = {
   source_title: string;
   url?: string | null;
@@ -231,6 +249,18 @@ export function getHealth(apiBase: string) {
 
 export function getModels(apiBase: string) {
   return request<ModelsResponse>(apiBase, '/api/models');
+}
+
+export function listChatConversations(apiBase: string, roomId?: string) {
+  const query = roomId ? `?room_id=${encodeURIComponent(roomId)}` : '';
+  return request<ChatConversationRecord[]>(apiBase, `/api/chat/conversations${query}`);
+}
+
+export function listChatMessages(apiBase: string, conversationId: string) {
+  return request<ChatMessageRecord[]>(
+    apiBase,
+    `/api/chat/conversations/${encodeURIComponent(conversationId)}/messages`
+  );
 }
 
 export function selectModel(apiBase: string, taskDescription: string, vramGb: number, ramGb: number) {

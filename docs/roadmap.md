@@ -29,7 +29,7 @@ Status: implemented as backend/runtime foundation.
 - WorkflowRunner with human approval gates and WebSocket events.
 - PluginManager for local MCP plugin manifests.
 - Runtime agent catalog: 10 agents.
-- Runtime skill catalog: 16 skills.
+- Runtime skill catalog: 20 skills.
 - `AgentRegistry.validate_catalog()` and `GET /api/agents/catalog/validate`.
 
 ## Phase 3 - Desktop Product Integration
@@ -37,6 +37,7 @@ Status: implemented as backend/runtime foundation.
 Status: in progress.
 
 - Svelte/Vite app shell connected to FastAPI routes.
+- Chat history reload and conversation continuity.
 - Tauri config now points to `frontend/dist` and runs Vite through `beforeDevCommand`/`beforeBuildCommand`.
 - Frontend desktop bridge can start, health-check, and stop the FastAPI sidecar through Tauri IPC.
 - Agent Catalog UI with validation status and manifest detail.
@@ -46,7 +47,7 @@ Status: in progress.
 - RAG search UI over the local index.
 - Task Simulator UI for AgentPlan generation.
 - Context Rooms API and UI selector.
-- Adaptive Artifacts API for block-level outputs.
+- Adaptive Artifacts API for block-level outputs and chat assistant response persistence.
 - Research Receipt export API and UI surface.
 - AgentRun and Flight Recorder API with UI log preview.
 - Agent Lab UI for plan approval and sandbox runs.

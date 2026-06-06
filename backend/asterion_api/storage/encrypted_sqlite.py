@@ -64,6 +64,7 @@ class EncryptedSQLiteStore(BaseHarness):
         role: str,
         content: str,
         model: str | None,
+        artifact_id: str | None = None,
     ) -> str:
         return await asyncio.to_thread(
             self._append_message_sync,
@@ -71,7 +72,11 @@ class EncryptedSQLiteStore(BaseHarness):
             role,
             content,
             model,
+            artifact_id,
         )
+
+    async def list_conversations(self, room_id: str | None = None) -> list[dict[str, Any]]:
+        return await asyncio.to_thread(self._list_conversations_sync, room_id)
 
     async def list_messages(self, conv_id: str) -> list[dict[str, Any]]:
         return await asyncio.to_thread(self._list_messages_sync, conv_id)
@@ -295,10 +300,17 @@ class EncryptedSQLiteStore(BaseHarness):
                     role TEXT NOT NULL CHECK(role IN ('system', 'user', 'assistant', 'tool')),
                     content TEXT NOT NULL,
                     model TEXT,
+                    artifact_id TEXT,
                     ts TEXT NOT NULL
                 )
                 """
             )
+            message_columns = {
+                str(column["name"])
+                for column in conn.execute("PRAGMA table_info(messages)").fetchall()
+            }
+            if "artifact_id" not in message_columns:
+                conn.execute("ALTER TABLE messages ADD COLUMN artifact_id TEXT")
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_conversations_room_id ON conversations(room_id)"
             )
@@ -444,25 +456,62 @@ class EncryptedSQLiteStore(BaseHarness):
         role: str,
         content: str,
         model: str | None,
+        artifact_id: str | None,
     ) -> str:
         message_id = str(uuid4())
         ts = datetime.now(UTC).isoformat()
         with self._connect() as conn:
             conn.execute(
                 """
-                INSERT INTO messages (id, conv_id, role, content, model, ts)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO messages (id, conv_id, role, content, model, artifact_id, ts)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                (message_id, conv_id, role, content, model, ts),
+                (message_id, conv_id, role, content, model, artifact_id, ts),
             )
             conn.commit()
         return message_id
+
+    def _list_conversations_sync(self, room_id: str | None) -> list[dict[str, Any]]:
+        with self._connect() as conn:
+            if room_id:
+                rows = conn.execute(
+                    """
+                    SELECT
+                        c.id,
+                        c.room_id,
+                        c.created_at,
+                        COUNT(m.id) AS message_count,
+                        MAX(m.ts) AS latest_ts
+                    FROM conversations c
+                    LEFT JOIN messages m ON m.conv_id = c.id
+                    WHERE c.room_id = ?
+                    GROUP BY c.id, c.room_id, c.created_at
+                    ORDER BY COALESCE(latest_ts, c.created_at) DESC
+                    """,
+                    (room_id,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """
+                    SELECT
+                        c.id,
+                        c.room_id,
+                        c.created_at,
+                        COUNT(m.id) AS message_count,
+                        MAX(m.ts) AS latest_ts
+                    FROM conversations c
+                    LEFT JOIN messages m ON m.conv_id = c.id
+                    GROUP BY c.id, c.room_id, c.created_at
+                    ORDER BY COALESCE(latest_ts, c.created_at) DESC
+                    """
+                ).fetchall()
+        return [dict(row) for row in rows]
 
     def _list_messages_sync(self, conv_id: str) -> list[dict[str, Any]]:
         with self._connect() as conn:
             rows = conn.execute(
                 """
-                SELECT id, conv_id, role, content, model, ts
+                SELECT id, conv_id, role, content, model, artifact_id, ts
                 FROM messages
                 WHERE conv_id = ?
                 ORDER BY ts ASC
