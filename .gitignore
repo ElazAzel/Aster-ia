@@ -11,3 +11,7 @@ __pycache__/
 dist/
 build/
 tmp/
+
+# Auto-generated harness artifacts
+eval/results.json
+harness/candidates/
