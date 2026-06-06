@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import shutil
+import tempfile
 from pathlib import Path
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from asterion_api.dependencies import get_document_indexer, get_store
 from asterion_api.schemas import RagChunk, RagDocumentRecord, RagIndexRequest, RagSearchRequest
@@ -53,3 +55,26 @@ async def search_documents(
         room_id=request.room_id,
         limit=request.limit,
     )
+
+
+@router.post("/index/upload")
+async def index_uploaded_file(
+    file: UploadFile = File(...),
+    room_id: str = Form(default="default"),
+    indexer: DocumentIndexer = Depends(get_document_indexer),
+    store: EncryptedSQLiteStore = Depends(get_store),
+) -> dict[str, object]:
+    suffix = Path(file.filename or "upload").suffix or ".bin"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        shutil.copyfileobj(file.file, tmp)
+        tmp_path = Path(tmp.name)
+    try:
+        result = await indexer.index_file(file_path=tmp_path, room_id=room_id)
+        document = await store.record_rag_document(
+            room_id=room_id,
+            source=file.filename or tmp_path.name,
+            indexed_chunks=int(result["indexed_chunks"]),
+        )
+        return {**result, "source": file.filename or tmp_path.name, "document": document}
+    finally:
+        tmp_path.unlink(missing_ok=True)

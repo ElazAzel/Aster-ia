@@ -441,3 +441,182 @@ export function listAgentRunLogs(apiBase: string, runId: string) {
     `/api/agents/runs/${encodeURIComponent(runId)}/logs`
   );
 }
+
+// ─── Image Studio ────────────────────────────────────────────────────────────
+
+export type ImageGenerateRequest = {
+  prompt: string;
+  recipe?: Record<string, unknown>;
+};
+
+export type ImageGenerateResponse = {
+  prompt_id: string;
+  history: Record<string, unknown>;
+};
+
+export function generateImage(apiBase: string, payload: ImageGenerateRequest) {
+  return request(apiBase, '/api/images/generate', {
+    method: 'POST',
+    body: payload
+  });
+}
+
+// ─── Plugin Manager ──────────────────────────────────────────────────────────
+
+export type PluginManifest = {
+  name: string;
+  trust_level: 'verified' | 'local-only' | 'network' | 'file' | 'shell' | 'danger';
+  path: string;
+  description?: string | null;
+};
+
+export function listPlugins(apiBase: string) {
+  return request<PluginManifest[]>(apiBase, '/api/plugins');
+}
+
+// ─── Automation / Workflow ───────────────────────────────────────────────────
+
+export type WorkflowStep = {
+  name: string;
+  type: 'action' | 'human_approval' | 'condition';
+  config?: Record<string, unknown>;
+};
+
+export type WorkflowRunRequest = {
+  workflow: {
+    name?: string;
+    steps: WorkflowStep[];
+  };
+};
+
+export type WorkflowRunResponse = {
+  run_id: string;
+  status: 'completed' | 'rejected' | 'pending';
+  results: Array<Record<string, unknown>>;
+};
+
+export function runWorkflow(apiBase: string, payload: WorkflowRunRequest) {
+  return request<WorkflowRunResponse>(apiBase, '/api/workflows/run', {
+    method: 'POST',
+    body: payload
+  });
+}
+
+export function confirmWorkflow(apiBase: string, runId: string, approved: boolean, extra: Record<string, unknown> = {}) {
+  return request<WorkflowRunResponse>(apiBase, '/api/workflows/confirm', {
+    method: 'POST',
+    body: { run_id: runId, approved, payload: extra }
+  });
+}
+
+export function createWorkflowEventsSocket(apiBase: string): WebSocket {
+  const wsBase = apiBase.replace(/^http/, 'ws');
+  return new WebSocket(`${wsBase}/api/workflows/events`);
+}
+
+// ─── Deep Research ───────────────────────────────────────────────────────────
+
+export type DeepResearchRequest = {
+  query: string;
+  max_subtasks?: number;
+  web_access?: boolean;
+};
+
+export type ResearchResult = {
+  subtask: string;
+  title: string;
+  url?: string | null;
+  snippet?: string | null;
+};
+
+export type DeepResearchResponse = {
+  query: string;
+  subtasks: string[];
+  results: ResearchResult[];
+  privacy: PrivacyReport;
+};
+
+export function deepResearch(apiBase: string, payload: DeepResearchRequest) {
+  return request<DeepResearchResponse>(apiBase, '/api/research/deep', {
+    method: 'POST',
+    body: {
+      query: payload.query,
+      max_subtasks: payload.max_subtasks ?? 5,
+      web_access: payload.web_access ?? true
+    }
+  });
+}
+
+// ─── Contradiction Finder ────────────────────────────────────────────────────
+
+export type ContradictionMatch = {
+  left: string;
+  right: string;
+  similarity: number;
+  sentiment_left: string;
+  sentiment_right: string;
+};
+
+export function findContradictions(apiBase: string, claims: string[], threshold = 0.85) {
+  return request<ContradictionMatch[]>(apiBase, '/api/research/contradictions', {
+    method: 'POST',
+    body: { claims, threshold }
+  });
+}
+
+// ─── Artifacts ───────────────────────────────────────────────────────────────
+
+export function listArtifacts(apiBase: string, roomId?: string) {
+  const query = roomId ? `?room_id=${encodeURIComponent(roomId)}` : '';
+  return request<ArtifactRecord[]>(apiBase, `/api/artifacts${query}`);
+}
+
+export function getArtifact(apiBase: string, artifactId: string) {
+  return request<ArtifactRecord>(apiBase, `/api/artifacts/${encodeURIComponent(artifactId)}`);
+}
+
+// ─── RAG File Upload ─────────────────────────────────────────────────────────
+
+export type RagIndexResponse = {
+  indexed_chunks: number;
+  source: string;
+  room_id: string;
+  document: RagDocumentRecord;
+};
+
+export async function indexFile(apiBase: string, file: File, roomId: string): Promise<RagIndexResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('room_id', roomId);
+
+  const response = await fetch(`${apiBase}/api/rag/index/upload`, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `${response.status} ${response.statusText}`);
+  }
+  return response.json() as Promise<RagIndexResponse>;
+}
+
+// ─── Agent Run detail ────────────────────────────────────────────────────────
+
+export function getAgentRun(apiBase: string, runId: string) {
+  return request<AgentRun>(apiBase, `/api/agents/runs/${encodeURIComponent(runId)}`);
+}
+
+export function runAgentCode(apiBase: string, runId: string, code: string, permissions?: { allowed_folders: string[]; network: boolean; shell: boolean }) {
+  return request<Record<string, unknown>>(
+    apiBase,
+    `/api/agents/runs/${encodeURIComponent(runId)}/code`,
+    {
+      method: 'POST',
+      body: {
+        code,
+        permissions: permissions ?? { allowed_folders: [], network: false, shell: false }
+      }
+    }
+  );
+}

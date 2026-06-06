@@ -1,7 +1,7 @@
 {
   "metrics": {
     "task_success_rate": 1.0,
-    "avg_latency_ms": 40.4512882232666,
+    "avg_latency_ms": 40.58408737182617,
     "privacy_score": 1.0,
     "harness_efficiency": 0.98,
     "ui_contracts_passed": 8,
@@ -111,7 +111,7 @@
     {
       "run": 1,
       "startup_success": true,
-      "chat_latency_seconds": 0.0404512882232666,
+      "chat_latency_seconds": 0.04058408737182617,
       "status": "PASS"
     }
   ]

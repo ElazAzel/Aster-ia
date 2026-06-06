@@ -117,6 +117,26 @@ async def get_agent_run(
     return AgentRun(**row)
 
 
+@router.post("/runs/{run_id}/code")
+async def run_agent_code(
+    run_id: str,
+    request: AgentRunCodeRequest,
+    sandbox: AgentSandbox = Depends(get_agent_sandbox),
+    store: EncryptedSQLiteStore = Depends(get_store),
+) -> dict[str, object]:
+    result = await sandbox.run_code(code=request.code, permissions=request.permissions)
+    await store.append_agent_log(
+        run_id=run_id,
+        action="run_code",
+        tool="python_sandbox",
+        privacy_level="local",
+        input_text=request.code[:500],
+        output_text=result.get("stdout", "")[:500],
+        error=result.get("stderr") or None,
+    )
+    return result
+
+
 @router.get("/runs/{run_id}/logs", response_model=list[FlightRecorderEvent])
 async def list_agent_run_logs(
     run_id: str,

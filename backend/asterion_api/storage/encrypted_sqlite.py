@@ -207,6 +207,9 @@ class EncryptedSQLiteStore(BaseHarness):
             source,
         )
 
+    async def list_artifacts(self, room_id: str | None = None) -> list[dict[str, Any]]:
+        return await asyncio.to_thread(self._list_artifacts_sync, room_id)
+
     async def get_artifact(self, artifact_id: str) -> dict[str, Any] | None:
         return await asyncio.to_thread(self._get_artifact_sync, artifact_id)
 
@@ -783,6 +786,30 @@ class EncryptedSQLiteStore(BaseHarness):
         if artifact is None:
             raise RuntimeError("created artifact could not be read")
         return artifact
+
+    def _list_artifacts_sync(self, room_id: str | None) -> list[dict[str, Any]]:
+        with self._connect() as conn:
+            if room_id:
+                rows = conn.execute(
+                    """
+                    SELECT id, room_id, kind, title, blocks, source, created_at
+                    FROM artifacts WHERE room_id = ? ORDER BY created_at DESC
+                    """,
+                    (room_id,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """
+                    SELECT id, room_id, kind, title, blocks, source, created_at
+                    FROM artifacts ORDER BY created_at DESC
+                    """
+                ).fetchall()
+        result = []
+        for row in rows:
+            artifact = dict(row)
+            artifact["blocks"] = json.loads(str(artifact["blocks"]))
+            result.append(artifact)
+        return result
 
     def _get_artifact_sync(self, artifact_id: str) -> dict[str, Any] | None:
         with self._connect() as conn:

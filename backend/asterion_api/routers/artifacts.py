@@ -24,6 +24,15 @@ async def create_artifact(
     return ArtifactRecord(**row)
 
 
+@router.get("", response_model=list[ArtifactRecord])
+async def list_artifacts(
+    room_id: str | None = None,
+    store: EncryptedSQLiteStore = Depends(get_store),
+) -> list[ArtifactRecord]:
+    rows = await store.list_artifacts(room_id)
+    return [ArtifactRecord(**{**row, "blocks": row["blocks"]}) for row in rows]
+
+
 @router.get("/{artifact_id}", response_model=ArtifactRecord)
 async def get_artifact(
     artifact_id: str,

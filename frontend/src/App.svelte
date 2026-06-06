@@ -35,7 +35,23 @@
     type RagChunk,
     type RagDocumentRecord,
     type ResearchReportExportResponse,
-    type RiskLevel
+    type RiskLevel,
+    deepResearch,
+    findContradictions,
+    generateImage,
+    listPlugins,
+    runWorkflow,
+    confirmWorkflow,
+    createWorkflowEventsSocket,
+    listArtifacts,
+    indexFile,
+    getAgentRun,
+    type DeepResearchResponse,
+    type ContradictionMatch,
+    type PluginManifest,
+    type WorkflowRunResponse,
+    type ArtifactRecord as ArtifactRecordFull,
+    type RagIndexResponse
   } from './lib/api';
   import StreamingChat from './lib/StreamingChat.svelte';
   import {
@@ -80,6 +96,38 @@
   let statusText = 'Ожидание проверки';
   let busy = false;
   let errorText = '';
+
+  // Image Studio
+  let imagePrompt = '';
+  let imageResult: Record<string, unknown> | null = null;
+  let imageGenerating = false;
+
+  // Deep Research
+  let researchDeepQuery = 'Сравнить приватность локального и облачного AI';
+  let deepResearchResult: DeepResearchResponse | null = null;
+  let deepResearchBusy = false;
+
+  // Contradiction Finder
+  let contradictionClaims = 'Локальные модели безопаснее\nОблачные модели надёжнее';
+  let contradictions: ContradictionMatch[] = [];
+
+  // Plugin Manager
+  let plugins: PluginManifest[] = [];
+
+  // Automation Board
+  let workflowName = 'Мой рабочий процесс';
+  let workflowSteps = '[{"name":"Проверить файлы","type":"action"},{"name":"Согласовать","type":"human_approval"},{"name":"Создать отчёт","type":"action"}]';
+  let workflowResult: WorkflowRunResponse | null = null;
+  let workflowPending = false;
+  let workflowSocket: WebSocket | null = null;
+
+  // Artifacts browser
+  let allArtifacts: ArtifactRecordFull[] = [];
+
+  // File upload
+  let uploadFile: File | null = null;
+  let uploadBusy = false;
+  let uploadResult: RagIndexResponse | null = null;
 
   // Tab routing states
   let activeTab = 'chat'; // 'chat' | 'agents' | 'vault' | 'research' | 'system'
@@ -216,7 +264,9 @@
       refreshRooms(),
       refreshMemories(),
       refreshRagDocuments(),
-      analyzeCurrentPrivacy()
+      analyzeCurrentPrivacy(),
+      refreshPlugins(),
+      refreshArtifacts()
     ]);
     statusText = 'Готово';
     busy = false;
@@ -341,6 +391,85 @@
     }
   }
 
+  async function runImageGeneration() {
+    if (!imagePrompt.trim()) return;
+    imageGenerating = true;
+    imageResult = null;
+    const result = await runStep('Генерирую изображение через ComfyUI', () =>
+      generateImage(apiBase, { prompt: imagePrompt })
+    );
+    if (result) imageResult = result;
+    imageGenerating = false;
+  }
+
+  async function runDeepResearch() {
+    if (!researchDeepQuery.trim()) return;
+    deepResearchBusy = true;
+    const result = await runStep('Запускаю Deep Research', () =>
+      deepResearch(apiBase, { query: researchDeepQuery, max_subtasks: 5, web_access: true })
+    );
+    if (result) deepResearchResult = result;
+    deepResearchBusy = false;
+  }
+
+  async function runContradictionFinder() {
+    const claims = contradictionClaims.split('\n').map(s => s.trim()).filter(Boolean);
+    if (claims.length < 2) return;
+    const result = await runStep('Ищу противоречия', () =>
+      findContradictions(apiBase, claims, 0.75)
+    );
+    if (result) contradictions = result;
+  }
+
+  async function refreshPlugins() {
+    const result = await runStep('Читаю плагины', () => listPlugins(apiBase));
+    if (result) plugins = result;
+  }
+
+  async function startWorkflow() {
+    let steps;
+    try { steps = JSON.parse(workflowSteps); } catch { errorText = 'Неверный JSON шагов'; return; }
+    workflowResult = null;
+    workflowPending = false;
+
+    if (!workflowSocket || workflowSocket.readyState > 1) {
+      workflowSocket = createWorkflowEventsSocket(apiBase);
+      workflowSocket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'approval_required') workflowPending = true;
+      };
+    }
+
+    const result = await runStep('Запускаю workflow', () =>
+      runWorkflow(apiBase, { workflow: { name: workflowName, steps } })
+    );
+    if (result) { workflowResult = result; workflowPending = false; }
+  }
+
+  async function approveWorkflow(approved: boolean) {
+    if (!workflowResult?.run_id) return;
+    const result = await runStep(approved ? 'Подтверждаю шаг' : 'Отклоняю шаг', () =>
+      confirmWorkflow(apiBase, workflowResult!.run_id, approved)
+    );
+    if (result) workflowPending = false;
+  }
+
+  async function refreshArtifacts() {
+    const result = await runStep('Читаю артефакты', () => listArtifacts(apiBase, roomId));
+    if (result) allArtifacts = result;
+  }
+
+  async function uploadVaultFile() {
+    if (!uploadFile) return;
+    uploadBusy = true;
+    uploadResult = null;
+    const result = await runStep('Индексирую файл в Vault', () =>
+      indexFile(apiBase, uploadFile!, roomId)
+    );
+    if (result) { uploadResult = result; await refreshRagDocuments(); }
+    uploadBusy = false;
+  }
+
   function agentGroupTitle(agent: AgentManifest) {
     if (agent.privacy_level === 'hybrid') return 'hybrid';
     if (agent.privacy_level === 'external') return 'external';
@@ -394,6 +523,26 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
         <span>Система</span>
       </button>
+      <button class:active={activeTab === 'research_deep'} on:click={() => activeTab = 'research_deep'}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6"/><path d="M8 11h6"/></svg>
+        <span>Deep Research</span>
+      </button>
+      <button class:active={activeTab === 'images'} on:click={() => activeTab = 'images'}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        <span>Image Studio</span>
+      </button>
+      <button class:active={activeTab === 'automation'} on:click={() => activeTab = 'automation'}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        <span>Automation</span>
+      </button>
+      <button class:active={activeTab === 'artifacts_browser'} on:click={() => { activeTab = 'artifacts_browser'; void refreshArtifacts(); }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>Артефакты</span>
+      </button>
+      <button class:active={activeTab === 'plugins'} on:click={() => { activeTab = 'plugins'; void refreshPlugins(); }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+        <span>Плагины</span>
+      </button>
     </nav>
 
     <div class="system-meter">
@@ -425,6 +574,21 @@
         {:else if activeTab === 'system'}
           <p class="eyebrow">Аппаратный роутинг</p>
           <h1>Консоль конфигураций</h1>
+        {:else if activeTab === 'research_deep'}
+          <p class="eyebrow">Аналитика источников</p>
+          <h1>Deep Research Studio</h1>
+        {:else if activeTab === 'images'}
+          <p class="eyebrow">Генерация изображений</p>
+          <h1>Image Studio</h1>
+        {:else if activeTab === 'automation'}
+          <p class="eyebrow">Рабочие процессы</p>
+          <h1>Automation Board</h1>
+        {:else if activeTab === 'artifacts_browser'}
+          <p class="eyebrow">Хранилище артефактов</p>
+          <h1>Артефакты</h1>
+        {:else if activeTab === 'plugins'}
+          <p class="eyebrow">Расширения</p>
+          <h1>Plugin Manager</h1>
         {/if}
       </div>
 
@@ -1087,6 +1251,265 @@
               <input bind:value={apiBase} style="font-family: var(--font-mono);" aria-label="FastAPI base URL" />
             </label>
             <small style="color: var(--text-muted); line-height: 1.4;">Это адрес, по которому Tauri-клиент общается с серверным sidecar-модулем. Изменяйте только при переносе бэкенда на внешний сервер.</small>
+          </section>
+        </div>
+      </div>
+
+    {:else if activeTab === 'research_deep'}
+      <div class="tab-content">
+        <div class="secondary-grid">
+          <section class="panel">
+            <div class="panel-heading compact">
+              <h2>Deep Research Studio</h2>
+              <span class="risk-pill {deepResearchResult?.privacy?.level ? `risk-${deepResearchResult.privacy.level}` : ''}">
+                {deepResearchResult?.privacy?.level ?? '—'}
+              </span>
+            </div>
+            <form on:submit|preventDefault={runDeepResearch} class="stack-form">
+              <label style="display:flex;flex-direction:column;gap:4px">
+                <span style="font-size:11px;font-weight:600;color:var(--text-secondary)">Цель исследования</span>
+                <input bind:value={researchDeepQuery} placeholder="Например: Сравнить privacy-модели RAG систем..." />
+              </label>
+              <button type="submit" disabled={deepResearchBusy || !researchDeepQuery.trim()}>
+                {deepResearchBusy ? 'Исследую...' : 'Запустить Deep Research'}
+              </button>
+            </form>
+
+            {#if deepResearchResult}
+              <div class="plan-box" style="margin-top:0">
+                <strong>Запрос: {deepResearchResult.query}</strong>
+                <div>
+                  <p style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px">Подзадачи ({deepResearchResult.subtasks.length})</p>
+                  <ol style="padding-left:16px;font-size:12px;color:var(--text-secondary);display:flex;flex-direction:column;gap:4px">
+                    {#each deepResearchResult.subtasks as subtask}
+                      <li>{subtask}</li>
+                    {/each}
+                  </ol>
+                </div>
+              </div>
+            {/if}
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading compact">
+              <h2>Результаты ({deepResearchResult?.results?.length ?? 0})</h2>
+            </div>
+            <div class="result-list" style="max-height:500px">
+              {#each deepResearchResult?.results ?? [] as result}
+                <article>
+                  <strong>{result.title}</strong>
+                  {#if result.url}
+                    <small><a href={result.url} target="_blank" rel="noreferrer" style="color:var(--color-brand)">{result.url}</a></small>
+                  {/if}
+                  {#if result.snippet}
+                    <p style="font-size:12px;line-height:1.5;color:var(--text-secondary)">{result.snippet}</p>
+                  {/if}
+                  <small style="color:var(--text-muted)">Подзадача: {result.subtask}</small>
+                </article>
+              {:else}
+                <p class="empty">Запустите исследование для получения результатов.</p>
+              {/each}
+            </div>
+          </section>
+
+          <section class="panel" style="grid-column:span 2">
+            <div class="panel-heading compact">
+              <h2>Contradiction Finder</h2>
+              <span class="count">{contradictions.length} противоречий</span>
+            </div>
+            <form on:submit|preventDefault={runContradictionFinder} class="stack-form">
+              <label style="display:flex;flex-direction:column;gap:4px">
+                <span style="font-size:11px;font-weight:600;color:var(--text-secondary)">Утверждения (одно на строку, минимум 2)</span>
+                <textarea bind:value={contradictionClaims} rows="4" placeholder="Первое утверждение&#10;Второе утверждение&#10;..."></textarea>
+              </label>
+              <button type="submit" disabled={contradictionClaims.split('\n').filter(s => s.trim()).length < 2}>
+                Найти противоречия
+              </button>
+            </form>
+            {#if contradictions.length > 0}
+              <div class="result-list" style="max-height:300px">
+                {#each contradictions as match}
+                  <article style="border-left:3px solid var(--color-red);padding-left:12px">
+                    <strong style="color:var(--color-red-text);font-size:12px">Similarity: {(match.similarity * 100).toFixed(1)}%</strong>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
+                      <div style="padding:8px;background:var(--bg-input);border-radius:6px">
+                        <small style="color:var(--text-muted)">{match.sentiment_left}</small>
+                        <p style="font-size:12px;margin-top:4px">{match.left}</p>
+                      </div>
+                      <div style="padding:8px;background:var(--bg-input);border-radius:6px">
+                        <small style="color:var(--text-muted)">{match.sentiment_right}</small>
+                        <p style="font-size:12px;margin-top:4px">{match.right}</p>
+                      </div>
+                    </div>
+                  </article>
+                {/each}
+              </div>
+            {/if}
+          </section>
+        </div>
+      </div>
+
+    {:else if activeTab === 'images'}
+      <div class="tab-content">
+        <div class="secondary-grid">
+          <section class="panel">
+            <div class="panel-heading compact"><h2>Image Studio (ComfyUI)</h2></div>
+            <form on:submit|preventDefault={runImageGeneration} class="stack-form">
+              <label style="display:flex;flex-direction:column;gap:4px">
+                <span style="font-size:11px;font-weight:600;color:var(--text-secondary)">Промпт</span>
+                <textarea bind:value={imagePrompt} rows="4" placeholder="a photorealistic spaceship cockpit, cinematic lighting, ultra-detailed..."></textarea>
+              </label>
+              <button type="submit" disabled={imageGenerating || !imagePrompt.trim()}>
+                {imageGenerating ? '⏳ Генерирую...' : '✨ Сгенерировать'}
+              </button>
+            </form>
+            <div class="plan-box" style="margin-top:0;background:var(--bg-input)">
+              <p style="font-size:12px;color:var(--text-secondary)">Требуется локальный <strong style="color:var(--text-primary)">ComfyUI</strong> на порту 8188.</p>
+              <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Запустите: <code style="background:var(--bg-card);padding:2px 6px;border-radius:4px;font-family:var(--font-mono)">python main.py --listen 127.0.0.1</code></p>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-heading compact"><h2>Результат</h2></div>
+            {#if imageResult}
+              <div style="background:var(--bg-input);border-radius:8px;padding:16px;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);overflow-x:auto">
+                <pre style="margin:0;white-space:pre-wrap">{JSON.stringify(imageResult, null, 2)}</pre>
+              </div>
+            {:else}
+              <p class="empty">Результат генерации появится здесь.</p>
+            {/if}
+          </section>
+        </div>
+      </div>
+
+    {:else if activeTab === 'automation'}
+      <div class="tab-content">
+        <div class="secondary-grid">
+          <section class="panel">
+            <div class="panel-heading compact">
+              <h2>Automation Board</h2>
+              {#if workflowResult}
+                <span class="count" style="color:{workflowResult.status === 'completed' ? 'var(--color-green-text)' : 'var(--color-red-text)'}">
+                  {workflowResult.status}
+                </span>
+              {/if}
+            </div>
+            <label style="display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:11px;font-weight:600;color:var(--text-secondary)">Название workflow</span>
+              <input bind:value={workflowName} placeholder="Мой рабочий процесс" />
+            </label>
+            <label style="display:flex;flex-direction:column;gap:4px;margin-top:8px">
+              <span style="font-size:11px;font-weight:600;color:var(--text-secondary)">Шаги (JSON)</span>
+              <textarea bind:value={workflowSteps} rows="6" style="font-family:var(--font-mono);font-size:12px" placeholder={JSON.stringify([{"name":"Шаг 1","type":"action"}])}></textarea>
+            </label>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button type="button" on:click={startWorkflow} disabled={!workflowSteps.trim()}>▶ Запустить</button>
+              {#if workflowPending}
+                <button type="button" on:click={() => approveWorkflow(true)} style="background:var(--color-green);color:#fff">✓ Подтвердить</button>
+                <button type="button" class="secondary" on:click={() => approveWorkflow(false)}>✗ Отклонить</button>
+              {/if}
+            </div>
+            {#if workflowPending}
+              <div style="padding:12px;background:var(--color-yellow-glow);border:1px solid var(--color-yellow-border);border-radius:8px;margin-top:8px">
+                <strong style="color:var(--color-yellow-text);font-size:13px">⚠ Human Approval Gate</strong>
+                <p style="font-size:12px;color:var(--text-secondary);margin-top:4px">Workflow ожидает вашего подтверждения для продолжения.</p>
+              </div>
+            {/if}
+          </section>
+          <section class="panel">
+            <div class="panel-heading compact"><h2>Результат выполнения</h2></div>
+            {#if workflowResult}
+              <div class="plan-box" style="margin-top:0">
+                <strong>Run ID: {workflowResult.run_id}</strong>
+                <ol style="padding-left:16px;font-size:12px;color:var(--text-secondary);display:flex;flex-direction:column;gap:4px">
+                  {#each workflowResult.results as step}
+                    <li><strong style="color:var(--text-primary)">{step.step}</strong> — {step.status}</li>
+                  {/each}
+                </ol>
+              </div>
+            {:else}
+              <p class="empty">Запустите workflow для просмотра результатов.</p>
+            {/if}
+          </section>
+        </div>
+      </div>
+
+    {:else if activeTab === 'artifacts_browser'}
+      <div class="tab-content">
+        <section class="panel" style="flex:1;overflow:hidden">
+          <div class="panel-heading compact">
+            <h2>Хранилище артефактов</h2>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="count">{allArtifacts.length} артефактов</span>
+              <button type="button" class="text-button" on:click={refreshArtifacts}>Обновить</button>
+            </div>
+          </div>
+          <div class="result-list" style="max-height:calc(100vh - 200px)">
+            {#each allArtifacts as artifact}
+              <article>
+                <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                  <strong>{artifact.title}</strong>
+                  <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:var(--color-brand-glow);border:1px solid var(--color-brand);color:var(--color-brand-text);text-transform:uppercase">{artifact.kind}</span>
+                </div>
+                <small>Комната: {artifact.room_id} · Блоков: {artifact.blocks.length} · {new Date(artifact.created_at).toLocaleString('ru')}</small>
+                {#if artifact.blocks[0]?.content}
+                  <p style="font-size:12px;color:var(--text-secondary);line-height:1.4;margin-top:4px">{artifact.blocks[0].content.slice(0, 200)}{artifact.blocks[0].content.length > 200 ? '...' : ''}</p>
+                {/if}
+              </article>
+            {:else}
+              <p class="empty">Артефактов пока нет. Начните чат или создайте исследование.</p>
+            {/each}
+          </div>
+        </section>
+      </div>
+
+    {:else if activeTab === 'plugins'}
+      <div class="tab-content">
+        <div class="secondary-grid">
+          <section class="panel">
+            <div class="panel-heading compact">
+              <h2>Plugin Manager</h2>
+              <span class="count">{plugins.length} плагинов</span>
+            </div>
+            <div class="plan-box" style="margin-top:0;background:var(--bg-input)">
+              <p style="font-size:12px;color:var(--text-secondary)">Плагины загружаются из <code style="background:var(--bg-card);padding:2px 6px;border-radius:4px;font-family:var(--font-mono)">~/.asterion/plugins/*/manifest.json</code></p>
+            </div>
+            <div class="result-list" style="max-height:400px">
+              {#each plugins as plugin}
+                <article>
+                  <div style="display:flex;justify-content:space-between;align-items:center">
+                    <strong>{plugin.name}</strong>
+                    <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:var(--bg-input);border:1px solid var(--border-color);color:var(--text-secondary)">{plugin.trust_level}</span>
+                  </div>
+                  {#if plugin.description}
+                    <p style="font-size:12px;color:var(--text-secondary)">{plugin.description}</p>
+                  {/if}
+                  <small style="font-family:var(--font-mono)">{plugin.path}</small>
+                </article>
+              {:else}
+                <p class="empty">Плагины не найдены. Создайте папку с manifest.json в ~/.asterion/plugins/</p>
+              {/each}
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-heading compact"><h2>Загрузить файл в Vault</h2></div>
+            <p style="font-size:13px;color:var(--text-secondary)">Загрузите PDF или TXT для индексации в Knowledge Vault текущей комнаты.</p>
+            <label style="display:block;cursor:pointer;padding:20px;border:2px dashed var(--border-color);border-radius:10px;text-align:center;transition:var(--transition-smooth)" on:dragover|preventDefault on:drop|preventDefault={(e) => { uploadFile = e.dataTransfer?.files[0] ?? null; }}>
+              <input type="file" accept=".pdf,.txt,.md,.docx,.csv" style="display:none" on:change={(e) => { uploadFile = (e.target as HTMLInputElement).files?.[0] ?? null; }} />
+              {#if uploadFile}
+                <span style="font-size:14px;color:var(--color-brand)">{uploadFile.name}</span>
+              {:else}
+                <span style="font-size:13px;color:var(--text-muted)">Нажмите или перетащите файл сюда</span>
+              {/if}
+            </label>
+            <button type="button" on:click={uploadVaultFile} disabled={!uploadFile || uploadBusy} style="margin-top:8px">
+              {uploadBusy ? 'Индексирую...' : '📁 Загрузить и индексировать'}
+            </button>
+            {#if uploadResult}
+              <div class="plan-box" style="margin-top:8px">
+                <strong>✓ Проиндексировано</strong>
+                <p style="font-size:12px">{uploadResult.source} — {uploadResult.indexed_chunks} чанков</p>
+              </div>
+            {/if}
           </section>
         </div>
       </div>

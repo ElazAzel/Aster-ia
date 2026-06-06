@@ -1,6 +1,10 @@
 # Asterion AI
 
 [![CI](https://github.com/ElazAzel/Aster-ia/actions/workflows/ci.yml/badge.svg)](https://github.com/ElazAzel/Aster-ia/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-violet.svg)](LICENSE)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://python.org)
+[![Svelte 5](https://img.shields.io/badge/svelte-5.0-orange.svg)](https://svelte.dev)
+[![Tauri v2](https://img.shields.io/badge/tauri-v2-24C8D8.svg)](https://tauri.app)
 
 Asterion AI is a local-first desktop AI workspace.
 
@@ -21,21 +25,52 @@ The current scaffold contains:
 
 ## Quick Start
 
-```powershell
+### 1. Предварительные требования
+
+```bash
+# Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
+ollama pull llama3.2
+ollama pull nomic-embed-text
+
+# Python
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Node.js 22+
+# Скачай с https://nodejs.org
+```
+
+### 2. Backend (FastAPI sidecar)
+
+```bash
 cd backend
+uv sync
 uv run python -m asterion_api --host 127.0.0.1 --port 8000
+
+# Проверка
+curl http://127.0.0.1:8000/api/health
 ```
 
-Health check:
+### 3. Frontend (dev mode)
 
-```powershell
-Invoke-RestMethod http://127.0.0.1:8000/api/health
+```bash
+cd frontend
+npm install
+npm run dev
+# Открой http://127.0.0.1:5173
 ```
 
-Agent catalog check:
+### 4. Запуск тестов
 
-```powershell
-Invoke-RestMethod http://127.0.0.1:8000/api/agents/catalog/validate
+```bash
+cd backend
+ASTERION_ALLOW_PLAINTEXT_SQLITE_FOR_DEV=1 uv run pytest tests/ -v
+```
+
+### 5. Desktop (Tauri) — требует Rust + MSVC
+
+```bash
+npm run tauri dev
 ```
 
 Recommended local models:
