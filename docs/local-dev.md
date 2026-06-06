@@ -82,7 +82,7 @@ Expected catalog state:
 {
   "ok": true,
   "agents_count": 10,
-  "skills_count": 16,
+  "skills_count": 20,
   "errors": [],
   "warnings": []
 }

@@ -2,6 +2,17 @@
 
 ## 2026-06-06
 
+### Полная верификация: все компоненты запущены и работают
+
+- **Backend (FastAPI)**: Запущен на `127.0.0.1:8000`. Health endpoint — `status: ok`, база SQLCipher — `encrypted: true`. Все 47 роутов зарегистрированы.
+- **Ollama**: `llama3.2` (2.0 GB) и `nomic-embed-text` (274 MB) загружены. Chat endpoint работает (33s latency при первой загрузке, ответ осмысленный).
+- **Privacy Radar**: `POST /api/privacy/analyze` корректно возвращает `red` для API-модели, `green` для локальной.
+- **Agent Registry**: 10 агентов, 20 скиллов, 0 ошибок, 0 предупреждений.
+- **Frontend**: `npm run build` — чистая сборка (0 ошибок, 0 warnings). Dev-сервер Vite на `5173`.
+- **Tauri**: Rust 1.96.0, cargo check требует MSVC linker (`link.exe`). Добавлен `x86_64-pc-windows-gnu` target как fallback.
+- **Meta-Harness**: 100% прохождение (60/60 контрактов, 40.4ms avg latency).
+- **Dependencies**: DuckDB 1.5.3, LanceDB 0.33.0, httpx 0.28.1, sqlcipher3 — все импортируются без ошибок.
+
 ### UX/UI Редизайн: Трехколоночный Workbench + Умный ввод
 
 - **Трехколоночный интерфейс Workbench**: Левая панель (контекстные комнаты + Memory Ledger), центр (чат), правая панель Workbench с вкладками (План, Логи, Артефакты). Все три колонки можно сворачивать через кнопки в шапке.
