@@ -10,6 +10,7 @@
 - Reworked docs for architecture, API, local development, privacy/security, roadmap, and agents/skills to match the current runtime catalog.
 - Verified catalog locally with `ok=true`, 10 agents, 16 skills, and no warnings.
 - Added a runnable Svelte/Vite frontend shell in `frontend/` with live SSE chat, Privacy Radar, Model Router, Agent Catalog, Memory Ledger, RAG search, and Task Simulator panels.
+- Connected Tauri configuration to `frontend/dist` and added a Svelte Tauri IPC bridge for starting, health-checking, and stopping the FastAPI sidecar.
 
 ## 2026-06-05
 

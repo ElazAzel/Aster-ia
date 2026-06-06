@@ -26,6 +26,13 @@
     type RiskLevel
   } from './lib/api';
   import StreamingChat from './lib/StreamingChat.svelte';
+  import {
+    fastapiHealthCheck,
+    isTauriRuntime,
+    shutdownFastapiSidecar,
+    startFastapiSidecar,
+    type BackendStatus
+  } from './lib/tauri';
 
   let apiBase = DEFAULT_API_BASE;
   let roomId = 'default';
@@ -47,6 +54,8 @@
   let ragResults: RagChunk[] = [];
   let agentTask = 'Проверить локальный документ и найти противоречия';
   let agentPlan: AgentPlan | null = null;
+  let desktopStatus: BackendStatus | null = null;
+  let desktopAvailable = false;
   let statusText = 'Ожидание проверки';
   let busy = false;
   let errorText = '';
@@ -90,6 +99,33 @@
   async function refreshHealth() {
     const result = await runStep('Проверяю sidecar', () => getHealth(apiBase));
     if (result) health = result;
+  }
+
+  async function startDesktopBackend() {
+    const result = await runStep('Запускаю FastAPI sidecar через Tauri', () => startFastapiSidecar());
+    if (result) {
+      desktopStatus = result;
+      apiBase = `http://${result.host}:${result.port}`;
+      if (result.health && typeof result.health === 'object') {
+        health = result.health as HealthResponse;
+      }
+    }
+  }
+
+  async function checkDesktopBackend() {
+    const result = await runStep('Проверяю sidecar через Tauri IPC', () => fastapiHealthCheck());
+    if (result) {
+      desktopStatus = result;
+      apiBase = `http://${result.host}:${result.port}`;
+      if (result.health && typeof result.health === 'object') {
+        health = result.health as HealthResponse;
+      }
+    }
+  }
+
+  async function stopDesktopBackend() {
+    const result = await runStep('Останавливаю FastAPI sidecar', () => shutdownFastapiSidecar());
+    if (result) desktopStatus = result;
   }
 
   async function refreshModels() {
@@ -176,6 +212,7 @@
   }
 
   onMount(() => {
+    desktopAvailable = isTauriRuntime();
     void refreshAll();
   });
 </script>
@@ -196,6 +233,7 @@
 
     <nav>
       <a href="#chat">Чат</a>
+      <a href="#desktop">Desktop</a>
       <a href="#agents">Агенты</a>
       <a href="#privacy">Privacy</a>
       <a href="#memory">Память</a>
@@ -262,6 +300,27 @@
       </section>
 
       <aside class="right-stack" aria-label="Операционные панели">
+        <section id="desktop" class="panel">
+          <div class="panel-heading compact">
+            <h2>Desktop Sidecar</h2>
+            <span class:ok={desktopStatus?.running} class:warn={!desktopStatus?.running} class="status-dot"></span>
+          </div>
+          <p class="desktop-note">
+            {desktopAvailable ? 'Tauri IPC доступен' : 'Браузерный режим: используйте запущенный FastAPI URL'}
+          </p>
+          <div class="button-grid">
+            <button type="button" on:click={startDesktopBackend} disabled={!desktopAvailable}>Запустить</button>
+            <button type="button" class="secondary" on:click={checkDesktopBackend} disabled={!desktopAvailable}>Health</button>
+            <button type="button" class="secondary" on:click={stopDesktopBackend} disabled={!desktopAvailable}>Стоп</button>
+          </div>
+          {#if desktopStatus}
+            <p class="result-line">
+              <strong>{desktopStatus.running ? 'running' : 'stopped'}</strong>
+              <span>{desktopStatus.host}:{desktopStatus.port}</span>
+            </p>
+          {/if}
+        </section>
+
         <section id="privacy" class="panel">
           <div class="panel-heading compact">
             <h2>Privacy Radar</h2>

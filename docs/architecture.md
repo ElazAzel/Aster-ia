@@ -61,6 +61,7 @@ Primary files:
 - `frontend/src/App.svelte` - command center layout.
 - `frontend/src/lib/StreamingChat.svelte` - browser `EventSource` streaming chat client.
 - `frontend/src/lib/api.ts` - typed FastAPI client.
+- `frontend/src/lib/tauri.ts` - Tauri IPC bridge for sidecar lifecycle commands with browser fallback.
 - `frontend/src/app.css` - responsive operational UI styles.
 
 The first screen is the workspace itself: live chat, Privacy Radar, Model Router, Agent Catalog, Memory Ledger, RAG search, and Task Simulator.
@@ -168,6 +169,21 @@ sequenceDiagram
 - `shutdown_fastapi_sidecar`
 
 The expected sidecar binary name is `asterion-backend`.
+
+`src-tauri/tauri.conf.json` points desktop builds at the Svelte app:
+
+```json
+{
+  "build": {
+    "beforeDevCommand": "npm --prefix ../frontend run dev",
+    "beforeBuildCommand": "npm --prefix ../frontend run build",
+    "frontendDist": "../frontend/dist",
+    "devUrl": "http://127.0.0.1:5173"
+  }
+}
+```
+
+The Svelte UI calls the Tauri commands only when the Tauri runtime is present. In browser mode, it uses the configured FastAPI URL directly.
 
 ## Storage
 

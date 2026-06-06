@@ -56,6 +56,15 @@ Default frontend URL:
 http://127.0.0.1:5173
 ```
 
+Desktop shell:
+
+```powershell
+cd src-tauri
+cargo check
+```
+
+`cargo check` on Windows requires Visual Studio Build Tools with the C++ workload so `link.exe` is available.
+
 ## Key Documentation
 
 - [Build Guide](BUILD_GUIDE.md)
@@ -86,6 +95,8 @@ uv run python -m compileall backend\asterion_api harness\meta_harness.py
 uv run python harness/meta_harness.py --phase 1 --iterations 3
 cd frontend
 npm run build
+cd ..\src-tauri
+cargo check
 ```
 
 Tauri check currently requires a complete Windows C++ build toolchain with `link.exe`.

@@ -4,8 +4,10 @@
   "version": "0.1.0",
   "identifier": "ai.asterion.desktop",
   "build": {
-    "frontendDist": "../",
-    "devUrl": "http://localhost:5173"
+    "beforeDevCommand": "npm --prefix ../frontend run dev",
+    "beforeBuildCommand": "npm --prefix ../frontend run build",
+    "frontendDist": "../frontend/dist",
+    "devUrl": "http://127.0.0.1:5173"
   },
   "app": {
     "windows": [

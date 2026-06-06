@@ -256,6 +256,18 @@ nav a:hover {
   margin: 10px 0;
 }
 
+.button-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.desktop-note {
+  margin: 0;
+  color: #475467;
+}
+
 .toggle-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -516,6 +528,7 @@ dd {
 
   .inline-controls,
   .split-controls,
+  .button-grid,
   .toggle-grid,
   dl {
     grid-template-columns: 1fr;

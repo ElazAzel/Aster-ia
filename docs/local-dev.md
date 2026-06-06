@@ -159,6 +159,30 @@ uv --cache-dir .uv-cache run python harness/meta_harness.py --phase 1 --iteratio
 
 ## Tauri
 
+The Tauri shell now uses the Svelte/Vite app in `frontend/`.
+
+Development:
+
+```powershell
+cd src-tauri
+cargo tauri dev
+```
+
+The Tauri config runs:
+
+```powershell
+npm --prefix ../frontend run dev
+```
+
+Build:
+
+```powershell
+cd src-tauri
+cargo tauri build
+```
+
+Rust check:
+
 ```powershell
 cd src-tauri
 cargo check

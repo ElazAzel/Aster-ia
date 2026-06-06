@@ -37,6 +37,8 @@ Status: implemented as backend/runtime foundation.
 Status: in progress.
 
 - Svelte/Vite app shell connected to FastAPI routes.
+- Tauri config now points to `frontend/dist` and runs Vite through `beforeDevCommand`/`beforeBuildCommand`.
+- Frontend desktop bridge can start, health-check, and stop the FastAPI sidecar through Tauri IPC.
 - Agent Catalog UI with validation status and manifest detail.
 - Privacy Radar UI visible before elevated operations.
 - Model Router UI with hardware profile controls.
@@ -47,7 +49,7 @@ Status: in progress.
 - RAG file picker with explicit approval and indexed-source list.
 - Workflow approval gate UI over WebSocket.
 - ComfyUI recipe picker and local generation queue.
-- Tauri sidecar packaging with bundled Python backend.
+- Tauri sidecar binary packaging with bundled Python backend.
 
 ## Phase 4 - Production Hardening
 
