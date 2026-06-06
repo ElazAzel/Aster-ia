@@ -7,5 +7,8 @@
   "inputs": ["code", "permissions"],
   "outputs": ["exit_code", "stdout", "stderr"],
   "tools": ["AgentSandbox"],
-  "guardrails": ["Reject shell calls unless shell permission is enabled.", "Reject network libraries unless network permission is enabled."]
+  "guardrails": ["Reject shell calls unless shell permission is enabled.", "Reject network libraries unless network permission is enabled."],
+  "requires_consent": ["network", "shell", "file_write"],
+  "failure_modes": ["Subprocess timeout.", "Permission denied.", "Code imports blocked module."],
+  "acceptance_checks": ["Network imports are rejected when network=false.", "Shell calls are rejected when shell=false.", "Result includes exit_code, stdout, and stderr."]
 }

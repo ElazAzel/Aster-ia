@@ -5,6 +5,11 @@
   "description": "Runs local-first deep research through SearXNG on port 8080, aggregates evidence in DuckDB, and marks privacy implications before execution.",
   "privacy_level": "hybrid",
   "default_model": "llama3.2",
+  "triggers": [
+    "deep_research_requested",
+    "claim_audit_requested",
+    "web_research_confirmed"
+  ],
   "skills": [
     "privacy-radar",
     "deep-research",
@@ -16,6 +21,28 @@
     "network": true,
     "shell": false
   },
+  "lifecycle": [
+    "analyze privacy",
+    "decompose into 3-5 subtasks",
+    "run local SearXNG searches",
+    "aggregate in DuckDB",
+    "flag contradictions",
+    "return structured findings"
+  ],
+  "outputs": [
+    "DeepResearchResponse",
+    "ContradictionMatch[]",
+    "source table"
+  ],
+  "handoff_targets": [
+    "privacy-guardian",
+    "memory-curator"
+  ],
+  "acceptance_checks": [
+    "Research decomposes into 3-5 subtasks.",
+    "Public web access is not used when web_access=false.",
+    "Results preserve URLs or local-service error state."
+  ],
   "system_prompt": "You are Asterion Research Supervisor. Decompose the user question into 3-5 independent subtasks, run only approved local or hybrid tools, preserve citations, and return structured findings with contradictions and open questions.",
   "escalation_policy": "Ask for user approval before any public web search or external API model route."
 }

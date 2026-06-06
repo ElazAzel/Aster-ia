@@ -7,5 +7,8 @@
   "inputs": ["task"],
   "outputs": ["AgentPlan"],
   "tools": ["TaskSimulator"],
-  "guardrails": ["Plan before execute.", "Surface network, shell, and file-write permission needs."]
+  "guardrails": ["Plan before execute.", "Surface network, shell, and file-write permission needs."],
+  "requires_consent": ["network", "shell", "file_write"],
+  "failure_modes": ["Task description is empty.", "Permission estimate is incomplete.", "User rejects the plan."],
+  "acceptance_checks": ["AgentPlan includes steps.", "AgentPlan includes required_permissions.", "AgentPlan includes estimated_tokens."]
 }

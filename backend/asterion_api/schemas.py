@@ -166,24 +166,36 @@ class AgentPermissions(BaseModel):
 class RuntimeSkillManifest(BaseModel):
     id: str
     name: str
+    version: str = "0.1.0"
+    owner: str = "asterion"
     category: str
     description: str
     privacy_level: Literal["local", "hybrid", "external"]
+    triggers: list[str] = Field(default_factory=list)
     inputs: list[str] = Field(default_factory=list)
     outputs: list[str] = Field(default_factory=list)
     tools: list[str] = Field(default_factory=list)
     guardrails: list[str] = Field(default_factory=list)
+    requires_consent: list[str] = Field(default_factory=list)
+    failure_modes: list[str] = Field(default_factory=list)
+    acceptance_checks: list[str] = Field(default_factory=list)
 
 
 class AgentManifest(BaseModel):
     id: str
     name: str
+    version: str = "0.1.0"
     role: str
     description: str
     privacy_level: Literal["local", "hybrid", "external"]
     default_model: str
+    triggers: list[str] = Field(default_factory=list)
     skills: list[str] = Field(default_factory=list)
     permissions: AgentPermissions = Field(default_factory=AgentPermissions)
+    lifecycle: list[str] = Field(default_factory=list)
+    outputs: list[str] = Field(default_factory=list)
+    handoff_targets: list[str] = Field(default_factory=list)
+    acceptance_checks: list[str] = Field(default_factory=list)
     system_prompt: str
     escalation_policy: str
 

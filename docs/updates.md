@@ -1,5 +1,15 @@
 # Updates
 
+## 2026-06-06
+
+- Expanded runtime agent catalog from 6 to 10 agents with `chat-orchestrator`, `model-curator`, `memory-curator`, and `plugin-auditor`.
+- Expanded runtime skill catalog from 12 to 16 skills with `conversation-orchestration`, `ollama-operations`, `sqlcipher-storage`, and `agent-catalog-governance`.
+- Added manifest lifecycle metadata: `triggers`, `lifecycle`, `outputs`, `handoff_targets`, `acceptance_checks`, `requires_consent`, and `failure_modes`.
+- Added `AgentRegistry.validate_catalog()` to detect malformed manifests, duplicate ids, unknown skill references, and unknown handoff targets.
+- Added `GET /api/agents/catalog/validate` for UI and release checks.
+- Reworked docs for architecture, API, local development, privacy/security, roadmap, and agents/skills to match the current runtime catalog.
+- Verified catalog locally with `ok=true`, 10 agents, 16 skills, and no warnings.
+
 ## 2026-06-05
 
 - Added Phase 1 Asterion AI FastAPI sidecar scaffold with `/api/health`, `/api/models`, `/api/chat`, and `/api/chat/stream`.

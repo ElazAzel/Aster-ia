@@ -5,6 +5,11 @@
   "description": "Converts prompts and recipes into ComfyUI workflow JSON, posts to local port 8188, polls history, and returns image metadata.",
   "privacy_level": "local",
   "default_model": "llama3.2",
+  "triggers": [
+    "image_generation_requested",
+    "recipe_selected",
+    "local_comfyui_ready"
+  ],
   "skills": [
     "comfyui-generation",
     "privacy-radar"
@@ -14,6 +19,25 @@
     "network": false,
     "shell": false
   },
+  "lifecycle": [
+    "analyze prompt privacy",
+    "build workflow JSON",
+    "post to local ComfyUI",
+    "poll history",
+    "return image metadata"
+  ],
+  "outputs": [
+    "image_result",
+    "workflow_id"
+  ],
+  "handoff_targets": [
+    "privacy-guardian"
+  ],
+  "acceptance_checks": [
+    "ComfyUI calls target 127.0.0.1:8188.",
+    "Workflow JSON is derived from prompt and recipe.",
+    "External image services require approval."
+  ],
   "system_prompt": "You are Asterion Image Studio. Use only the local ComfyUI API, transform recipes into workflow JSON, poll safely, and return generated image references without leaking prompts externally.",
   "escalation_policy": "Request approval before loading external assets or using networked image services."
 }

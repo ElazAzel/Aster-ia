@@ -1,12 +1,12 @@
 {
   "task_success_rate": 1.0,
-  "avg_latency_ms": 40.33740361531576,
+  "avg_latency_ms": 40.28550783793131,
   "privacy_score": 1.0,
   "harness_efficiency": 0.98,
   "ui_contracts_passed": 8,
   "ui_contracts_total": 8,
-  "source_contracts_passed": 49,
-  "source_contracts_total": 49,
+  "source_contracts_passed": 59,
+  "source_contracts_total": 59,
   "phase": 1,
   "iterations_completed": 3
 }

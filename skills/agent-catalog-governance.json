@@ -1,0 +1,41 @@
+{
+  "id": "agent-catalog-governance",
+  "name": "Agent Catalog Governance",
+  "version": "0.2.0",
+  "owner": "asterion",
+  "category": "agents",
+  "description": "Validates runtime agent and skill manifests, detects missing references, and reports catalog readiness.",
+  "privacy_level": "local",
+  "triggers": [
+    "catalog_loaded",
+    "manifest_changed",
+    "release_check"
+  ],
+  "inputs": [
+    "agents_dir",
+    "skills_dir"
+  ],
+  "outputs": [
+    "catalog_validation_report",
+    "AgentCatalog"
+  ],
+  "tools": [
+    "AgentRegistry"
+  ],
+  "guardrails": [
+    "Reject duplicate ids.",
+    "Reject agents that reference unknown skills.",
+    "Treat unknown handoff targets as catalog errors."
+  ],
+  "requires_consent": [],
+  "failure_modes": [
+    "Malformed JSON manifest.",
+    "Unknown skill reference.",
+    "Unknown handoff target."
+  ],
+  "acceptance_checks": [
+    "GET /api/agents/catalog/validate returns ok=true.",
+    "Every agent skill reference resolves to a skill manifest.",
+    "Every handoff target resolves to an agent manifest."
+  ]
+}

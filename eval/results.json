@@ -1,13 +1,13 @@
 {
   "metrics": {
     "task_success_rate": 1.0,
-    "avg_latency_ms": 40.33740361531576,
+    "avg_latency_ms": 40.28550783793131,
     "privacy_score": 1.0,
     "harness_efficiency": 0.98,
     "ui_contracts_passed": 8,
     "ui_contracts_total": 8,
-    "source_contracts_passed": 49,
-    "source_contracts_total": 49,
+    "source_contracts_passed": 59,
+    "source_contracts_total": 59,
     "phase": 1,
     "iterations_completed": 3
   },
@@ -60,9 +60,19 @@
     "WorkflowRunner": true,
     "PluginManager": true,
     "AgentRegistry": true,
+    "Agent catalog validator": true,
     "Agent catalog API": true,
+    "Agent catalog validation API": true,
+    "Chat orchestrator manifest": true,
+    "Model curator manifest": true,
+    "Memory curator manifest": true,
+    "Plugin auditor manifest": true,
     "Research agent manifest": true,
     "Privacy agent manifest": true,
+    "Conversation orchestration skill": true,
+    "Ollama operations skill": true,
+    "SQLCipher storage skill": true,
+    "Agent governance skill": true,
     "RAG skill manifest": true,
     "Streaming skill manifest": true,
     "Root README": true,
@@ -76,19 +86,19 @@
     {
       "run": 1,
       "startup_success": true,
-      "chat_latency_seconds": 0.04055619239807129,
+      "chat_latency_seconds": 0.04039573669433594,
       "status": "PASS"
     },
     {
       "run": 2,
       "startup_success": true,
-      "chat_latency_seconds": 0.04024934768676758,
+      "chat_latency_seconds": 0.04012656211853027,
       "status": "PASS"
     },
     {
       "run": 3,
       "startup_success": true,
-      "chat_latency_seconds": 0.0402066707611084,
+      "chat_latency_seconds": 0.040334224700927734,
       "status": "PASS"
     }
   ]

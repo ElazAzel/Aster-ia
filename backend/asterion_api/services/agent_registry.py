@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from typing import Any, Mapping
 
+from pydantic import ValidationError
+
 from asterion_api.harness import BaseHarness
 from asterion_api.schemas import AgentCatalog, AgentManifest, RuntimeSkillManifest
 
@@ -46,6 +48,64 @@ class AgentRegistry(BaseHarness):
     def get_skill(self, skill_id: str) -> RuntimeSkillManifest | None:
         return next((skill for skill in self.list_skills() if skill.id == skill_id), None)
 
+    def validate_catalog(self) -> dict[str, Any]:
+        raw_agents = self._load_json_files(self.agents_dir)
+        raw_skills = self._load_json_files(self.skills_dir)
+
+        errors: list[str] = []
+        warnings: list[str] = []
+        agents: list[AgentManifest] = []
+        skills: list[RuntimeSkillManifest] = []
+
+        for data in raw_agents:
+            try:
+                agents.append(AgentManifest(**data))
+            except ValidationError as exc:
+                errors.append(f"agent:{data.get('id', '<unknown>')}: {exc.errors()}")
+
+        for data in raw_skills:
+            try:
+                skills.append(RuntimeSkillManifest(**data))
+            except ValidationError as exc:
+                errors.append(f"skill:{data.get('id', '<unknown>')}: {exc.errors()}")
+
+        agent_ids = [agent.id for agent in agents]
+        skill_ids = [skill.id for skill in skills]
+        self._append_duplicate_errors("agent", agent_ids, errors)
+        self._append_duplicate_errors("skill", skill_ids, errors)
+
+        known_skill_ids = set(skill_ids)
+        known_agent_ids = set(agent_ids)
+        for agent in agents:
+            missing_skills = sorted(set(agent.skills) - known_skill_ids)
+            for skill_id in missing_skills:
+                errors.append(f"agent:{agent.id}: unknown skill '{skill_id}'")
+
+            missing_handoffs = sorted(set(agent.handoff_targets) - known_agent_ids)
+            for target_id in missing_handoffs:
+                errors.append(f"agent:{agent.id}: unknown handoff target '{target_id}'")
+
+            if agent.privacy_level == "local" and agent.permissions.network:
+                warnings.append(f"agent:{agent.id}: local privacy with network=true")
+            if agent.privacy_level == "local" and agent.permissions.shell:
+                warnings.append(f"agent:{agent.id}: local privacy with shell=true")
+            if not agent.acceptance_checks:
+                warnings.append(f"agent:{agent.id}: missing acceptance checks")
+
+        for skill in skills:
+            if skill.privacy_level == "external" and not skill.requires_consent:
+                errors.append(f"skill:{skill.id}: external skill must declare requires_consent")
+            if not skill.acceptance_checks:
+                warnings.append(f"skill:{skill.id}: missing acceptance checks")
+
+        return {
+            "ok": not errors,
+            "agents_count": len(agents),
+            "skills_count": len(skills),
+            "errors": errors,
+            "warnings": warnings,
+        }
+
     @staticmethod
     def _load_json_files(folder: Path) -> list[dict[str, Any]]:
         if not folder.exists():
@@ -54,3 +114,11 @@ class AgentRegistry(BaseHarness):
         for path in sorted(folder.glob("*.json")):
             items.append(json.loads(path.read_text(encoding="utf-8")))
         return items
+
+    @staticmethod
+    def _append_duplicate_errors(kind: str, ids: list[str], errors: list[str]) -> None:
+        seen: set[str] = set()
+        for item_id in ids:
+            if item_id in seen:
+                errors.append(f"{kind}:{item_id}: duplicate id")
+            seen.add(item_id)

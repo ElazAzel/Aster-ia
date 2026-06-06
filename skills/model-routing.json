@@ -7,5 +7,8 @@
   "inputs": ["task_description", "hw_profile"],
   "outputs": ["ModelSelection"],
   "tools": ["ModelRouter"],
-  "guardrails": ["Prefer local model when feasible.", "Explain why API fallback was selected."]
+  "guardrails": ["Prefer local model when feasible.", "Explain why API fallback was selected."],
+  "requires_consent": ["api_fallback"],
+  "failure_modes": ["Hardware profile is incomplete.", "Required local model is unavailable.", "API fallback lacks approval."],
+  "acceptance_checks": ["VRAM-qualified local routes return mode=local.", "Fallback routes return mode=api with reason.", "Fallback route is paired with Privacy Radar red risk."]
 }

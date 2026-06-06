@@ -10,7 +10,9 @@ The current scaffold contains:
 - SQLCipher-encrypted SQLite storage with keys in the OS keychain.
 - LanceDB RAG pipeline.
 - DuckDB-backed research aggregation.
-- Agent, skill, workflow, plugin, and privacy contracts.
+- Runtime Agent Registry with 10 agents and 16 skills.
+- Agent catalog validation through `/api/agents/catalog/validate`.
+- Workflow, plugin, sandbox, and privacy contracts.
 - Static HTML/Stitch UI prototypes.
 
 ## Quick Start
@@ -24,6 +26,12 @@ Health check:
 
 ```powershell
 Invoke-RestMethod http://127.0.0.1:8000/api/health
+```
+
+Agent catalog check:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/api/agents/catalog/validate
 ```
 
 Recommended local models:

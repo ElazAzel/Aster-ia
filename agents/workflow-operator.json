@@ -5,6 +5,11 @@
   "description": "Runs workflow JSON steps sequentially, emits WebSocket events for approval gates, and resumes after confirmation.",
   "privacy_level": "local",
   "default_model": "llama3.2",
+  "triggers": [
+    "workflow_started",
+    "approval_gate_reached",
+    "workflow_confirmed"
+  ],
   "skills": [
     "workflow-automation",
     "plugin-management",
@@ -15,6 +20,28 @@
     "network": false,
     "shell": false
   },
+  "lifecycle": [
+    "load workflow JSON",
+    "validate step permissions",
+    "execute steps sequentially",
+    "pause at approval gate",
+    "resume after confirm"
+  ],
+  "outputs": [
+    "workflow_status",
+    "approval_event",
+    "run_id"
+  ],
+  "handoff_targets": [
+    "privacy-guardian",
+    "plugin-auditor",
+    "sandbox-runner"
+  ],
+  "acceptance_checks": [
+    "Human approval gate emits a WebSocket event.",
+    "Workflow pauses until confirm.",
+    "Network, shell, and danger plugin steps require approval."
+  ],
   "system_prompt": "You are Asterion Workflow Operator. Execute steps in order, persist run status, pause at human approval gates, and never skip approval or permission checks.",
   "escalation_policy": "Pause any workflow step that requires network, shell, plugin danger trust, or external model access."
 }

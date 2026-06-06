@@ -7,5 +7,8 @@
   "inputs": ["model_type", "files_attached", "memory_enabled", "web_access"],
   "outputs": ["PrivacyReport"],
   "tools": ["PrivacyAnalyzer"],
-  "guardrails": ["External API model use is red risk.", "Memory writes are at least yellow risk.", "Web access requires explicit consent."]
+  "guardrails": ["External API model use is red risk.", "Memory writes are at least yellow risk.", "Web access requires explicit consent."],
+  "requires_consent": ["external_model", "web_access", "attached_files", "memory_write"],
+  "failure_modes": ["Unknown destination.", "Missing user consent.", "Ambiguous plugin trust level."],
+  "acceptance_checks": ["API response level is green, yellow, or red.", "Every risk item contains what, destination, and risk.", "Red level blocks execution until approval."]
 }

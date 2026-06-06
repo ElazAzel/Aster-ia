@@ -7,5 +7,8 @@
   "inputs": ["file_path", "room_id", "query"],
   "outputs": ["indexed_chunks", "RagChunk[]"],
   "tools": ["DocumentIndexer", "OllamaService", "LanceDB"],
-  "guardrails": ["Index only approved local files.", "Use local embeddings.", "Return source paths and scores."]
+  "guardrails": ["Index only approved local files.", "Use local embeddings.", "Return source paths and scores."],
+  "requires_consent": ["attached_files", "broad_folder_indexing"],
+  "failure_modes": ["File path is outside approved scope.", "Parser cannot extract text.", "Embedding service unavailable."],
+  "acceptance_checks": ["Chunks are upserted into LanceDB.", "Embedding model is nomic-embed-text.", "Hybrid search returns deterministic scored chunks."]
 }

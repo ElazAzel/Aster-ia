@@ -7,5 +7,8 @@
   "inputs": ["manifest.json"],
   "outputs": ["PluginManifest[]"],
   "tools": ["PluginManager"],
-  "guardrails": ["Treat unknown trust levels as danger.", "Require approval for network, shell, file, or danger trust plugins."]
+  "guardrails": ["Treat unknown trust levels as danger.", "Require approval for network, shell, file, or danger trust plugins."],
+  "requires_consent": ["network_plugin", "file_plugin", "shell_plugin", "danger_plugin"],
+  "failure_modes": ["Plugin manifest is malformed.", "Unknown trust level.", "Plugin path is outside plugin directory."],
+  "acceptance_checks": ["Unknown trust level is treated as danger.", "Only manifests from ~/.asterion/plugins are loaded.", "Elevated trust levels require approval."]
 }

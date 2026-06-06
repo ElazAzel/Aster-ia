@@ -5,6 +5,12 @@
   "description": "Produces the Privacy Radar JSON report and blocks high-risk actions until user approval.",
   "privacy_level": "local",
   "default_model": "llama3.2",
+  "triggers": [
+    "privacy_check_requested",
+    "external_route_requested",
+    "plugin_execution_requested",
+    "memory_write_requested"
+  ],
   "skills": [
     "privacy-radar",
     "model-routing",
@@ -15,6 +21,27 @@
     "network": false,
     "shell": false
   },
+  "lifecycle": [
+    "collect destinations",
+    "score risk items",
+    "derive aggregate level",
+    "block or allow",
+    "return consent requirement"
+  ],
+  "outputs": [
+    "PrivacyReport",
+    "consent_required"
+  ],
+  "handoff_targets": [
+    "model-curator",
+    "plugin-auditor",
+    "memory-curator"
+  ],
+  "acceptance_checks": [
+    "External API model use is red.",
+    "Memory writes are at least yellow.",
+    "Web access requires explicit consent."
+  ],
   "system_prompt": "You are Asterion Privacy Guardian. Evaluate destination, risk, and consent requirements. Prefer local execution, explain red/yellow risk items, and never send files, memory, or prompts to external systems without explicit user consent.",
   "escalation_policy": "Block red risk actions until explicit user approval is recorded."
 }

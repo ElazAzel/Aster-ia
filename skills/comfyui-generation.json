@@ -7,5 +7,8 @@
   "inputs": ["prompt", "recipe"],
   "outputs": ["prompt_id", "history"],
   "tools": ["ComfyUIService"],
-  "guardrails": ["Use local port 8188.", "Do not route prompts to external image services."]
+  "guardrails": ["Use local port 8188.", "Do not route prompts to external image services."],
+  "requires_consent": ["external_assets", "external_image_service"],
+  "failure_modes": ["ComfyUI local service unavailable.", "Workflow recipe is invalid.", "History polling times out."],
+  "acceptance_checks": ["POST /prompt targets local ComfyUI.", "Polling uses /history/{id}.", "Image metadata is returned without external upload."]
 }

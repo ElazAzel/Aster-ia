@@ -32,6 +32,13 @@ async def list_skill_manifests(
     return registry.list_skills()
 
 
+@router.get("/catalog/validate")
+async def validate_catalog(
+    registry: AgentRegistry = Depends(get_agent_registry),
+) -> dict[str, object]:
+    return registry.validate_catalog()
+
+
 @router.get("/catalog/agents/{agent_id}", response_model=AgentManifest)
 async def get_agent_manifest(
     agent_id: str,

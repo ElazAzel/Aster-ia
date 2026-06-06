@@ -1,0 +1,52 @@
+{
+  "id": "conversation-orchestration",
+  "name": "Conversation Orchestration",
+  "version": "0.2.0",
+  "owner": "asterion",
+  "category": "chat",
+  "description": "Coordinates privacy analysis, model selection, optional context retrieval, chat generation, and encrypted persistence.",
+  "privacy_level": "local",
+  "triggers": [
+    "user_message",
+    "chat_retry",
+    "room_switch"
+  ],
+  "inputs": [
+    "ChatRequest",
+    "room_id",
+    "conversation_id"
+  ],
+  "outputs": [
+    "ChatResponse",
+    "conversation_id",
+    "message_records"
+  ],
+  "tools": [
+    "ChatService",
+    "PrivacyAnalyzer",
+    "ModelRouter",
+    "MemoryLedger",
+    "DocumentIndexer"
+  ],
+  "guardrails": [
+    "Run Privacy Radar before external model routes.",
+    "Use only approved RAG context.",
+    "Persist chat messages in SQLCipher storage."
+  ],
+  "requires_consent": [
+    "external_model",
+    "web_access",
+    "attached_files",
+    "memory_write"
+  ],
+  "failure_modes": [
+    "Ollama unavailable.",
+    "SQLCipher key unavailable.",
+    "Privacy Radar returns red."
+  ],
+  "acceptance_checks": [
+    "Chat response includes conversation_id and privacy_level.",
+    "First token is streamed over SSE for streaming requests.",
+    "No external destination is used without consent."
+  ]
+}

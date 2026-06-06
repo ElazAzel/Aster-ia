@@ -5,49 +5,86 @@
 Status: implemented.
 
 - FastAPI sidecar.
-- Ollama chat and streaming.
-- SQLCipher storage.
-- Tauri sidecar lifecycle commands.
-- Meta-Harness checks.
+- Async Ollama service.
+- `/api/health`, `/api/models`, `/api/chat`, `/api/chat/stream`.
+- SQLCipher SQLite storage with OS keychain secret source.
+- Tauri v2 sidecar lifecycle commands.
+- BaseHarness interface.
+- Meta-Harness Phase 1 latency check: first successful chat response target `< 5s`.
 
-## Phase 2 - Agentic Workspace
+## Phase 2 - Agentic Workspace Core
 
-Status: initial scaffold implemented.
+Status: implemented as backend/runtime foundation.
 
-- Runtime agent manifests.
-- Runtime skill manifests.
-- Agent catalog API.
-- Privacy Radar.
-- ModelRouter.
-- RAG pipeline.
-- Memory Ledger.
-- Deep Research.
-- Contradiction Finder.
-- Sandbox and TaskSimulator.
-- ComfyUI bridge.
-- WorkflowRunner.
-- PluginManager.
+- Streaming chat via FastAPI `StreamingResponse` and SSE.
+- Privacy Radar with green/yellow/red JSON risk reports.
+- ModelRouter with local-first VRAM routing.
+- Memory Ledger CRUD with privacy checks.
+- LanceDB RAG indexing and hybrid dense plus BM25 search.
+- Deep Research supervisor with local SearXNG and DuckDB aggregation.
+- Contradiction Finder with embeddings and opposing sentiment.
+- TaskSimulator and AgentPlan generation.
+- AgentSandbox subprocess execution with network/shell permission gates.
+- ComfyUI localhost bridge.
+- WorkflowRunner with human approval gates and WebSocket events.
+- PluginManager for local MCP plugin manifests.
+- Runtime agent catalog: 10 agents.
+- Runtime skill catalog: 16 skills.
+- `AgentRegistry.validate_catalog()` and `GET /api/agents/catalog/validate`.
 
-## Phase 3 - Production Hardening
+## Phase 3 - Desktop Product Integration
 
-Planned:
+Status: next.
 
-- Real UI integration for agent catalog.
-- Durable workflow state.
-- Stronger sandbox isolation on Windows/macOS/Linux.
-- SearXNG deployment helper.
-- ComfyUI recipe library.
+- Full Svelte app shell connected to FastAPI routes.
+- Agent Lab UI for catalog, plan approval, and sandbox runs.
+- Privacy Radar UI visible before elevated operations.
+- Model settings UI with Ollama model state and hardware profile.
+- RAG file picker with explicit approval and indexed-source list.
+- Memory Ledger UI with source, expiration, and delete controls.
+- Workflow approval gate UI over WebSocket.
+- ComfyUI recipe picker and local generation queue.
+- Tauri sidecar packaging with bundled Python backend.
+
+## Phase 4 - Production Hardening
+
+Status: planned.
+
+- Durable workflow state across app restarts.
+- Stronger OS-level sandbox isolation on Windows, macOS, and Linux.
 - Plugin signature verification.
-- RAG file watcher.
-- Full Tauri build pipeline.
-- E2E UI tests.
+- SearXNG deployment helper.
+- ComfyUI recipe library and validation.
+- RAG file watcher with opt-in folder scopes.
+- Secrets scanner in CI.
+- Full frontend E2E tests.
+- Tauri `cargo check` and packaging in CI after Windows C++ toolchain is available.
 
-## Phase 4 - Power User Runtime
+## Phase 5 - Power User Runtime
 
-Planned:
+Status: planned.
 
 - vLLM runtime profile.
 - GPU hardware detection.
 - Model benchmark cache.
-- Larger local model catalogs.
+- Larger local model catalog.
 - Multi-room memory controls.
+- Research Studio report exports through DuckDB.
+- Advanced workflow templates.
+
+## Current Release Gate
+
+Before publishing:
+
+```powershell
+uv run python -m compileall backend\asterion_api harness\meta_harness.py
+uv run python harness/meta_harness.py --phase 1 --iterations 3
+```
+
+Required API checks:
+
+- `GET /api/health`
+- `GET /api/models`
+- `GET /api/agents/catalog/validate`
+- `POST /api/privacy/analyze`
+- `GET /api/chat/stream`
