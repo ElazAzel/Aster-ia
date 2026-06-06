@@ -4,6 +4,7 @@
 
 ### Phase 5: UX/UI Polish and E2E Testing (Block 7)
 
+- **Release Entry Point Repair**: Added `backend/main.py` as a PyInstaller-compatible sidecar entrypoint that delegates to `asterion_api.__main__.main`, fixing the release workflow path expected by `.github/workflows/release.yml`.
 - **Reactive Conversation History Sidebar**: Refactored the chat history list from `StreamingChat.svelte` to a dedicated section in the Left Context Panel (`ContextPanel.svelte`) with a reactive full-text search input (filtering by title and localized date). Added conversation renaming (`PATCH`) and cascading deletion (`DELETE`) with toast alerts. Shared state variables (`conversationId`, `conversations`, `conversationSearchQuery`) are synced in a central Svelte store.
 - **Drag-and-Drop RAG Vault Indexing**: Integrated a responsive, glassmorphic drag-and-drop zone inside `VaultTab.svelte` that accepts `.pdf`, `.docx`, `.txt`, and `.md` files. Immediately triggers file parsing and vectorization via `uploadVaultFile()` on drop. For desktop Tauri runs, includes a native filesystem path selection input executing `indexLocalVaultFile()`.
 - **Toast Alerts & Theme State Synced**: Configured light mode override tokens in `frontend/src/app.css` using CSS custom properties, syncing the theme preference to `localStorage`. Created `ToastContainer.svelte` supplying non-blocking floating alerts for success, warning, and error events.
