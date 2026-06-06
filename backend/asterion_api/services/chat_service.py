@@ -16,6 +16,7 @@ from asterion_api.structured_logging import StructuredLogger
 class ChatService(BaseHarness):
     privacy_level = "local"
     _CODE_FENCE_RE = re.compile(r"```(?P<language>[A-Za-z0-9_.+-]*)\s*\n(?P<code>.*?)```", re.DOTALL)
+    MAX_HISTORY_CHARS = 8_000
 
     def __init__(
         self,
@@ -56,7 +57,7 @@ class ChatService(BaseHarness):
             content=request.message,
             model=model,
         )
-        prompt = await self._build_prompt(conv_id, request.message)
+        prompt = await self._build_prompt(request.message, conv_id)
         text = await self.ollama.generate(model=model, prompt=prompt)
         artifact = await self._persist_response_artifact(
             room_id=request.room_id,
@@ -97,7 +98,7 @@ class ChatService(BaseHarness):
             content=request.message,
             model=model,
         )
-        prompt = await self._build_prompt(conv_id, request.message)
+        prompt = await self._build_prompt(request.message, conv_id)
         parts: list[str] = []
         started = time.perf_counter()
         async for chunk in self.ollama.stream_generate(model=model, prompt=prompt):
@@ -135,20 +136,19 @@ class ChatService(BaseHarness):
             "privacy_level": self.privacy_level,
         }
 
-    async def _build_prompt(self, conv_id: str, current_message: str, max_chars: int = 8000) -> str:
+    async def _build_prompt(self, message: str, conv_id: str) -> str:
         history = await self.store.list_messages(conv_id)
-        parts = [f"User: {current_message}"]
-        used = len(parts[0])
-        for msg in reversed(history):
-            role = msg.get("role", "user")
-            content = str(msg.get("content", ""))
-            line = f"\n{'User' if role == 'user' else 'Assistant'}: {content}"
-            if used + len(line) > max_chars:
+        lines: list[str] = []
+        total = 0
+        for msg in reversed(history[-20:]):
+            line = f"{msg['role'].upper()}: {msg['content']}"
+            if total + len(line) > self.MAX_HISTORY_CHARS:
                 break
-            parts.append(line)
-            used += len(line)
-        parts.reverse()
-        return "".join(parts)
+            lines.append(line)
+            total += len(line)
+        lines.reverse()
+        lines.append(f"USER: {message}")
+        return "\n".join(lines)
 
     async def _persist_response_artifact(
         self,

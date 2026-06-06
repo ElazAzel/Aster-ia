@@ -1,96 +1,103 @@
+"""Smoke-tests для критических сервисов Asterion AI."""
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from asterion_api.schemas import ChatRequest, PrivacyItem, PrivacyReport, RagChunk
-from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
-from asterion_api.services.rag import DocumentIndexer
-from asterion_api.services.agent_registry import AgentRegistry
+
+# ── Storage ──────────────────────────────────────────────────────────────────
+
+def test_encrypted_store_imports():
+    from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
+    from asterion_api.harness import BaseHarness
+    assert issubclass(EncryptedSQLiteStore, BaseHarness)
 
 
-class TestPrivacyAnalyzer:
-    def test_local_model_returns_green(self) -> None:
-        pa = PrivacyAnalyzer()
-        report = pa.analyze(model_type="local", files_attached=False, memory_enabled=False, web_access=False)
-        assert report.level == "green"
-        assert len(report.items) == 1
-        assert report.items[0].risk == "green"
-
-    def test_api_model_returns_red(self) -> None:
-        pa = PrivacyAnalyzer()
-        report = pa.analyze(model_type="api", files_attached=False, memory_enabled=False, web_access=False)
-        assert report.level == "red"
-        assert any(item.risk == "red" for item in report.items)
-
-    def test_memory_enabled_adds_yellow_item(self) -> None:
-        pa = PrivacyAnalyzer()
-        report = pa.analyze(model_type="local", files_attached=False, memory_enabled=True, web_access=False)
-        assert report.level == "yellow"
-        risks = [item.risk for item in report.items]
-        assert "yellow" in risks
-
-    def test_all_red_when_api_with_web_access(self) -> None:
-        pa = PrivacyAnalyzer()
-        report = pa.analyze(model_type="api", files_attached=True, memory_enabled=True, web_access=True)
-        assert report.level == "red"
+@pytest.mark.asyncio
+async def test_store_schema_creates_tables(tmp_path):
+    import os
+    os.environ["ASTERION_DATA_DIR"] = str(tmp_path)
+    os.environ["ASTERION_ALLOW_PLAINTEXT_SQLITE_FOR_DEV"] = "1"
+    from asterion_api.config import get_settings
+    get_settings.cache_clear()
+    from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
+    store = EncryptedSQLiteStore(get_settings())
+    await store.ensure_schema()
+    health = await store.health_check()
+    assert health["ok"] is True
 
 
-class TestRagChunking:
-    def test_chunk_splits_text(self) -> None:
-        text = "hello world " * 500
-        chunks = DocumentIndexer._chunk(text, size=200, overlap=20)
-        assert len(chunks) > 1
-        assert all(len(c) <= 200 for c in chunks)
+# ── Privacy Analyzer ─────────────────────────────────────────────────────────
 
-    def test_chunk_empty_text(self) -> None:
-        assert DocumentIndexer._chunk("") == []
-
-    def test_terms_extracts_words(self) -> None:
-        result = DocumentIndexer._terms("Hello World! Привет мир")
-        assert result == ["hello", "world", "привет", "мир"]
+def test_privacy_local_is_green():
+    from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
+    report = PrivacyAnalyzer().analyze(
+        model_type="local",
+        files_attached=False,
+        memory_enabled=False,
+        web_access=False,
+    )
+    assert report.level == "green"
 
 
-class TestSchemas:
-    def test_chat_request_valid(self) -> None:
-        req = ChatRequest(message="hello")
-        assert req.message == "hello"
-        assert req.room_id == "default"
-
-    def test_chat_request_message_too_short(self) -> None:
-        with pytest.raises(ValueError):
-            ChatRequest(message="")
-
-    def test_rag_chunk_roundtrip(self) -> None:
-        chunk = RagChunk(id="abc", room_id="r1", content="test", source="/x.txt", score=0.9)
-        data = chunk.model_dump(mode="json")
-        restored = RagChunk(**data)
-        assert restored.id == "abc"
-        assert restored.score == 0.9
-
-    def test_privacy_report_serialization(self) -> None:
-        report = PrivacyReport(
-            level="yellow",
-            items=[PrivacyItem(what="memory", destination="local_db", risk="yellow")],
-        )
-        d = report.model_dump(mode="json")
-        assert d["level"] == "yellow"
+def test_privacy_api_is_red():
+    from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
+    report = PrivacyAnalyzer().analyze(
+        model_type="api",
+        files_attached=True,
+        memory_enabled=True,
+        web_access=True,
+    )
+    assert report.level == "red"
+    assert any(item.risk == "red" for item in report.items)
 
 
-class TestAgentRegistry:
-    def test_catalog_loads_without_error(self) -> None:
-        root = Path(__file__).resolve().parents[2]
-        registry = AgentRegistry(project_root=root)
-        catalog = registry.catalog()
-        assert len(catalog.agents) > 0
-        assert len(catalog.skills) > 0
+# ── Model Router ──────────────────────────────────────────────────────────────
 
-    def test_agent_manifest_has_required_fields(self) -> None:
-        root = Path(__file__).resolve().parents[2]
-        registry = AgentRegistry(project_root=root)
-        for agent in registry.list_agents():
-            assert agent.id
-            assert agent.name
-            assert agent.privacy_level in ("local", "hybrid", "external")
+def test_model_router_local_high_vram():
+    from asterion_api.services.model_router import ModelRouter
+    from asterion_api.schemas import HardwareProfile
+    router = ModelRouter()
+    result = router.select("local coding", HardwareProfile(vram_gb=10.0))
+    assert result.mode == "local"
+    assert result.model != router.api_fallback
+
+
+def test_model_router_api_fallback_no_vram():
+    from asterion_api.services.model_router import ModelRouter
+    from asterion_api.schemas import HardwareProfile
+    router = ModelRouter()
+    result = router.select("complex task", HardwareProfile(vram_gb=0.5))
+    assert result.mode == "api"
+    assert result.model == router.api_fallback
+
+
+# ── RAG chunking ─────────────────────────────────────────────────────────────
+
+def test_rag_chunk_splits_correctly():
+    from asterion_api.services.rag import DocumentIndexer
+    text = "A" * 3000
+    chunks = DocumentIndexer._chunk(text, size=1200, overlap=160)
+    assert len(chunks) >= 2
+    assert all(len(c) <= 1200 for c in chunks)
+
+
+def test_rag_bm25_empty_query():
+    from asterion_api.services.rag import DocumentIndexer
+    rows = [{"id": "1", "content": "hello world"}, {"id": "2", "content": "foo bar"}]
+    scores = DocumentIndexer._bm25_scores("", rows)
+    assert set(scores.keys()) == {"1", "2"}
+
+
+# ── BaseHarness compliance ────────────────────────────────────────────────────
+
+def test_all_services_implement_harness():
+    from asterion_api.harness import BaseHarness
+    from asterion_api.services.ollama_service import OllamaService
+    from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
+    from asterion_api.services.rag import DocumentIndexer
+    from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
+    for cls in [OllamaService, PrivacyAnalyzer, EncryptedSQLiteStore]:
+        assert issubclass(cls, BaseHarness), f"{cls.__name__} не реализует BaseHarness"

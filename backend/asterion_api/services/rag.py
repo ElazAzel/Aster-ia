@@ -78,11 +78,14 @@ class DocumentIndexer(BaseHarness):
         rows = self._all_rows_paginated(room_id, max_rows=2000)
         dense = self._dense_scores(query_vector, rows)
         bm25 = self._bm25_scores(query, rows)
-        merged = []
-        for row in rows:
-            score = 0.7 * dense.get(row["id"], 0.0) + 0.3 * bm25.get(row["id"], 0.0)
-            merged.append((row, score))
-        merged.sort(key=lambda item: item[1], reverse=True)
+        merged = sorted(
+            [
+                (row, 0.7 * dense.get(row["id"], 0.0) + 0.3 * bm25.get(row["id"], 0.0))
+                for row in rows
+            ],
+            key=lambda x: x[1],
+            reverse=True,
+        )
         return [
             RagChunk(
                 id=row["id"],
@@ -111,22 +114,9 @@ class DocumentIndexer(BaseHarness):
         db = lancedb.connect(str(self.db_path))
         if self.table_name not in db.table_names():
             return []
-        table = db.open_table(self.table_name)
-        count = min(table.count_rows(), max_rows)
-        if count == 0:
-            return []
-        reader = table.to_batches(batch_size=500)
-        rows = []
-        for batch in reader:
-            pdf = batch.to_pandas()
-            for record in pdf.to_dict("records"):
-                if record.get("room_id") == room_id and len(rows) < max_rows:
-                    rows.append(record)
-                if len(rows) >= max_rows:
-                    break
-            if len(rows) >= max_rows:
-                break
-        return rows
+        tbl = db.open_table(self.table_name)
+        df = tbl.search().where(f'room_id = "{room_id}"').limit(max_rows).to_pandas()
+        return df.to_dict("records")
 
     @staticmethod
     def _chunk(text: str, size: int = 1200, overlap: int = 160) -> list[str]:
