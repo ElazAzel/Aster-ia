@@ -35,6 +35,9 @@ import {
   exportSystemData,
   importSystemData,
   wipeSystemData,
+  listChatConversations,
+  updateChatConversation,
+  deleteChatConversation,
   type HealthResponse,
   type ModelInfo,
   type PrivacyReport,
@@ -141,6 +144,59 @@ export type ConsentRequest = {
 export const auditLogs = writable<AuditLogRecord[]>([]);
 export const activeConsentRequest = writable<ConsentRequest | null>(null);
 
+// Theme store & initialization
+export const theme = writable<'dark' | 'light'>((typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : 'dark') as 'dark' | 'light' || 'dark');
+if (typeof document !== 'undefined') {
+  const currentTheme = localStorage.getItem('theme') || 'dark';
+  if (currentTheme === 'light') {
+    document.documentElement.classList.add('light-theme');
+  } else {
+    document.documentElement.classList.remove('light-theme');
+  }
+}
+
+export function toggleTheme() {
+  theme.update(t => {
+    const next = t === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', next);
+    if (typeof document !== 'undefined') {
+      const html = document.documentElement;
+      if (next === 'light') {
+        html.classList.add('light-theme');
+      } else {
+        html.classList.remove('light-theme');
+      }
+    }
+    return next;
+  });
+}
+
+// Toast store & helper
+export type ToastItem = {
+  id: string;
+  message: string;
+  type: 'success' | 'warning' | 'error';
+  duration: number;
+};
+export const toasts = writable<ToastItem[]>([]);
+
+export function showToast(message: string, type: 'success' | 'warning' | 'error' = 'success', duration = 3500) {
+  const id = Math.random().toString(36).substring(2, 9);
+  toasts.update(t => [...t, { id, message, type, duration }]);
+  setTimeout(() => {
+    toasts.update(t => t.filter(item => item.id !== id));
+  }, duration);
+}
+
+// Onboarding store & helper
+export const showOnboarding = writable<boolean>(typeof localStorage !== 'undefined' ? localStorage.getItem('asterion_onboarding_completed') !== 'true' : true);
+
+export function completeOnboarding() {
+  localStorage.setItem('asterion_onboarding_completed', 'true');
+  showOnboarding.set(false);
+  showToast('Ознакомление завершено! Добро пожаловать в Asterion AI.', 'success');
+}
+
 // System prompt editor
 export const systemPrompt = writable(localStorage.getItem('asterion_system_prompt') ?? '');
 export const systemPromptSaved = writable(false);
@@ -152,6 +208,12 @@ export const privacyPopoverOpen = writable(false);
 export const showLeftPanel = writable(true);
 export const showRightPanel = writable(true);
 export const activeWorkbenchTab = writable<'logs' | 'plan' | 'artifacts'>('plan');
+export const showCommandPalette = writable(false);
+
+// Chat conversations stores
+export const conversationId = writable<string | null>(null);
+export const conversations = writable<any[]>([]);
+export const conversationSearchQuery = writable('');
 
 // Privacy Input (reactive combination)
 export const privacyInput = writable({
@@ -206,7 +268,9 @@ export async function runStep<T>(label: string, action: () => Promise<T>): Promi
     errorText.set('');
     return await action();
   } catch (error) {
-    errorText.set(error instanceof Error ? error.message : String(error));
+    const msg = error instanceof Error ? error.message : String(error);
+    errorText.set(msg);
+    showToast(msg, 'error');
     return null;
   }
 }
@@ -293,6 +357,36 @@ export async function refreshRagDocuments() {
   if (result) ragDocuments.set(result);
 }
 
+export async function refreshConversations() {
+  const base = get(apiBase);
+  const rid = get(roomId);
+  const result = await runStep('Читаю историю чатов', () => listChatConversations(base, rid));
+  if (result) {
+    conversations.set(result);
+  }
+}
+
+export async function renameConversation(id: string, newTitle: string) {
+  const base = get(apiBase);
+  const result = await runStep('Переименовываю диалог', () => updateChatConversation(base, id, newTitle));
+  if (result) {
+    showToast('Диалог переименован', 'success');
+    await refreshConversations();
+  }
+}
+
+export async function removeConversation(id: string) {
+  const base = get(apiBase);
+  const result = await runStep('Удаляю диалог', () => deleteChatConversation(base, id));
+  if (result) {
+    showToast('Диалог удален', 'success');
+    if (get(conversationId) === id) {
+      conversationId.set(null);
+    }
+    await refreshConversations();
+  }
+}
+
 export async function analyzeCurrentPrivacy() {
   const base = get(apiBase);
   const input = get(privacyInput);
@@ -326,6 +420,7 @@ export async function addMemory() {
   const result = await runStep('Добавляю память', () => createMemory(base, rid, content));
   if (result) {
     memoryDraft.set('');
+    showToast('Память успешно сохранена', 'success');
     await refreshMemories();
     privacyInput.update(p => {
       p.memory_enabled = true;
@@ -344,6 +439,7 @@ export async function addRoom() {
   if (result) {
     roomDraft.set('');
     roomId.set(result.id);
+    showToast(`Комната "${name}" создана`, 'success');
     await refreshRooms();
     await refreshMemories();
     await refreshRagDocuments();
@@ -353,7 +449,10 @@ export async function addRoom() {
 export async function removeMemory(memoryId: string) {
   const base = get(apiBase);
   const result = await runStep('Удаляю память', () => deleteMemory(base, memoryId));
-  if (result) await refreshMemories();
+  if (result) {
+    showToast('Память удалена', 'success');
+    await refreshMemories();
+  }
 }
 
 export async function runRagSearch() {
@@ -369,7 +468,10 @@ export async function runRagSearch() {
 export async function removeRagDocument(documentId: string) {
   const base = get(apiBase);
   const result = await runStep('Удаляю запись Vault', () => deleteRagDocument(base, documentId));
-  if (result) await refreshRagDocuments();
+  if (result) {
+    showToast('Документ удален из хранилища RAG', 'success');
+    await refreshRagDocuments();
+  }
 }
 
 export async function exportResearchArtifact() {
@@ -397,6 +499,7 @@ export async function exportResearchArtifact() {
     })
   );
   if (result) {
+    showToast('Отчет успешно экспортирован в артефакты', 'success');
     exportedReport.set(result);
     activeWorkbenchTab.set('artifacts');
     showRightPanel.set(true);
@@ -703,6 +806,7 @@ export async function refreshAll() {
     refreshRooms(),
     refreshMemories(),
     refreshRagDocuments(),
+    refreshConversations(),
     analyzeCurrentPrivacy(),
     refreshPlugins(),
     refreshArtifacts(),

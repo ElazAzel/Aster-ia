@@ -727,3 +727,19 @@ export function wipeSystemData(apiBase: string) {
     method: 'POST',
   });
 }
+
+// ─── Chat Conversations Operations ──────────────────────────────────────────
+
+export function updateChatConversation(apiBase: string, id: string, title: string) {
+  return request<ChatConversationRecord>(apiBase, `/api/chat/conversations/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: { title }
+  });
+}
+
+export function deleteChatConversation(apiBase: string, id: string) {
+  return request<{ deleted: boolean }>(apiBase, `/api/chat/conversations/${encodeURIComponent(id)}`, {
+    method: 'DELETE'
+  });
+}
+

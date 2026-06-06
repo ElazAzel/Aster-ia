@@ -17,15 +17,20 @@
     refreshAll,
     checkDesktopBackend,
     privacyPopoverOpen,
-    activeConsentRequest
+    activeConsentRequest,
+    showOnboarding,
+    showCommandPalette
   } from './lib/stores';
 
   // Import Svelte Components
   import SideRail from './lib/SideRail.svelte';
   import TopBar from './lib/TopBar.svelte';
+  import OnboardingWizard from './lib/OnboardingWizard.svelte';
+  import CommandPalette from './lib/CommandPalette.svelte';
   import ContextPanel from './lib/ContextPanel.svelte';
   import Workbench from './lib/Workbench.svelte';
   import StreamingChat from './lib/StreamingChat.svelte';
+  import ToastContainer from './lib/ToastContainer.svelte';
 
   // Import Tab Components
   import AgentLabTab from './lib/AgentLabTab.svelte';
@@ -67,9 +72,7 @@
   function handleKeydown(event: KeyboardEvent) {
     if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
       event.preventDefault();
-      const tabIndex = TAB_TABS.indexOf($activeTab as typeof TAB_TABS[number]);
-      const nextTab = TAB_TABS[(tabIndex + 1) % TAB_TABS.length];
-      $activeTab = nextTab;
+      $showCommandPalette = !$showCommandPalette;
     }
     if ((event.metaKey || event.ctrlKey) && event.key >= '1' && event.key <= '9') {
       event.preventDefault();
@@ -211,6 +214,13 @@
           </div>
         </div>
       </div>
+    {/if}
+    <ToastContainer />
+    {#if $showOnboarding}
+      <OnboardingWizard />
+    {/if}
+    {#if $showCommandPalette}
+      <CommandPalette />
     {/if}
   </div>
 {/if}

@@ -15,3 +15,8 @@ tmp/
 # Auto-generated harness artifacts
 eval/results.json
 harness/candidates/
+
+# Playwright E2E test directories
+frontend/playwright-report/
+frontend/test-results/
+

@@ -1563,3 +1563,52 @@ input:focus, select:focus, textarea:focus {
     display: none;
   }
 }
+
+/* === Premium Light Theme Palette === */
+:root.light-theme {
+  --bg-app: #f4f6f9;
+  --bg-sidebar: #ebedf3;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f7f9fc;
+  --bg-input: #e2e6f0;
+  --bg-glass: rgba(255, 255, 255, 0.7);
+
+  --border-color: #d1d7e2;
+  --border-hover: #b8c0d1;
+
+  --text-primary: #1a202c;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+
+  --color-brand-glow: rgba(124, 109, 250, 0.08);
+  --shadow-premium: 0 8px 30px rgba(0, 0, 0, 0.06);
+}
+
+/* === Skeleton Loading Utility === */
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.95; }
+}
+
+.skeleton {
+  animation: pulse 1.5s infinite ease-in-out;
+  background: var(--border-color);
+  border-radius: 6px;
+  display: block;
+}
+
+.skeleton-text {
+  height: 12px;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.skeleton-text.short {
+  width: 60%;
+}
+
+.skeleton-card {
+  height: 80px;
+  width: 100%;
+}
+

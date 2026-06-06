@@ -2,6 +2,19 @@
 
 ## 2026-06-06
 
+### Phase 5: UX/UI Polish and E2E Testing (Block 7)
+
+- **Reactive Conversation History Sidebar**: Refactored the chat history list from `StreamingChat.svelte` to a dedicated section in the Left Context Panel (`ContextPanel.svelte`) with a reactive full-text search input (filtering by title and localized date). Added conversation renaming (`PATCH`) and cascading deletion (`DELETE`) with toast alerts. Shared state variables (`conversationId`, `conversations`, `conversationSearchQuery`) are synced in a central Svelte store.
+- **Drag-and-Drop RAG Vault Indexing**: Integrated a responsive, glassmorphic drag-and-drop zone inside `VaultTab.svelte` that accepts `.pdf`, `.docx`, `.txt`, and `.md` files. Immediately triggers file parsing and vectorization via `uploadVaultFile()` on drop. For desktop Tauri runs, includes a native filesystem path selection input executing `indexLocalVaultFile()`.
+- **Toast Alerts & Theme State Synced**: Configured light mode override tokens in `frontend/src/app.css` using CSS custom properties, syncing the theme preference to `localStorage`. Created `ToastContainer.svelte` supplying non-blocking floating alerts for success, warning, and error events.
+- **Onboarding Wizard**: Built a step-by-step onboarding walkthrough (`OnboardingWizard.svelte`) checking FastAPI sidecar and local Ollama status, guiding first room creation, and demonstrating keyboard shortcuts, saved to `localStorage` on completion.
+- **Command Palette (Ctrl+K / Cmd+K)**: Centered modal supporting command queries (navigating between tabs, selecting agents, switching room contexts, toggling light/dark theme, and triggering database backup/wipe).
+- **Custom Markdown Renderers**: Custom regex-based parser with syntax-highlighting for Python, Rust, JavaScript, and shell commands in chat messages without heavy dependencies.
+- **Playwright E2E Tests**: Implemented local mocked integration tests covering app shell navigation, theme switches, command palette searches, room context creations, memory inserts, and the onboarding walkthrough. All 4 Playwright E2E tests pass cleanly.
+- **Verification**: Clean backend compilation, 65/65 pytest checks pass, 100% Meta-Harness success (40.4ms avg response latency), and Vite build compiles with 0 warnings/errors.
+
+## 2026-06-06
+
 ### Phase 4: Security and Privacy Hardening (Block 6)
 
 - **OS-level Process Sandboxing**: Implemented secure subprocess sandboxing. Windows uses native `ctypes` Job Objects restricting memory to 512 MB and process spawning (ActiveProcessLimit = 2). Linux utilizes the `resource` module inside `preexec_fn` (`RLIMIT_AS`, `RLIMIT_CPU`, `RLIMIT_NPROC`).

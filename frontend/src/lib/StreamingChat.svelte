@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount, onDestroy, tick } from 'svelte';
   import { listChatConversations, listChatMessages } from './api';
+  import MarkdownRenderer from './MarkdownRenderer.svelte';
+  import { conversationId, conversations, refreshConversations } from './stores';
 
   type ChatMessage = {
     role: 'user' | 'assistant';
@@ -48,11 +50,28 @@
   let activeSource: EventSource | null = null;
   let streaming = false;
   let errorText = '';
-  let conversations: Awaited<ReturnType<typeof listChatConversations>> = [];
-  let conversationId: string | null = null;
   let loadingHistory = false;
   let messagesEl: HTMLDivElement;
   let textareaEl: HTMLTextAreaElement;
+
+  let loadedConversationId: string | null = null;
+
+  $: if ($conversationId) {
+    void loadMessages($conversationId);
+  } else {
+    messages = [
+      {
+        role: 'assistant',
+        content: 'Привет! Я Asterion. Готов к локальному диалогу. Ответы приходят через SSE поток в реальном времени. Чем я могу помочь?'
+      }
+    ];
+    loadedConversationId = null;
+  }
+
+  $: if (roomId) {
+    newChat();
+    void loadHistory();
+  }
 
   // Autocomplete state
   let autocompleteType: '/' | '@' | null = null;
@@ -60,71 +79,6 @@
   let autocompleteItems: AutocompleteItem[] = [];
   let autocompleteIndex = 0;
   let autocompleteVisible = false;
-
-  function parseMarkdown(text: string): string {
-    if (!text) return '';
-    let html = text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-
-    html = html.replace(/```(\w*)\n([\s\S]*?)\n```/g, (_, lang, code) => {
-      const language = lang || 'text';
-      return `<div class="code-container">
-        <div class="code-header">
-          <span>${language}</span>
-          <button type="button" class="copy-btn" onclick="navigator.clipboard.writeText(this.nextElementSibling.innerText); this.innerText = 'Скопировано!'; setTimeout(() => this.innerText = 'Копировать', 2000)">Копировать</button>
-          <pre style="display:none;">${code}</pre>
-        </div>
-        <pre><code class="language-${language}">${code}</code></pre>
-      </div>`;
-    });
-
-    html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
-    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-
-    // Extract source citations and render as Perplexity-style cards
-    html = html.replace(/\[source:(.+?)\]\((.+?)\)/g, (_, title, url) => {
-      return `<div class="source-card" onclick="window.open('${url}','_blank')">
-        <div class="source-icon">📄</div>
-        <div class="source-info">
-          <div class="source-title">${title}</div>
-          <div class="source-url">${url}</div>
-        </div>
-      </div>`;
-    });
-
-    const lines = html.split('\n');
-    let inList = false;
-    for (let i = 0; i < lines.length; i++) {
-      const match = lines[i].match(/^(\s*)[-*]\s+(.+)$/);
-      if (match) {
-        if (!inList) {
-          lines[i] = '<ul>\n<li>' + match[2] + '</li>';
-          inList = true;
-        } else {
-          lines[i] = '<li>' + match[2] + '</li>';
-        }
-      } else {
-        if (inList) {
-          lines[i] = '</ul>\n' + lines[i];
-          inList = false;
-        }
-      }
-    }
-    if (inList) {
-      lines.push('</ul>');
-    }
-
-    html = lines.map(line => {
-      if (line.includes('<div') || line.includes('</div') || line.includes('<pre') || line.includes('</pre') || line.includes('<ul') || line.includes('</ul') || line.includes('<li') || line.includes('</li')) {
-        return line;
-      }
-      return line + '<br>';
-    }).join('\n');
-
-    return html;
-  }
 
   function appendAssistantToken(token: string) {
     const next = [...messages];
@@ -155,15 +109,14 @@
   }
 
   async function loadHistory() {
-    const convs = await listChatConversations(apiBase, roomId);
-    conversations = convs;
-    if (convs.length > 0 && !conversationId) {
-      conversationId = convs[0].id;
-      await loadMessages(conversationId);
+    await refreshConversations();
+    if ($conversations.length > 0 && !$conversationId) {
+      $conversationId = $conversations[0].id;
     }
   }
 
   async function loadMessages(convId: string) {
+    if (convId === loadedConversationId) return;
     loadingHistory = true;
     try {
       const records = await listChatMessages(apiBase, convId);
@@ -171,6 +124,7 @@
       if (messages.length === 0) {
         messages = [{ role: 'assistant', content: 'Привет! Я Asterion. Готов к локальному диалогу.' }];
       }
+      loadedConversationId = convId;
     } catch {
       messages = [{ role: 'assistant', content: 'Привет! Я Asterion. Готов к локальному диалогу.' }];
     }
@@ -180,7 +134,8 @@
 
   function newChat() {
     messages = [{ role: 'assistant', content: 'Привет! Я Asterion. Готов к локальному диалогу.' }];
-    conversationId = null;
+    $conversationId = null;
+    loadedConversationId = null;
     errorText = '';
     activeSource?.close();
     streaming = false;
@@ -319,7 +274,7 @@
       room_id: roomId
     });
     if (model) params.set('model', model);
-    if (conversationId) params.set('conversation_id', conversationId);
+    if ($conversationId) params.set('conversation_id', $conversationId);
 
     activeSource?.close();
     activeSource = new EventSource(`${apiBase}/api/chat/stream?${params.toString()}`);
@@ -331,6 +286,7 @@
           error?: string;
           response?: string;
           done?: boolean;
+          conversation_id?: string;
         };
 
         if (payload.type === 'error') {
@@ -343,8 +299,11 @@
         if (payload.type === 'done' || payload.done) {
           streaming = false;
           activeSource?.close();
-          if (payload.conversation_id) conversationId = payload.conversation_id;
-          loadHistory();
+          if (payload.conversation_id) {
+            $conversationId = payload.conversation_id;
+            loadedConversationId = payload.conversation_id;
+          }
+          void refreshConversations();
           return;
         }
 
@@ -380,17 +339,6 @@
 </script>
 
 <div class="chat-container">
-  {#if conversations.length > 0}
-    <div class="chat-history-bar">
-      <select bind:value={conversationId} on:change={(e) => { if (e.currentTarget.value) loadMessages(e.currentTarget.value); }} style="font-size:11px;padding:4px 8px;max-width:200px">
-        <option value={null}>Новый чат</option>
-        {#each conversations as conv}
-          <option value={conv.id}>Чат {new Date(conv.created_at).toLocaleString('ru')} ({conv.message_count})</option>
-        {/each}
-      </select>
-      <button type="button" class="text-button" on:click={newChat} style="font-size:11px">+ Новый</button>
-    </div>
-  {/if}
   <div class="chat-messages" bind:this={messagesEl}>
     {#each messages as message}
       <div class="chat-bubble-row {message.role}">
@@ -404,17 +352,17 @@
           <div class="bubble-content">
             {#if message.role === 'assistant'}
               {#if streaming && message === messages[messages.length - 1]}
-                {@html parseMarkdown(message.content)}
+                <MarkdownRenderer text={message.content} />
                 <div class="streaming-indicator">
                   <span class="streaming-dot"></span>
                   <span class="streaming-dot"></span>
                   <span class="streaming-dot"></span>
                 </div>
               {:else}
-                {@html parseMarkdown(message.content)}
+                <MarkdownRenderer text={message.content} />
               {/if}
             {:else}
-              <p>{message.content}</p>
+              <MarkdownRenderer text={message.content} />
             {/if}
           </div>
         </div>
@@ -531,25 +479,6 @@
     flex-direction: column;
     gap: 24px;
     scroll-behavior: smooth;
-  }
-
-  .chat-history-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 32px;
-    border-bottom: 1px solid var(--border-color);
-    background: var(--bg-sidebar);
-    flex-shrink: 0;
-  }
-
-  .chat-history-bar select {
-    background: var(--bg-input);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    color: var(--text-primary);
-    font-size: 11px;
-    padding: 4px 8px;
   }
 
   .chat-bubble-row {
