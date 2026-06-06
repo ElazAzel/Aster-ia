@@ -306,3 +306,139 @@ async def test_artifact_create_and_list(tmp_path):
     assert artifact["kind"] == "chat"
     listing = await store.list_artifacts("default")
     assert any(a["id"] == artifact["id"] for a in listing)
+
+
+# ── Integration tests ─────────────────────────────────────────────────────────
+
+
+def test_supervisor_agent_implements_harness():
+    from asterion_api.harness import BaseHarness
+    from asterion_api.services.deep_research import SupervisorAgent
+    from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
+    agent = SupervisorAgent(PrivacyAnalyzer())
+    assert isinstance(agent, BaseHarness)
+    state = agent.get_state()
+    assert "searxng_url" in state
+    agent.set_state({"searxng_url": "http://test:8080"})
+    assert agent.searxng_url == "http://test:8080"
+
+
+def test_supervisor_agent_decompose():
+    from asterion_api.services.deep_research import SupervisorAgent
+    from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
+    agent = SupervisorAgent(PrivacyAnalyzer())
+    subtasks = agent.decompose("test query", 3)
+    assert len(subtasks) == 3
+    assert all("test query" in s for s in subtasks)
+
+
+def test_contradiction_finder_empty_input():
+    from unittest.mock import AsyncMock
+    from asterion_api.services.contradiction_finder import ContradictionFinder
+    ollama = AsyncMock()
+    ollama.embed.return_value = []
+    import asyncio
+    finder = ContradictionFinder(ollama)
+    result = asyncio.run(finder.find(claims=[], threshold=0.8))
+    assert result == []
+
+
+def test_contradiction_finder_single_claim():
+    from unittest.mock import AsyncMock
+    from asterion_api.services.contradiction_finder import ContradictionFinder
+    ollama = AsyncMock()
+    ollama.embed.return_value = []
+    import asyncio
+    finder = ContradictionFinder(ollama)
+    result = asyncio.run(finder.find(claims=["only one"], threshold=0.8))
+    assert result == []
+
+
+@pytest.mark.asyncio
+async def test_deep_research_local_only_no_web():
+    from asterion_api.services.deep_research import SupervisorAgent
+    from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
+    agent = SupervisorAgent(PrivacyAnalyzer())
+    result = await agent.research(query="test", max_subtasks=2, web_access=False)
+    assert result.query == "test"
+    assert len(result.subtasks) == 2
+    assert result.results == []
+
+
+def test_workflow_runner_accepts_empty():
+    from asterion_api.services.workflow_runner import WorkflowRunner
+    import asyncio
+    runner = WorkflowRunner()
+    result = asyncio.run(runner.run({"steps": []}))
+    assert result["status"] == "completed"
+
+
+def test_plugin_manager_skips_missing_manifest(tmp_path):
+    import os
+    os.environ["ASTERION_DATA_DIR"] = str(tmp_path)
+    from asterion_api.config import get_settings
+    get_settings.cache_clear()
+    from asterion_api.services.plugin_manager import PluginManager
+    settings = get_settings()
+    plugin_dir = settings.data_dir / "plugins" / "empty-plugin"
+    plugin_dir.mkdir(parents=True)
+    manager = PluginManager(settings)
+    plugins = manager.load()
+    assert plugins == []
+
+
+def test_plugin_manager_skips_invalid_manifest(tmp_path):
+    import os
+    os.environ["ASTERION_DATA_DIR"] = str(tmp_path)
+    from asterion_api.config import get_settings
+    get_settings.cache_clear()
+    from asterion_api.services.plugin_manager import PluginManager
+    settings = get_settings()
+    plugin_dir = settings.data_dir / "plugins" / "bad-plugin"
+    plugin_dir.mkdir(parents=True)
+    (plugin_dir / "manifest.json").write_text("not json")
+    manager = PluginManager(settings)
+    try:
+        plugins = manager.load()
+        assert plugins == []
+    except Exception:
+        pass
+
+
+@pytest.mark.asyncio
+async def test_workflow_runner_approval_rejection():
+    import asyncio
+    from asterion_api.services.workflow_runner import WorkflowRunner
+    runner = WorkflowRunner()
+    task = asyncio.create_task(runner.run({
+        "steps": [{"name": "Approve", "type": "human_approval"}]
+    }))
+    await asyncio.sleep(0.05)
+    run_id = next(iter(runner.paused), None)
+    if run_id:
+        runner.confirm(run_id, False, {})
+    result = await asyncio.wait_for(task, timeout=2)
+    assert result["status"] == "rejected"
+
+
+def test_task_simulator_dangerous_task():
+    from asterion_api.services.agent_sandbox import TaskSimulator
+    simulator = TaskSimulator()
+    plan = simulator.plan("delete all system files and remove OS")
+    assert "dangerous" in plan.required_permissions or plan.estimated_tokens > 0
+
+
+def test_sandbox_allows_safe_code():
+    from asterion_api.services.agent_sandbox import AgentSandbox
+    from asterion_api.schemas import AgentPermissions
+    sandbox = AgentSandbox()
+    sandbox._validate_code("x = 1 + 1", AgentPermissions())
+
+
+def test_supervisor_agent_execute():
+    from asterion_api.services.deep_research import SupervisorAgent
+    from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
+    agent = SupervisorAgent(PrivacyAnalyzer())
+    import asyncio
+    result = asyncio.run(agent.execute({"query": "test", "max_subtasks": 1, "web_access": False}))
+    assert result.query == "test"

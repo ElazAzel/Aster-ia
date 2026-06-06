@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import {
     DEFAULT_API_BASE,
     analyzePrivacy,
@@ -45,8 +45,9 @@
     createWorkflowEventsSocket,
     listArtifacts,
     indexFile,
-    getAgentRun,
+    streamDeepResearch,
     type DeepResearchResponse,
+    type DeepResearchStreamEvent,
     type ContradictionMatch,
     type PluginManifest,
     type WorkflowRunResponse,
@@ -129,12 +130,19 @@
   let uploadBusy = false;
   let uploadResult: RagIndexResponse | null = null;
 
+  // System prompt editor (localStorage)
+  let systemPrompt = localStorage.getItem('asterion_system_prompt') ?? '';
+  let systemPromptSaved = false;
+  function saveSystemPrompt() {
+    localStorage.setItem('asterion_system_prompt', systemPrompt);
+    systemPromptSaved = true;
+    setTimeout(() => systemPromptSaved = false, 2000);
+  }
+
   // Tab routing states
   let activeTab = 'chat'; // 'chat' | 'agents' | 'vault' | 'research' | 'system'
   let activeVaultTab = 'memory'; // 'memory' | 'rag' | 'rooms'
   let privacyPopoverOpen = false;
-  let drawerOpen = false;
-
   // Three-column workbench state
   let showLeftPanel = true;
   let showRightPanel = true;
@@ -405,10 +413,35 @@
   async function runDeepResearch() {
     if (!researchDeepQuery.trim()) return;
     deepResearchBusy = true;
+    deepResearchResult = null;
     const result = await runStep('Запускаю Deep Research', () =>
       deepResearch(apiBase, { query: researchDeepQuery, max_subtasks: 5, web_access: true })
     );
     if (result) deepResearchResult = result;
+    deepResearchBusy = false;
+  }
+
+  async function runDeepResearchStreaming() {
+    if (!researchDeepQuery.trim()) return;
+    deepResearchBusy = true;
+    deepResearchResult = null;
+    const accumResults = [] as DeepResearchResponse['results'];
+    try {
+      const gen = streamDeepResearch(apiBase, { query: researchDeepQuery, max_subtasks: 5, web_access: true });
+      while (true) {
+        const { value, done } = await gen.next();
+        if (done) break;
+        if (value.type === 'subtask_start') {
+          statusText = `Исследую: ${value.subtask}`;
+        } else if (value.type === 'result_found') {
+          accumResults.push(value.result);
+        } else if (value.type === 'done') {
+          deepResearchResult = value.response;
+        }
+      }
+    } catch (error) {
+      errorText = error instanceof Error ? error.message : String(error);
+    }
     deepResearchBusy = false;
   }
 
@@ -476,9 +509,67 @@
     return 'local';
   }
 
+  function clearError() {
+    errorText = '';
+  }
+
+  const TAB_TABS = ['chat', 'agents', 'vault', 'research', 'system', 'research_deep', 'images', 'automation', 'artifacts_browser', 'plugins'] as const;
+
+  const WORKFLOW_TEMPLATES = [
+    { name: 'Проверка файлов', steps: [{"name":"Сканировать файлы","type":"action"},{"name":"Проверить на вирусы","type":"action"},{"name":"Отчёт","type":"action"}] },
+    { name: 'Ревью кода', steps: [{"name":"Загрузить код","type":"action"},{"name":"Проверить стиль","type":"action"},{"name":"Утвердить изменения","type":"human_approval"},{"name":"Создать PR","type":"action"}] },
+    { name: 'Исследование', steps: [{"name":"Собрать источники","type":"action"},{"name":"Анализировать","type":"action"},{"name":"Создать отчёт","type":"human_approval"}] },
+  ];
+
+  const PERMISSION_PRESETS = [
+    { label: 'Минимальные', permissions: { allowed_folders: [], network: false, shell: false } },
+    { label: 'Чтение файлов', permissions: { allowed_folders: ['~/documents'], network: false, shell: false } },
+    { label: 'Веб-доступ', permissions: { allowed_folders: [], network: true, shell: false } },
+    { label: 'Полный доступ', permissions: { allowed_folders: ['~'], network: true, shell: true } },
+  ];
+  let permissionPreset = PERMISSION_PRESETS[0];
+
+  function applyWorkflowTemplate(index: number) {
+    if (index >= 0 && index < WORKFLOW_TEMPLATES.length) {
+      workflowName = WORKFLOW_TEMPLATES[index].name;
+      workflowSteps = JSON.stringify(WORKFLOW_TEMPLATES[index].steps, null, 2);
+    }
+  }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+      event.preventDefault();
+      const tabIndex = TAB_TABS.indexOf(activeTab as typeof TAB_TABS[number]);
+      const nextTab = TAB_TABS[(tabIndex + 1) % TAB_TABS.length];
+      activeTab = nextTab;
+    }
+    if ((event.metaKey || event.ctrlKey) && event.key >= '1' && event.key <= '9') {
+      event.preventDefault();
+      const idx = parseInt(event.key) - 1;
+      if (idx < TAB_TABS.length) activeTab = TAB_TABS[idx];
+    }
+    if (event.key === 'Escape') {
+      privacyPopoverOpen = false;
+    }
+  }
+
+  function notifyUser(title: string, body: string) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body });
+    }
+  }
+
   onMount(() => {
     desktopAvailable = isTauriRuntime();
     void refreshAll();
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+    document.addEventListener('keydown', handleKeydown);
+  });
+
+  onDestroy(() => {
+    document.removeEventListener('keydown', handleKeydown);
   });
 </script>
 
@@ -696,7 +787,10 @@
 
     <!-- Error notice -->
     {#if errorText}
-      <p class="notice error">{errorText}</p>
+      <div class="notice error" style="display:flex;justify-content:space-between;align-items:center">
+        <span>{errorText}</span>
+        <button type="button" class="text-button" on:click={clearError} style="font-size:12px;margin-left:12px">✕</button>
+      </div>
     {:else if statusText && statusText !== 'Готово'}
       <p class="notice">{statusText}</p>
     {/if}
@@ -842,7 +936,14 @@
                   <p style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Конструктор задач (Agent Lab)</p>
                   <form on:submit|preventDefault={simulatePlan} class="stack-form" style="gap: 8px;">
                     <textarea bind:value={agentTask} rows="3" placeholder="Опишите задачу для агента..." style="font-size: 12px; padding: 8px 10px;"></textarea>
-                    <button type="submit" disabled={!agentTask.trim()} style="min-height: 32px; font-size: 12px; padding: 0 14px;">Собрать AgentPlan</button>
+                    <div style="display:flex;gap:8px;align-items:center">
+                      <select bind:value={permissionPreset} style="flex:1;font-size:11px;padding:6px 8px">
+                        {#each PERMISSION_PRESETS as preset}
+                          <option value={preset}>{preset.label}</option>
+                        {/each}
+                      </select>
+                      <button type="submit" disabled={!agentTask.trim()} style="min-height: 32px; font-size: 12px; padding: 0 14px;">Собрать AgentPlan</button>
+                    </div>
                   </form>
                 </div>
 
@@ -1241,6 +1342,34 @@
             {/if}
           </section>
 
+          <!-- Keyboard shortcuts & Onboarding -->
+          <section class="panel">
+            <div class="panel-heading compact">
+              <h2>Горячие клавиши</h2>
+            </div>
+            <div style="font-size:12px;display:flex;flex-direction:column;gap:6px;color:var(--text-secondary)">
+              <div style="display:flex;justify-content:space-between"><kbd style="background:var(--bg-input);padding:2px 8px;border-radius:4px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border-color)">Ctrl+1-0</kbd><span>Переключить вкладку</span></div>
+              <div style="display:flex;justify-content:space-between"><kbd style="background:var(--bg-input);padding:2px 8px;border-radius:4px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border-color)">Ctrl+K</kbd><span>Следующая вкладка</span></div>
+              <div style="display:flex;justify-content:space-between"><kbd style="background:var(--bg-input);padding:2px 8px;border-radius:4px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border-color)">Esc</kbd><span>Закрыть Privacy Radar</span></div>
+              <div style="display:flex;justify-content:space-between"><kbd style="background:var(--bg-input);padding:2px 8px;border-radius:4px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border-color)">Enter</kbd><span>Отправить сообщение / создать комнату</span></div>
+            </div>
+          </section>
+
+          <!-- System Prompt Editor -->
+          <section class="panel">
+            <div class="panel-heading compact">
+              <h2>Системный промпт</h2>
+              {#if systemPromptSaved}
+                <span style="font-size:11px;color:var(--color-green-text)">Сохранено</span>
+              {/if}
+            </div>
+            <label style="display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:11px;font-weight:600;color:var(--text-secondary)">Системный промпт для чата</span>
+              <textarea bind:value={systemPrompt} rows="4" style="font-size:12px;padding:8px 10px;font-family:var(--font-mono)" placeholder="Ты — полезный AI ассистент..."></textarea>
+            </label>
+            <button type="button" on:click={saveSystemPrompt} style="align-self:flex-start;font-size:12px;padding:6px 14px">Сохранить</button>
+          </section>
+
           <!-- FastAPI config -->
           <section class="panel" style="grid-column: span 2;">
             <div class="panel-heading compact">
@@ -1344,6 +1473,8 @@
                   </article>
                 {/each}
               </div>
+            {:else}
+              <p class="empty" style="font-size:12px;margin-top:8px">Противоречия не найдены. Добавьте два или более утверждений и запустите поиск.</p>
             {/if}
           </section>
         </div>
@@ -1372,6 +1503,11 @@
             <div class="panel-heading compact"><h2>Результат</h2></div>
             {#if imageResult}
               <div style="background:var(--bg-input);border-radius:8px;padding:16px;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);overflow-x:auto">
+                {#if imageResult.images && imageResult.images.length > 0}
+                  <img src={imageResult.images[0]} alt={imagePrompt} style="max-width:100%;border-radius:6px;margin-bottom:8px" />
+                {:else if imageResult.image}
+                  <img src={imageResult.image} alt={imagePrompt} style="max-width:100%;border-radius:6px;margin-bottom:8px" />
+                {/if}
                 <pre style="margin:0;white-space:pre-wrap">{JSON.stringify(imageResult, null, 2)}</pre>
               </div>
             {:else}
@@ -1393,6 +1529,15 @@
                 </span>
               {/if}
             </div>
+            <label style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px">
+              <span style="font-size:11px;font-weight:600;color:var(--text-secondary)">Шаблон</span>
+              <select on:change={(e) => applyWorkflowTemplate(parseInt(e.currentTarget.value))} style="font-size:12px;padding:6px 10px">
+                <option value="-1">Выберите шаблон...</option>
+                {#each WORKFLOW_TEMPLATES as template, i}
+                  <option value={i}>{template.name}</option>
+                {/each}
+              </select>
+            </label>
             <label style="display:flex;flex-direction:column;gap:4px">
               <span style="font-size:11px;font-weight:600;color:var(--text-secondary)">Название workflow</span>
               <input bind:value={workflowName} placeholder="Мой рабочий процесс" />

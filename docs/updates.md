@@ -2,6 +2,23 @@
 
 ## 2026-06-06
 
+### Phase 3: E2E Integration, UX Polish, Testing & Hardening, New Features
+
+- **SSE streaming for Deep Research**: Added `POST /api/research/deep/stream` endpoint with `subtask_start`, `result_found`, and `done` events. Frontend `streamDeepResearch()` async generator in `api.ts` for progressive UI updates.
+- **Keyboard shortcuts**: `Ctrl+1-0` to switch tabs, `Ctrl+K` for next tab, `Esc` to close Privacy Radar. Added shortcuts help panel in System tab.
+- **Desktop notifications**: `Notification.requestPermission()` on mount, `notifyUser()` helper for future use.
+- **Workflow templates**: 3 presets (Проверка файлов, Ревью кода, Исследование) with dropdown selector in Automation tab.
+- **Permission presets**: 4 presets (Минимальные, Чтение файлов, Веб-доступ, Полный доступ) in Agent Lab dropdown.
+- **Image rendering**: ComfyUI response now renders `<img>` tag if response contains `images[0]` or `image` field.
+- **Error dismissal**: Error banner has a close button (`✕`).
+- **Empty states**: Contradiction Finder shows "Противоречия не найдены" when no matches; models selector shows proper fallback.
+- **System Prompt Editor**: New localStorage-based textarea in System tab, saved across sessions.
+- **CSS cleanup**: Removed orphaned classes (`.artifacts-drawer`, `.chat-history-bar`, `.api-field`, `.primary-grid`, `.right-stack`, `.inline-controls`, `.source-card-grid`, `.glass-panel`, `.chat-layout`). Removed dead `drawerOpen` state.
+- **Integration tests**: Expanded from 26 → 38 tests. Added tests for SupervisorAgent (harness, decompose, execute), ContradictionFinder (empty/single claim), WorkflowRunner (empty steps, approval rejection), PluginManager (missing/invalid manifest), AgentSandbox (safe code), TaskSimulator (dangerous task).
+- **Removed unused imports**: `getAgentRun`, `PrivacyReport`, `Path`, `AsyncMock`/`MagicMock`/`patch`, `DocumentIndexer` (now properly included in harness check).
+
+## 2026-06-06
+
 ### Полная верификация: все компоненты запущены и работают
 
 - **Backend (FastAPI)**: Запущен на `127.0.0.1:8000`. Health endpoint — `status: ok`, база SQLCipher — `encrypted: true`. Все 47 роутов зарегистрированы.

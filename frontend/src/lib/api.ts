@@ -547,6 +547,58 @@ export function deepResearch(apiBase: string, payload: DeepResearchRequest) {
   });
 }
 
+// ─── Deep Research Streaming ─────────────────────────────────────────────────
+
+export type DeepResearchStreamEvent =
+  | { type: 'subtask_start'; subtask: string }
+  | { type: 'result_found'; result: ResearchResult }
+  | { type: 'done'; response: DeepResearchResponse };
+
+export async function* streamDeepResearch(
+  apiBase: string,
+  payload: DeepResearchRequest,
+): AsyncGenerator<DeepResearchStreamEvent, DeepResearchResponse> {
+  const response = await fetch(`${apiBase}/api/research/deep/stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      query: payload.query,
+      max_subtasks: payload.max_subtasks ?? 5,
+      web_access: payload.web_access ?? true,
+    }),
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `${response.status} ${response.statusText}`);
+  }
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+    let eventType = '';
+    let data = '';
+    for (const line of lines) {
+      if (line.startsWith('event: ')) eventType = line.slice(7);
+      else if (line.startsWith('data: ')) data = line.slice(6);
+      else if (line === '' && eventType) {
+        const parsed = JSON.parse(data);
+        if (eventType === 'subtask_start') yield { type: 'subtask_start', subtask: parsed.subtask };
+        else if (eventType === 'result_found') yield { type: 'result_found', result: parsed as ResearchResult };
+        else if (eventType === 'done') {
+          yield { type: 'done', response: parsed as DeepResearchResponse };
+          return parsed as DeepResearchResponse;
+        }
+      }
+    }
+  }
+  throw new Error('Stream ended without done event');
+}
+
 // ─── Contradiction Finder ────────────────────────────────────────────────────
 
 export type ContradictionMatch = {
