@@ -53,6 +53,11 @@ class DocumentIndexer(BaseHarness):
 
             reader = PdfReader(str(file_path))
             text = "\n".join(page.extract_text() or "" for page in reader.pages)
+        elif suffix == ".docx":
+            import docx
+
+            doc = docx.Document(str(file_path))
+            text = "\n".join(paragraph.text for paragraph in doc.paragraphs)
         else:
             text = file_path.read_text(encoding="utf-8", errors="ignore")
         return self._chunk(text)
@@ -73,9 +78,13 @@ class DocumentIndexer(BaseHarness):
         self._upsert(rows)
         return {"indexed_chunks": len(rows), "source": str(file_path), "room_id": room_id}
 
-    async def hybrid_search(self, *, query: str, room_id: str, limit: int) -> list[RagChunk]:
+    async def hybrid_search(
+        self, *, query: str, room_id: str, limit: int, source_filter: str | None = None
+    ) -> list[RagChunk]:
         query_vector = (await self.ollama.embed(model=self.embedding_model, input_texts=[query]))[0]
         rows = self._all_rows_paginated(room_id, max_rows=2000)
+        if source_filter:
+            rows = [r for r in rows if source_filter.lower() in str(r.get("source", "")).lower()]
         dense = self._dense_scores(query_vector, rows)
         bm25 = self._bm25_scores(query, rows)
         merged = sorted(
@@ -117,6 +126,31 @@ class DocumentIndexer(BaseHarness):
         tbl = db.open_table(self.table_name)
         df = tbl.search().where(f'room_id = "{room_id}"').limit(max_rows).to_pandas()
         return df.to_dict("records")
+
+    def start_watcher(self, watch_dir: Path, room_id: str = "default") -> None:
+        import asyncio
+        from watchdog.observers import Observer
+        from watchdog.events import FileSystemEventHandler
+
+        loop = asyncio.get_running_loop()
+
+        class Handler(FileSystemEventHandler):
+            def __init__(self, indexer: DocumentIndexer):
+                self.indexer = indexer
+
+            def on_created(self, event):
+                if event.is_directory:
+                    return
+                path = Path(event.src_path)
+                if path.suffix.lower() in (".pdf", ".docx", ".txt", ".md"):
+                    asyncio.run_coroutine_threadsafe(self.indexer.index_file(path, room_id), loop)
+
+        watch_dir.mkdir(parents=True, exist_ok=True)
+        handler = Handler(self)
+        observer = Observer()
+        observer.schedule(handler, str(watch_dir), recursive=True)
+        observer.start()
+        self._observer = observer
 
     @staticmethod
     def _chunk(text: str, size: int = 1200, overlap: int = 160) -> list[str]:

@@ -60,9 +60,14 @@ class ChatResponse(BaseModel):
 class ChatConversationRecord(BaseModel):
     id: str
     room_id: str
+    title: str | None = None
     created_at: datetime
     message_count: int = 0
     latest_ts: datetime | None = None
+
+
+class ChatConversationUpdateRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=256)
 
 
 class ChatMessageRecord(BaseModel):
@@ -141,6 +146,7 @@ class ContextRoomCreateRequest(BaseModel):
     allowed_models: list[str] = Field(default_factory=list)
     memory_policy: Literal["off", "session", "persistent"] = "session"
     retention_days: int = Field(default=30, ge=1, le=3650)
+    system_prompt: str = ""
 
 
 class ContextRoomUpdateRequest(BaseModel):
@@ -149,6 +155,7 @@ class ContextRoomUpdateRequest(BaseModel):
     allowed_models: list[str] | None = None
     memory_policy: Literal["off", "session", "persistent"] | None = None
     retention_days: int | None = Field(default=None, ge=1, le=3650)
+    system_prompt: str | None = None
 
 
 class ContextRoom(BaseModel):
@@ -158,6 +165,7 @@ class ContextRoom(BaseModel):
     allowed_models: list[str]
     memory_policy: Literal["off", "session", "persistent"]
     retention_days: int
+    system_prompt: str
     created_at: datetime
     updated_at: datetime
 
@@ -171,6 +179,7 @@ class RagSearchRequest(BaseModel):
     query: str = Field(min_length=1, max_length=16_000)
     room_id: str = "default"
     limit: int = Field(default=8, ge=1, le=50)
+    source_filter: str | None = None
 
 
 class RagChunk(BaseModel):
@@ -337,6 +346,11 @@ class AgentRunCreateRequest(BaseModel):
     task: str = Field(min_length=1, max_length=16_000)
     plan: AgentPlan | None = None
     permissions: AgentPermissions = Field(default_factory=AgentPermissions)
+
+
+class AgentRunUpdateRequest(BaseModel):
+    status: Literal["planned", "running", "paused", "completed", "failed", "cancelled"] | None = None
+    agent_id: str | None = None
 
 
 class AgentRun(BaseModel):

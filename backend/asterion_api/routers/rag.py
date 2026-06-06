@@ -54,6 +54,7 @@ async def search_documents(
         query=request.query,
         room_id=request.room_id,
         limit=request.limit,
+        source_filter=request.source_filter,
     )
 
 

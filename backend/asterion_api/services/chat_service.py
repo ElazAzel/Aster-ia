@@ -57,8 +57,8 @@ class ChatService(BaseHarness):
             content=request.message,
             model=model,
         )
-        prompt = await self._build_prompt(request.message, conv_id)
-        text = await self.ollama.generate(model=model, prompt=prompt)
+        prompt_msgs = await self._build_messages(conv_id, request.room_id)
+        text = await self.ollama.chat(model=model, messages=prompt_msgs)
         artifact = await self._persist_response_artifact(
             room_id=request.room_id,
             prompt=request.message,
@@ -98,11 +98,12 @@ class ChatService(BaseHarness):
             content=request.message,
             model=model,
         )
-        prompt = await self._build_prompt(request.message, conv_id)
+        prompt_msgs = await self._build_messages(conv_id, request.room_id)
         parts: list[str] = []
         started = time.perf_counter()
-        async for chunk in self.ollama.stream_generate(model=model, prompt=prompt):
-            token = str(chunk.get("response", ""))
+        async for chunk in self.ollama.stream_chat(model=model, messages=prompt_msgs):
+            message = chunk.get("message", {})
+            token = str(message.get("content", ""))
             if token:
                 parts.append(token)
                 yield {
@@ -136,19 +137,25 @@ class ChatService(BaseHarness):
             "privacy_level": self.privacy_level,
         }
 
-    async def _build_prompt(self, message: str, conv_id: str) -> str:
+    async def _build_messages(self, conv_id: str, room_id: str) -> list[dict[str, Any]]:
+        room = await self.store.get_room(room_id)
+        messages: list[dict[str, Any]] = []
+        if room and room.get("system_prompt"):
+            messages.append({"role": "system", "content": room["system_prompt"]})
+
         history = await self.store.list_messages(conv_id)
-        lines: list[str] = []
+        tail: list[dict[str, Any]] = []
         total = 0
-        for msg in reversed(history[-20:]):
-            line = f"{msg['role'].upper()}: {msg['content']}"
-            if total + len(line) > self.MAX_HISTORY_CHARS:
+        for msg in reversed(history[-40:]):
+            content = msg["content"]
+            if total + len(content) > self.MAX_HISTORY_CHARS:
                 break
-            lines.append(line)
-            total += len(line)
-        lines.reverse()
-        lines.append(f"USER: {message}")
-        return "\n".join(lines)
+            tail.append({"role": msg["role"], "content": content})
+            total += len(content)
+
+        tail.reverse()
+        messages.extend(tail)
+        return messages
 
     async def _persist_response_artifact(
         self,

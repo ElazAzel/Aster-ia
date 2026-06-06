@@ -7,7 +7,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from asterion_api.config import get_settings
-from asterion_api.dependencies import get_ollama_service, get_store
+from asterion_api.dependencies import get_document_indexer, get_ollama_service, get_store
+from asterion_api.exceptions import AsterionAPIError, global_exception_handler
 from asterion_api.routers import (
     agents,
     analytics,
@@ -33,6 +34,10 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     # Auto-pull required models (graceful — does not block if Ollama is offline)
     ollama = get_ollama_service()
     await ollama.ensure_models(settings.required_models)
+    # Start RAG file watcher
+    indexer = get_document_indexer()
+    indexer.start_watcher(watch_dir=settings.data_dir / "vault")
+    
     yield
     await ollama.aclose()
 
@@ -46,6 +51,9 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
     lifespan=lifespan,
 )
+
+app.add_exception_handler(Exception, global_exception_handler)
+app.add_exception_handler(AsterionAPIError, global_exception_handler)
 
 app.add_middleware(
     CORSMiddleware,

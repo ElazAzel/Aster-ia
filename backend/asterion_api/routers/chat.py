@@ -7,7 +7,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from asterion_api.dependencies import get_chat_service, get_store
-from asterion_api.schemas import ChatConversationRecord, ChatMessageRecord, ChatRequest, ChatResponse
+from asterion_api.schemas import (
+    ChatConversationRecord,
+    ChatConversationUpdateRequest,
+    ChatMessageRecord,
+    ChatRequest,
+    ChatResponse,
+)
 from asterion_api.services.chat_service import ChatService
 from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
 
@@ -32,6 +38,29 @@ async def list_conversations(
 ) -> list[ChatConversationRecord]:
     rows = await store.list_conversations(room_id)
     return [ChatConversationRecord(**row) for row in rows]
+
+
+@router.patch("/conversations/{conversation_id}", response_model=ChatConversationRecord)
+async def update_conversation(
+    conversation_id: str,
+    request: ChatConversationUpdateRequest,
+    store: EncryptedSQLiteStore = Depends(get_store),
+) -> ChatConversationRecord:
+    row = await store.update_conversation(conversation_id, title=request.title)
+    if not row:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return ChatConversationRecord(**row)
+
+
+@router.delete("/conversations/{conversation_id}")
+async def delete_conversation(
+    conversation_id: str,
+    store: EncryptedSQLiteStore = Depends(get_store),
+) -> dict[str, bool]:
+    deleted = await store.delete_conversation(conversation_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return {"deleted": True}
 
 
 @router.get("/conversations/{conversation_id}/messages", response_model=list[ChatMessageRecord])

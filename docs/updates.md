@@ -2,6 +2,28 @@
 
 ## 2026-06-06
 
+### Phase 2D: Research & Analytics (Block 3)
+
+- **SQLCipher Data Connection**: Added database methods to `EncryptedSQLiteStore` (`get_all_research_receipts()`, `get_all_agent_runs()`, and `get_all_agent_logs()`) to pull raw data with full room and metadata context.
+- **DuckDB Real Data Analytics**: Replaced mock endpoints with DuckDB SQL queries over registered Pandas DataFrames loaded from SQLite:
+  - `GET /api/analytics/research/stats`: Computes total research queries, sources, and claims.
+  - `GET /api/analytics/top-sources`: Lists top 10 consulted sources.
+  - `GET /api/analytics/claims-confidence`: Counts claims by confidence level.
+  - `GET /api/analytics/rooms-distribution`: Tallies research reports by room.
+  - `GET /api/analytics/agent-stats`: Analyzes runs, steps, privacy-levels, and error states.
+- **Markdown Export**: Created `GET /api/research/report/{artifact_id}/markdown` supporting download of formatted report artifacts as standard Markdown attachments.
+- **Verification**: Clean backend compilation, 39/39 tests passed (including the new integration test suite), Meta-Harness 100% Success.
+
+## 2026-06-06
+
+### Рефакторинг Frontend (Phase 1)
+
+- **Компонентная архитектура**: Монолитный файл `App.svelte` (~1700 строк) разделен на 14 независимых Svelte компонентов (SideRail, TopBar, PrivacyRadar, ContextPanel, Workbench, и 9 компонентов вкладок).
+- **Централизованный Стор**: Создан файл `frontend/src/lib/stores.ts`, инкапсулирующий все глобальные реактивные состояния и методы взаимодействия с API / Tauri IPC.
+- **Верификация**: Vite build clean (built in 5.72s), pytest clean (38/38 passed), Meta-Harness 100% Success.
+
+## 2026-06-06
+
 ### Реализация рекомендаций аудита платформы
 
 - **CI/CD Windows-матрица**: Backend и Harness джобы теперь запускаются на `ubuntu-latest` и `windows-latest`. Добавлен отдельный `tauri-check` джоб с `cargo check` на Windows, Rust-кэшированием.

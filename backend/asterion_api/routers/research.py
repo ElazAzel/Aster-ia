@@ -128,3 +128,79 @@ async def export_research_report(
         artifact=artifact,
         receipts_count=len(request.receipts),
     )
+
+
+@router.get("/report/{artifact_id}/markdown")
+async def export_report_markdown(
+    artifact_id: str,
+    store: EncryptedSQLiteStore = Depends(get_store),
+):
+    from fastapi import HTTPException
+    from fastapi.responses import Response
+    
+    artifact = await store.get_artifact(artifact_id)
+    if not artifact:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+
+    lines = []
+    lines.append(f"# {artifact['title']}")
+    lines.append(f"**Created At:** {artifact['created_at']}")
+    lines.append(f"**Room ID:** {artifact['room_id']}")
+    lines.append(f"**Source:** {artifact['source']}")
+    lines.append("")
+
+    for block_data in artifact["blocks"]:
+        block = ArtifactBlock(**block_data)
+        if block.type == "text":
+            if block.title:
+                lines.append(f"## {block.title}")
+            if block.content:
+                lines.append(block.content)
+            lines.append("")
+        elif block.type == "code":
+            if block.title:
+                lines.append(f"### {block.title}")
+            lang = block.language or ""
+            lines.append(f"```{lang}")
+            lines.append(block.content or "")
+            lines.append("```")
+            lines.append("")
+        elif block.type == "table":
+            if block.title:
+                lines.append(f"### {block.title}")
+            if block.rows:
+                headers = list(block.rows[0].keys())
+                header_row = "| " + " | ".join(headers) + " |"
+                sep_row = "| " + " | ".join(["---"] * len(headers)) + " |"
+                lines.append(header_row)
+                lines.append(sep_row)
+                for r in block.rows:
+                    row_val = "| " + " | ".join(str(r.get(h, "")) for h in headers) + " |"
+                    lines.append(row_val)
+            lines.append("")
+        elif block.type == "source":
+            if block.title:
+                lines.append(f"### Source: {block.title}")
+            if block.source:
+                lines.append(f"**URL:** [{block.source}]({block.source})")
+            if block.content:
+                lines.append(f"**Claim:** {block.content}")
+            meta = block.metadata or {}
+            if "quote" in meta and meta["quote"]:
+                lines.append(f"> {meta['quote']}")
+            if "confidence" in meta and meta["confidence"]:
+                lines.append(f"**Confidence:** {meta['confidence']}")
+            lines.append("")
+        elif block.type == "action":
+            action_title = block.title or block.action or "Action"
+            lines.append(f"- [ ] **{action_title}**: {block.content or ''}")
+            lines.append("")
+
+    content = "\n".join(lines)
+    return Response(
+        content=content,
+        media_type="text/markdown",
+        headers={
+            "Content-Disposition": f"attachment; filename=research_report_{artifact_id}.md"
+        }
+    )

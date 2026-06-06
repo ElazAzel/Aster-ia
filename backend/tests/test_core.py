@@ -442,3 +442,110 @@ def test_supervisor_agent_execute():
     import asyncio
     result = asyncio.run(agent.execute({"query": "test", "max_subtasks": 1, "web_access": False}))
     assert result.query == "test"
+
+
+def test_analytics_and_report_export(tmp_path):
+    import os
+    os.environ["ASTERION_DATA_DIR"] = str(tmp_path)
+    os.environ["ASTERION_ALLOW_PLAINTEXT_SQLITE_FOR_DEV"] = "1"
+    
+    from asterion_api.config import get_settings
+    get_settings.cache_clear()
+    
+    from asterion_api import dependencies
+    dependencies.get_store.cache_clear()
+    dependencies.get_ollama_service.cache_clear()
+    dependencies.get_chat_service.cache_clear()
+    dependencies.get_privacy_analyzer.cache_clear()
+    dependencies.get_model_router.cache_clear()
+    dependencies.get_memory_ledger.cache_clear()
+    dependencies.get_document_indexer.cache_clear()
+    dependencies.get_supervisor_agent.cache_clear()
+    dependencies.get_contradiction_finder.cache_clear()
+    dependencies.get_task_simulator.cache_clear()
+    dependencies.get_agent_sandbox.cache_clear()
+    dependencies.get_agent_registry.cache_clear()
+    dependencies.get_agent_executor.cache_clear()
+    dependencies.get_comfyui_service.cache_clear()
+    dependencies.get_workflow_runner.cache_clear()
+    dependencies.get_plugin_manager.cache_clear()
+
+    from asterion_api.main import app
+    from fastapi.testclient import TestClient
+    
+    with TestClient(app) as client:
+        # Check stats endpoint initially (should be 0 or empty since no data is seeded)
+        res = client.get("/api/analytics/research/stats")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["total_research_queries"] == 0
+        assert data["sources_consulted"] == 0
+        assert data["claims_verified"] == 0
+        
+        # Export a research report using the export endpoint (which populates research_receipts)
+        # POST /api/research/report/export
+        payload = {
+            "room_id": "default",
+            "query": "Is local routing secure?",
+            "title": "Security Report",
+            "receipts": [
+                {
+                    "source_title": "Source Alpha",
+                    "url": "http://alpha.com",
+                    "quote": "Local-first works locally.",
+                    "claim": "Local routing avoids cloud.",
+                    "confidence": "high"
+                },
+                {
+                    "source_title": "Source Beta",
+                    "url": "http://beta.com",
+                    "quote": "No external leaks.",
+                    "claim": "No external leaks.",
+                    "confidence": "medium"
+                }
+            ]
+        }
+        export_res = client.post("/api/research/report/export", json=payload)
+        assert export_res.status_code == 200
+        export_data = export_res.json()
+        artifact_id = export_data["artifact"]["id"]
+        
+        # Check stats endpoint now (should be updated)
+        res = client.get("/api/analytics/research/stats")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["total_research_queries"] == 1
+        assert data["sources_consulted"] == 2
+        assert data["claims_verified"] == 2
+        
+        # Check sub-endpoints
+        res = client.get("/api/analytics/top-sources")
+        assert res.status_code == 200
+        assert len(res.json()) >= 2
+        
+        res = client.get("/api/analytics/claims-confidence")
+        assert res.status_code == 200
+        conf_data = res.json()
+        # Check confidence values
+        confidences = {c["confidence"]: c["count"] for c in conf_data}
+        assert confidences["high"] == 1
+        assert confidences["medium"] == 1
+        
+        res = client.get("/api/analytics/rooms-distribution")
+        assert res.status_code == 200
+        assert len(res.json()) == 1
+        
+        # Check agent stats endpoint
+        res = client.get("/api/analytics/agent-stats")
+        assert res.status_code == 200
+        assert res.json()["total_runs"] == 0
+        
+        # Check markdown export endpoint
+        # GET /api/research/report/{artifact_id}/markdown
+        md_res = client.get(f"/api/research/report/{artifact_id}/markdown")
+        assert md_res.status_code == 200
+        assert "text/markdown" in md_res.headers["content-type"]
+        md_text = md_res.text
+        assert "# Security Report" in md_text
+        assert "Is local routing secure?" in md_text
+        assert "Source Alpha" in md_text

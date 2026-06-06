@@ -225,3 +225,12 @@ def migration_001(conn: Any) -> None:
         """,
         ("default", "Default Room", "#2f80ed", json.dumps([]), "session", 30, now, now),
     )
+
+
+# ── Migration 002: Phase 2A Chat Context ─────────────────────────────────────
+
+
+@_register(2, "Add system_prompt to rooms and title to conversations")
+def migration_002(conn: Any) -> None:
+    conn.execute("ALTER TABLE rooms ADD COLUMN system_prompt TEXT NOT NULL DEFAULT ''")
+    conn.execute("ALTER TABLE conversations ADD COLUMN title TEXT")

@@ -4,6 +4,7 @@ import asyncio
 import json
 import secrets
 import sqlite3
+import threading
 from datetime import UTC, datetime
 from typing import Any, Mapping
 from uuid import uuid4
@@ -33,6 +34,7 @@ class EncryptedSQLiteStore(BaseHarness):
         self.path = settings.database_path
         self._state: dict[str, Any] = {"path": str(self.path)}
         self.logger = StructuredLogger("sqlite", self.privacy_level)
+        self._local = threading.local()
 
     async def execute(self, payload: Mapping[str, Any] | None = None) -> Any:
         action = (payload or {}).get("action", "health")
@@ -79,6 +81,12 @@ class EncryptedSQLiteStore(BaseHarness):
             model,
             artifact_id,
         )
+
+    async def update_conversation(self, conv_id: str, *, title: str) -> dict[str, Any] | None:
+        return await asyncio.to_thread(self._update_conversation_sync, conv_id, title)
+
+    async def delete_conversation(self, conv_id: str) -> bool:
+        return await asyncio.to_thread(self._delete_conversation_sync, conv_id)
 
     async def list_conversations(self, room_id: str | None = None) -> list[dict[str, Any]]:
         return await asyncio.to_thread(self._list_conversations_sync, room_id)
@@ -225,6 +233,15 @@ class EncryptedSQLiteStore(BaseHarness):
     ) -> None:
         await asyncio.to_thread(self._add_research_receipts_sync, report_id, receipts)
 
+    async def get_all_research_receipts(self) -> list[dict[str, Any]]:
+        return await asyncio.to_thread(self._get_all_research_receipts_sync)
+
+    async def get_all_agent_runs(self) -> list[dict[str, Any]]:
+        return await asyncio.to_thread(self._get_all_agent_runs_sync)
+
+    async def get_all_agent_logs(self) -> list[dict[str, Any]]:
+        return await asyncio.to_thread(self._get_all_agent_logs_sync)
+
     async def create_agent_run(
         self,
         *,
@@ -245,6 +262,14 @@ class EncryptedSQLiteStore(BaseHarness):
 
     async def get_agent_run(self, run_id: str) -> dict[str, Any] | None:
         return await asyncio.to_thread(self._get_agent_run_sync, run_id)
+
+    async def update_agent_run(
+        self,
+        run_id: str,
+        status: str | None = None,
+        agent_id: str | None = None,
+    ) -> dict[str, Any] | None:
+        return await asyncio.to_thread(self._update_agent_run_sync, run_id, status, agent_id)
 
     async def append_agent_log(
         self,
@@ -344,6 +369,7 @@ class EncryptedSQLiteStore(BaseHarness):
                     SELECT
                         c.id,
                         c.room_id,
+                        c.title,
                         c.created_at,
                         COUNT(m.id) AS message_count,
                         MAX(m.ts) AS latest_ts
@@ -361,6 +387,7 @@ class EncryptedSQLiteStore(BaseHarness):
                     SELECT
                         c.id,
                         c.room_id,
+                        c.title,
                         c.created_at,
                         COUNT(m.id) AS message_count,
                         MAX(m.ts) AS latest_ts
@@ -371,6 +398,30 @@ class EncryptedSQLiteStore(BaseHarness):
                     """
                 ).fetchall()
         return [dict(row) for row in rows]
+
+    def _update_conversation_sync(self, conv_id: str, title: str) -> dict[str, Any] | None:
+        with self._connect() as conn:
+            conn.execute("UPDATE conversations SET title = ? WHERE id = ?", (title, conv_id))
+            conn.commit()
+            row = conn.execute(
+                """
+                SELECT
+                    c.id, c.room_id, c.title, c.created_at,
+                    COUNT(m.id) AS message_count, MAX(m.ts) AS latest_ts
+                FROM conversations c
+                LEFT JOIN messages m ON m.conv_id = c.id
+                WHERE c.id = ?
+                GROUP BY c.id, c.room_id, c.title, c.created_at
+                """,
+                (conv_id,),
+            ).fetchone()
+        return dict(row) if row is not None else None
+
+    def _delete_conversation_sync(self, conv_id: str) -> bool:
+        with self._connect() as conn:
+            cursor = conn.execute("DELETE FROM conversations WHERE id = ?", (conv_id,))
+            conn.commit()
+        return cursor.rowcount > 0
 
     def _list_messages_sync(self, conv_id: str) -> list[dict[str, Any]]:
         with self._connect() as conn:
@@ -475,7 +526,7 @@ class EncryptedSQLiteStore(BaseHarness):
         with self._connect() as conn:
             rows = conn.execute(
                 """
-                SELECT id, name, color, allowed_models, memory_policy, retention_days, created_at, updated_at
+                SELECT id, name, color, allowed_models, memory_policy, retention_days, system_prompt, created_at, updated_at
                 FROM rooms
                 ORDER BY created_at ASC
                 """
@@ -490,6 +541,7 @@ class EncryptedSQLiteStore(BaseHarness):
         allowed_models: list[str],
         memory_policy: str,
         retention_days: int,
+        system_prompt: str = "",
     ) -> dict[str, Any]:
         new_room_id = room_id or str(uuid4())
         now = datetime.now(UTC).isoformat()
@@ -497,9 +549,9 @@ class EncryptedSQLiteStore(BaseHarness):
             conn.execute(
                 """
                 INSERT INTO rooms (
-                    id, name, color, allowed_models, memory_policy, retention_days, created_at, updated_at
+                    id, name, color, allowed_models, memory_policy, retention_days, system_prompt, created_at, updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     new_room_id,
@@ -508,6 +560,7 @@ class EncryptedSQLiteStore(BaseHarness):
                     json.dumps(allowed_models),
                     memory_policy,
                     retention_days,
+                    system_prompt,
                     now,
                     now,
                 ),
@@ -522,7 +575,7 @@ class EncryptedSQLiteStore(BaseHarness):
         with self._connect() as conn:
             row = conn.execute(
                 """
-                SELECT id, name, color, allowed_models, memory_policy, retention_days, created_at, updated_at
+                SELECT id, name, color, allowed_models, memory_policy, retention_days, system_prompt, created_at, updated_at
                 FROM rooms
                 WHERE id = ?
                 """,
@@ -538,6 +591,7 @@ class EncryptedSQLiteStore(BaseHarness):
         allowed_models: list[str] | None,
         memory_policy: str | None,
         retention_days: int | None,
+        system_prompt: str | None = None,
     ) -> dict[str, Any] | None:
         current = self._get_room_sync(room_id)
         if current is None:
@@ -547,7 +601,7 @@ class EncryptedSQLiteStore(BaseHarness):
             conn.execute(
                 """
                 UPDATE rooms
-                SET name = ?, color = ?, allowed_models = ?, memory_policy = ?, retention_days = ?, updated_at = ?
+                SET name = ?, color = ?, allowed_models = ?, memory_policy = ?, retention_days = ?, system_prompt = ?, updated_at = ?
                 WHERE id = ?
                 """,
                 (
@@ -556,6 +610,7 @@ class EncryptedSQLiteStore(BaseHarness):
                     json.dumps(allowed_models if allowed_models is not None else current["allowed_models"]),
                     memory_policy if memory_policy is not None else current["memory_policy"],
                     retention_days if retention_days is not None else current["retention_days"],
+                    system_prompt if system_prompt is not None else current.get("system_prompt", ""),
                     updated_at,
                     room_id,
                 ),
@@ -717,6 +772,72 @@ class EncryptedSQLiteStore(BaseHarness):
             )
             conn.commit()
 
+    def _get_all_research_receipts_sync(self) -> list[dict[str, Any]]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT
+                    rr.id,
+                    rr.report_id,
+                    rr.source_title,
+                    rr.url,
+                    rr.quote,
+                    rr.claim,
+                    rr.confidence,
+                    rr.ts,
+                    COALESCE(a.room_id, 'default') as room_id,
+                    COALESCE(r.name, 'Default Room') as room_name
+                FROM research_receipts rr
+                LEFT JOIN artifacts a ON rr.report_id = a.id
+                LEFT JOIN rooms r ON a.room_id = r.id
+                """
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def _get_all_agent_runs_sync(self) -> list[dict[str, Any]]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT
+                    ar.id,
+                    ar.agent_id,
+                    ar.room_id,
+                    ar.status,
+                    ar.plan,
+                    ar.permissions,
+                    ar.created_at,
+                    ar.updated_at,
+                    COALESCE(r.name, 'Default Room') as room_name
+                FROM agent_runs ar
+                LEFT JOIN rooms r ON ar.room_id = r.id
+                """
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def _get_all_agent_logs_sync(self) -> list[dict[str, Any]]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT
+                    al.id,
+                    al.run_id,
+                    al.ts,
+                    al.action,
+                    al.tool,
+                    al.input,
+                    al.output,
+                    al.model,
+                    al.privacy_level,
+                    al.error,
+                    COALESCE(ar.room_id, 'default') as room_id,
+                    COALESCE(r.name, 'Default Room') as room_name
+                FROM agent_logs al
+                LEFT JOIN agent_runs ar ON al.run_id = ar.id
+                LEFT JOIN rooms r ON ar.room_id = r.id
+                """
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def _create_agent_run_sync(
         self,
         agent_id: str,
@@ -768,6 +889,33 @@ class EncryptedSQLiteStore(BaseHarness):
         run["plan"] = json.loads(str(run["plan"]))
         run["permissions"] = json.loads(str(run["permissions"]))
         return run
+
+    def _update_agent_run_sync(
+        self,
+        run_id: str,
+        status: str | None = None,
+        agent_id: str | None = None,
+    ) -> dict[str, Any] | None:
+        current = self._get_agent_run_sync(run_id)
+        if current is None:
+            return None
+        updated_at = datetime.now(UTC).isoformat()
+        with self._connect() as conn:
+            conn.execute(
+                """
+                UPDATE agent_runs
+                SET status = ?, agent_id = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    status if status is not None else current["status"],
+                    agent_id if agent_id is not None else current["agent_id"],
+                    updated_at,
+                    run_id,
+                ),
+            )
+            conn.commit()
+        return self._get_agent_run_sync(run_id)
 
     def _append_agent_log_sync(
         self,
@@ -837,6 +985,9 @@ class EncryptedSQLiteStore(BaseHarness):
         return room
 
     def _connect(self) -> Any:
+        if hasattr(self._local, "conn"):
+            return self._local.conn
+
         driver = self._driver()
         conn = driver.connect(str(self.path))
         conn.row_factory = self._row_factory
@@ -846,6 +997,11 @@ class EncryptedSQLiteStore(BaseHarness):
             conn.execute("PRAGMA kdf_iter = 256000")
             conn.execute("PRAGMA cipher_hmac_algorithm = HMAC_SHA512")
             conn.execute("PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512")
+        
+        conn.execute("PRAGMA journal_mode = WAL;")
+        conn.execute("PRAGMA synchronous = NORMAL;")
+        
+        self._local.conn = conn
         return conn
 
     def _driver(self) -> Any:

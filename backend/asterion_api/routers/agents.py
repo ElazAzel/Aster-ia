@@ -2,11 +2,17 @@ from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 
-from asterion_api.dependencies import get_agent_registry, get_agent_sandbox, get_store, get_task_simulator
+from asterion_api.dependencies import (
+    get_agent_executor,
+    get_agent_registry,
+    get_agent_sandbox,
+    get_store,
+    get_task_simulator,
+)
 from asterion_api.schemas import (
     AgentCatalog,
     AgentManifest,
@@ -14,9 +20,11 @@ from asterion_api.schemas import (
     AgentRun,
     AgentRunCodeRequest,
     AgentRunCreateRequest,
+    AgentRunUpdateRequest,
     FlightRecorderEvent,
     RuntimeSkillManifest,
 )
+from asterion_api.services.agent_executor import AgentExecutor
 from asterion_api.services.agent_registry import AgentRegistry
 from asterion_api.services.agent_sandbox import AgentSandbox, TaskSimulator
 from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
@@ -82,8 +90,10 @@ async def run_code(
 @router.post("/runs", response_model=AgentRun)
 async def create_agent_run(
     request: AgentRunCreateRequest,
+    background_tasks: BackgroundTasks,
     simulator: TaskSimulator = Depends(get_task_simulator),
     store: EncryptedSQLiteStore = Depends(get_store),
+    executor: AgentExecutor = Depends(get_agent_executor),
 ) -> AgentRun:
     plan = request.plan or simulator.plan(request.task)
     row = await store.create_agent_run(
@@ -103,6 +113,7 @@ async def create_agent_run(
         model=None,
         error=None,
     )
+    background_tasks.add_task(executor.execute_run, str(row["id"]))
     return AgentRun(**row)
 
 
@@ -114,6 +125,33 @@ async def get_agent_run(
     row = await store.get_agent_run(run_id)
     if row is None:
         raise HTTPException(status_code=404, detail="Agent run not found")
+    return AgentRun(**row)
+
+
+@router.patch("/runs/{run_id}", response_model=AgentRun)
+async def update_agent_run(
+    run_id: str,
+    request: AgentRunUpdateRequest,
+    store: EncryptedSQLiteStore = Depends(get_store),
+) -> AgentRun:
+    row = await store.update_agent_run(
+        run_id=run_id,
+        status=request.status,
+        agent_id=request.agent_id,
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Agent run not found")
+    
+    await store.append_agent_log(
+        run_id=run_id,
+        action="run.updated",
+        tool="API",
+        privacy_level="local",
+        input_text=json.dumps(request.model_dump(exclude_unset=True), ensure_ascii=False),
+        output_text=None,
+        model=None,
+        error=None,
+    )
     return AgentRun(**row)
 
 
