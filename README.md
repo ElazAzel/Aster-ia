@@ -13,6 +13,7 @@ The current scaffold contains:
 - Runtime Agent Registry with 10 agents and 16 skills.
 - Agent catalog validation through `/api/agents/catalog/validate`.
 - Workflow, plugin, sandbox, and privacy contracts.
+- Svelte/Vite frontend shell wired to the FastAPI sidecar.
 - Static HTML/Stitch UI prototypes.
 
 ## Quick Start
@@ -41,6 +42,20 @@ ollama pull llama3.2
 ollama pull nomic-embed-text
 ```
 
+Frontend:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Default frontend URL:
+
+```text
+http://127.0.0.1:5173
+```
+
 ## Key Documentation
 
 - [Build Guide](BUILD_GUIDE.md)
@@ -55,7 +70,7 @@ ollama pull nomic-embed-text
 
 ```text
 backend/       FastAPI sidecar
-frontend/      Svelte components and future app shell
+frontend/      Svelte/Vite app shell
 src-tauri/     Tauri v2 Rust shell
 agents/        Runtime agent manifests
 skills/        Runtime skill manifests
@@ -69,6 +84,8 @@ stitch/        UI prototype exports
 ```powershell
 uv run python -m compileall backend\asterion_api harness\meta_harness.py
 uv run python harness/meta_harness.py --phase 1 --iterations 3
+cd frontend
+npm run build
 ```
 
 Tauri check currently requires a complete Windows C++ build toolchain with `link.exe`.

@@ -88,6 +88,41 @@ Expected catalog state:
 }
 ```
 
+## Frontend Setup
+
+The working Svelte/Vite shell lives in `frontend/`.
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Open:
+
+```text
+http://127.0.0.1:5173
+```
+
+The UI reads the FastAPI base URL from:
+
+```text
+VITE_ASTERION_API_BASE
+```
+
+If the variable is absent, it defaults to:
+
+```text
+http://127.0.0.1:8000
+```
+
+Frontend build:
+
+```powershell
+cd frontend
+npm run build
+```
+
 ## Offline Manifest Check
 
 Run without starting FastAPI:
@@ -111,6 +146,8 @@ From the repository root:
 ```powershell
 uv run python -m compileall backend\asterion_api harness\meta_harness.py
 uv run python harness/meta_harness.py --phase 1 --iterations 3
+cd frontend
+npm run build
 ```
 
 Sandbox-safe variant:

@@ -25,7 +25,7 @@ flowchart LR
 
 ```text
 backend/       FastAPI sidecar and async services
-frontend/      Svelte components and UI shell work
+frontend/      Svelte/Vite app shell
 src-tauri/     Tauri v2 Rust desktop shell
 agents/        Runtime agent manifests
 skills/        Runtime skill manifests
@@ -51,6 +51,25 @@ Every service optimized or inspected by Meta-Harness must implement:
 - `execute()`
 - `get_state()`
 - `set_state()`
+
+## Frontend
+
+The frontend lives in `frontend/` and runs as a Svelte/Vite app during development.
+
+Primary files:
+
+- `frontend/src/App.svelte` - command center layout.
+- `frontend/src/lib/StreamingChat.svelte` - browser `EventSource` streaming chat client.
+- `frontend/src/lib/api.ts` - typed FastAPI client.
+- `frontend/src/app.css` - responsive operational UI styles.
+
+The first screen is the workspace itself: live chat, Privacy Radar, Model Router, Agent Catalog, Memory Ledger, RAG search, and Task Simulator.
+
+Default API base:
+
+```text
+http://127.0.0.1:8000
+```
 
 ## Service Boundaries
 

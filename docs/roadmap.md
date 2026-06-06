@@ -34,14 +34,17 @@ Status: implemented as backend/runtime foundation.
 
 ## Phase 3 - Desktop Product Integration
 
-Status: next.
+Status: in progress.
 
-- Full Svelte app shell connected to FastAPI routes.
-- Agent Lab UI for catalog, plan approval, and sandbox runs.
+- Svelte/Vite app shell connected to FastAPI routes.
+- Agent Catalog UI with validation status and manifest detail.
 - Privacy Radar UI visible before elevated operations.
-- Model settings UI with Ollama model state and hardware profile.
+- Model Router UI with hardware profile controls.
+- Memory Ledger UI with source and delete controls.
+- RAG search UI over the local index.
+- Task Simulator UI for AgentPlan generation.
+- Agent Lab UI for plan approval and sandbox runs.
 - RAG file picker with explicit approval and indexed-source list.
-- Memory Ledger UI with source, expiration, and delete controls.
 - Workflow approval gate UI over WebSocket.
 - ComfyUI recipe picker and local generation queue.
 - Tauri sidecar packaging with bundled Python backend.

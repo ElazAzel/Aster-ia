@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
+
   type ChatMessage = {
     role: 'user' | 'assistant';
     content: string;
@@ -9,10 +11,29 @@
   export let model: string | null = 'llama3.2';
 
   let input = '';
-  let messages: ChatMessage[] = [];
+  let messages: ChatMessage[] = [
+    {
+      role: 'assistant',
+      content: 'Готов к локальному диалогу. Ответы приходят через SSE поток.'
+    }
+  ];
   let activeSource: EventSource | null = null;
   let streaming = false;
   let errorText = '';
+
+  function appendAssistantToken(token: string) {
+    const next = [...messages];
+    const last = next[next.length - 1];
+    if (!last || last.role !== 'assistant') {
+      next.push({ role: 'assistant', content: token });
+    } else {
+      next[next.length - 1] = {
+        role: 'assistant',
+        content: `${last.content}${token}`
+      };
+    }
+    messages = next;
+  }
 
   function send() {
     const message = input.trim();
@@ -33,30 +54,37 @@
     activeSource = new EventSource(`${apiBase}/api/chat/stream?${params.toString()}`);
 
     activeSource.onmessage = (event) => {
-      const payload = JSON.parse(event.data);
-      if (payload.type === 'error') {
-        errorText = payload.error;
-        streaming = false;
-        activeSource?.close();
-        return;
-      }
-      if (payload.type === 'done') {
-        streaming = false;
-        activeSource?.close();
-        return;
-      }
-      if (payload.response) {
-        const next = [...messages];
-        next[next.length - 1] = {
-          role: 'assistant',
-          content: `${next[next.length - 1].content}${payload.response}`
+      try {
+        const payload = JSON.parse(event.data) as {
+          type?: string;
+          error?: string;
+          response?: string;
+          done?: boolean;
         };
-        messages = next;
+
+        if (payload.type === 'error') {
+          errorText = payload.error ?? 'Поток ответа завершился с ошибкой.';
+          streaming = false;
+          activeSource?.close();
+          return;
+        }
+
+        if (payload.type === 'done' || payload.done) {
+          streaming = false;
+          activeSource?.close();
+          return;
+        }
+
+        if (payload.response) appendAssistantToken(payload.response);
+      } catch {
+        errorText = 'Не удалось прочитать SSE событие.';
+        streaming = false;
+        activeSource?.close();
       }
     };
 
     activeSource.onerror = () => {
-      errorText = 'Поток ответа прерван';
+      errorText = 'Поток ответа прерван. Проверьте FastAPI sidecar и Ollama.';
       streaming = false;
       activeSource?.close();
     };
@@ -66,9 +94,13 @@
     activeSource?.close();
     streaming = false;
   }
+
+  onDestroy(() => {
+    activeSource?.close();
+  });
 </script>
 
-<section class="streaming-chat">
+<section class="streaming-chat" aria-label="Streaming chat">
   <div class="messages" aria-live="polite">
     {#each messages as message}
       <article class:assistant={message.role === 'assistant'} class="message">
@@ -83,72 +115,12 @@
   {/if}
 
   <form on:submit|preventDefault={send}>
-    <textarea bind:value={input} placeholder="Введите запрос" rows="3" />
+    <textarea bind:value={input} placeholder="Введите запрос" rows="3"></textarea>
     <div class="actions">
-      <button type="submit" disabled={streaming || !input.trim()}>Отправить</button>
-      <button type="button" on:click={stop} disabled={!streaming}>Остановить</button>
+      <button type="submit" disabled={streaming || !input.trim()}>
+        {streaming ? 'Идет ответ' : 'Отправить'}
+      </button>
+      <button type="button" class="secondary" on:click={stop} disabled={!streaming}>Остановить</button>
     </div>
   </form>
 </section>
-
-<style>
-  .streaming-chat {
-    display: grid;
-    gap: 12px;
-    width: 100%;
-  }
-
-  .messages {
-    display: grid;
-    gap: 8px;
-  }
-
-  .message {
-    border: 1px solid #d7dce3;
-    border-radius: 8px;
-    padding: 10px 12px;
-    background: #ffffff;
-  }
-
-  .message.assistant {
-    background: #f7f8fa;
-  }
-
-  .message p {
-    margin: 4px 0 0;
-    white-space: pre-wrap;
-  }
-
-  textarea {
-    width: 100%;
-    resize: vertical;
-    border: 1px solid #c9d0da;
-    border-radius: 8px;
-    padding: 10px 12px;
-    font: inherit;
-  }
-
-  .actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-  }
-
-  button {
-    border: 0;
-    border-radius: 8px;
-    padding: 8px 12px;
-    background: #111827;
-    color: #ffffff;
-    font: inherit;
-  }
-
-  button:disabled {
-    opacity: 0.45;
-  }
-
-  .error {
-    color: #b42318;
-    margin: 0;
-  }
-</style>

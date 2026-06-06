@@ -1,13 +1,13 @@
 {
   "metrics": {
     "task_success_rate": 1.0,
-    "avg_latency_ms": 40.28550783793131,
+    "avg_latency_ms": 40.43730099995931,
     "privacy_score": 1.0,
     "harness_efficiency": 0.98,
     "ui_contracts_passed": 8,
     "ui_contracts_total": 8,
-    "source_contracts_passed": 59,
-    "source_contracts_total": 59,
+    "source_contracts_passed": 63,
+    "source_contracts_total": 63,
     "phase": 1,
     "iterations_completed": 3
   },
@@ -42,6 +42,10 @@
     "Tauri sidecar shell": true,
     "EventSource SSE route": true,
     "Svelte EventSource client": true,
+    "Frontend Vite package": true,
+    "Frontend app shell": true,
+    "Frontend API client": true,
+    "Frontend CSS": true,
     "PrivacyAnalyzer": true,
     "Privacy risk JSON": true,
     "ModelRouter": true,
@@ -86,19 +90,19 @@
     {
       "run": 1,
       "startup_success": true,
-      "chat_latency_seconds": 0.04039573669433594,
+      "chat_latency_seconds": 0.04057812690734863,
       "status": "PASS"
     },
     {
       "run": 2,
       "startup_success": true,
-      "chat_latency_seconds": 0.04012656211853027,
+      "chat_latency_seconds": 0.04022836685180664,
       "status": "PASS"
     },
     {
       "run": 3,
       "startup_success": true,
-      "chat_latency_seconds": 0.040334224700927734,
+      "chat_latency_seconds": 0.040505409240722656,
       "status": "PASS"
     }
   ]
