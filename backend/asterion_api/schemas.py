@@ -398,3 +398,13 @@ class PluginManifest(BaseModel):
     trust_level: Literal["verified", "local-only", "network", "file", "shell", "danger"]
     path: str
     description: str | None = None
+
+
+class TelemetryReportRequest(BaseModel):
+    opt_in: bool
+    event_type: str
+    details: dict[str, Any] = Field(default_factory=dict)
+    vram_gb: float | None = None
+    ram_gb: float | None = None
+    os_platform: str | None = None
+

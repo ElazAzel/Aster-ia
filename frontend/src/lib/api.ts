@@ -743,3 +743,23 @@ export function deleteChatConversation(apiBase: string, id: string) {
   });
 }
 
+// ─── Telemetry Operations ───────────────────────────────────────────────────
+
+export function reportTelemetry(
+  apiBase: string,
+  payload: {
+    opt_in: boolean;
+    event_type: string;
+    details?: Record<string, unknown>;
+    vram_gb?: number;
+    ram_gb?: number;
+    os_platform?: string;
+  }
+) {
+  return request<{ status: string; reason?: string }>(apiBase, '/api/telemetry/report', {
+    method: 'POST',
+    body: payload
+  });
+}
+
+

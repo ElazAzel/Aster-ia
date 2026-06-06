@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import json
 import pytest
+import httpx
 from httpx import AsyncClient, ASGITransport
 
 from asterion_api.config import get_settings
@@ -267,3 +268,49 @@ async def test_agent_sandbox_constraints(test_app):
     with pytest.raises(PermissionError) as exc_info:
         await sandbox.run_code(code=code, permissions=AgentPermissions(network=False))
     assert "network permission is disabled" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_telemetry_endpoint(test_app, monkeypatch):
+    posted_data = []
+
+    original_post = httpx.AsyncClient.post
+
+    async def mock_post(self, url, *args, **kwargs):
+        if "telemetry.asterion.ai" in str(url):
+            posted_data.append((str(url), kwargs.get("json")))
+            return httpx.Response(200, json={"status": "success"})
+        return await original_post(self, url, *args, **kwargs)
+
+    monkeypatch.setattr(httpx.AsyncClient, "post", mock_post)
+
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
+        # 1. Test when opt_in is False -> should skip
+        payload_opt_out = {
+            "opt_in": False,
+            "event_type": "app_start",
+            "details": {}
+        }
+        res = await ac.post("/api/telemetry/report", json=payload_opt_out)
+        assert res.status_code == 200
+        assert res.json() == {"status": "skipped", "reason": "opt_out"}
+        assert len(posted_data) == 0
+
+        # 2. Test when opt_in is True -> should post to external url
+        payload_opt_in = {
+            "opt_in": True,
+            "event_type": "app_start",
+            "details": {"some": "info"},
+            "vram_gb": 8.0,
+            "ram_gb": 16.0,
+            "os_platform": "win32"
+        }
+        res = await ac.post("/api/telemetry/report", json=payload_opt_in)
+        assert res.status_code == 200
+        assert res.json() == {"status": "success"}
+        assert len(posted_data) == 1
+        url, json_data = posted_data[0]
+        assert url == "https://telemetry.asterion.ai/api/report"
+        assert json_data["event_type"] == "app_start"
+        assert json_data["vram_gb"] == 8.0
+        assert json_data["ram_gb"] == 16.0

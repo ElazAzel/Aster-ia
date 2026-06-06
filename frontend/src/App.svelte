@@ -19,7 +19,8 @@
     privacyPopoverOpen,
     activeConsentRequest,
     showOnboarding,
-    showCommandPalette
+    showCommandPalette,
+    reportTelemetryEvent
   } from './lib/stores';
 
   // Import Svelte Components
@@ -92,6 +93,7 @@
         Notification.requestPermission();
       }
       document.addEventListener('keydown', handleKeydown);
+      void reportTelemetryEvent('app_start');
     }
   });
 

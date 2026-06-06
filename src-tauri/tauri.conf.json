@@ -40,5 +40,14 @@
     "externalBin": [
       "binaries/asterion-backend"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://raw.githubusercontent.com/ElazAzel/Aster-ia/main/updater.json"
+      ],
+      "pubkey": "dW51c2VkX3B1YmxpY19rZXlfZm9yX2RlbW9uc3RyYXRpb25fcHVycG9zZXNfCg=="
+    }
   }
 }

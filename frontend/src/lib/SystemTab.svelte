@@ -18,7 +18,9 @@
     saveSystemPrompt,
     apiBase,
     auditLogs,
-    refreshAuditLogs
+    refreshAuditLogs,
+    telemetryOptIn,
+    reportTelemetryEvent
   } from './stores';
   import { getGpuInfo, installOllama } from './tauri';
   import { exportSystemData, importSystemData, wipeSystemData } from './api';
@@ -118,6 +120,10 @@
     void detectHardware();
     void refreshAuditLogs();
   });
+
+  $: if ($telemetryOptIn) {
+    void reportTelemetryEvent('telemetry_opt_in_changed', { enabled: true });
+  }
 </script>
 
 <div class="tab-content">
@@ -264,6 +270,24 @@
         <input bind:value={$apiBase} style="font-family: var(--font-mono);" aria-label="FastAPI base URL" />
       </label>
       <small style="color: var(--text-muted); line-height: 1.4;">Это адрес, по которому Tauri-клиент общается с серверным sidecar-модулем. Изменяйте только при переносе бэкенда на внешний сервер.</small>
+    </section>
+
+    <!-- Telemetry config -->
+    <section class="panel" style="grid-column: span 2;">
+      <div class="panel-heading compact">
+        <h2>Телеметрия и аналитика</h2>
+        <span class:ok={$telemetryOptIn} class:warn={!$telemetryOptIn} class="status-dot"></span>
+      </div>
+      <p style="font-size: 13px; line-height: 1.5; color: var(--text-secondary); margin-bottom: 12px; margin-top: 4px;">
+        Разрешить отправку полностью анонимных данных об использовании и возникающих ошибках.
+        Мы собираем только обезличенные технические параметры (платформа, объем RAM/VRAM, тип события)
+        для улучшения стабильности Asterion AI. Никакие ваши сообщения, файлы, личные данные или промпты
+        никогда не покидают локальный компьютер в соответствии с контрактом Local-first.
+      </p>
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-primary); user-select: none; cursor: pointer;">
+        <input type="checkbox" bind:checked={$telemetryOptIn} />
+        <span>Включить анонимную телеметрию (Рекомендуется)</span>
+      </label>
     </section>
 
     <!-- Data Management & Backups -->

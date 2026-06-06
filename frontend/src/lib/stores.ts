@@ -38,6 +38,7 @@ import {
   listChatConversations,
   updateChatConversation,
   deleteChatConversation,
+  reportTelemetry,
   type HealthResponse,
   type ModelInfo,
   type PrivacyReport,
@@ -214,6 +215,37 @@ export const showCommandPalette = writable(false);
 export const conversationId = writable<string | null>(null);
 export const conversations = writable<any[]>([]);
 export const conversationSearchQuery = writable('');
+
+// Telemetry store & reporter
+export const telemetryOptIn = writable<boolean>(
+  typeof localStorage !== 'undefined' ? localStorage.getItem('asterion_telemetry_opt_in') === 'true' : false
+);
+if (typeof localStorage !== 'undefined') {
+  telemetryOptIn.subscribe(val => {
+    localStorage.setItem('asterion_telemetry_opt_in', val ? 'true' : 'false');
+  });
+}
+
+export async function reportTelemetryEvent(eventType: string, details: Record<string, unknown> = {}) {
+  const base = get(apiBase);
+  const optIn = get(telemetryOptIn);
+  const vram = get(vramGb);
+  const ram = get(ramGb);
+  const os = typeof navigator !== 'undefined' ? navigator.platform : 'unknown';
+  
+  try {
+    await reportTelemetry(base, {
+      opt_in: optIn,
+      event_type: eventType,
+      details,
+      vram_gb: vram,
+      ram_gb: ram,
+      os_platform: os
+    });
+  } catch {
+    // telemetries are silent
+  }
+}
 
 // Privacy Input (reactive combination)
 export const privacyInput = writable({
@@ -597,6 +629,7 @@ export async function createPlannedAgentRun(permissions?: { allowed_folders: str
       startAgentRunEvents(result.id);
       const logs = await runStep('Читаю Flight Recorder', () => listAgentRunLogs(base, result.id));
       if (logs) flightLogs.set(logs);
+      void reportTelemetryEvent('agent_run_started', { agent_id: agent?.id ?? get(selectedAgentId) });
     }
   };
 
@@ -618,6 +651,7 @@ export async function runImageGeneration() {
   if (!pr.trim()) return;
   imageGenerating.set(true);
   imageResult.set(null);
+  void reportTelemetryEvent('image_generation_started');
   const result = await runStep('Генерирую изображение через ComfyUI', () =>
     generateImage(base, { prompt: pr })
   );
@@ -633,6 +667,7 @@ export async function runDeepResearch() {
   const run = async () => {
     deepResearchBusy.set(true);
     deepResearchResult.set(null);
+    void reportTelemetryEvent('deep_research_started');
     const result = await runStep('Запускаю Deep Research', () =>
       deepResearch(base, { query: dq, max_subtasks: 5, web_access: true })
     );
@@ -657,6 +692,7 @@ export async function runDeepResearchStreaming() {
     deepResearchBusy.set(true);
     deepResearchResult.set(null);
     const accumResults = [] as DeepResearchResponse['results'];
+    void reportTelemetryEvent('deep_research_streaming_started');
     try {
       const gen = streamDeepResearch(base, { query: dq, max_subtasks: 5, web_access: true });
       while (true) {
@@ -689,6 +725,7 @@ export async function runContradictionFinder() {
   const cc = get(contradictionClaims);
   const claims = cc.split('\n').map(s => s.trim()).filter(Boolean);
   if (claims.length < 2) return;
+  void reportTelemetryEvent('contradiction_finder_started');
   const result = await runStep('Ищу противоречия', () =>
     findContradictions(base, claims, 0.75)
   );
