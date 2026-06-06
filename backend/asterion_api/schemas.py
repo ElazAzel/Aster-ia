@@ -96,6 +96,7 @@ class PrivacyAnalyzeRequest(BaseModel):
     files_attached: bool = False
     memory_enabled: bool = False
     web_access: bool = False
+    prompt: str | None = None
 
 
 class HardwareProfile(BaseModel):

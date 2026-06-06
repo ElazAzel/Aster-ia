@@ -2,6 +2,26 @@
 
 ## 2026-06-06
 
+### Phase 4: Security and Privacy Hardening (Block 6)
+
+- **OS-level Process Sandboxing**: Implemented secure subprocess sandboxing. Windows uses native `ctypes` Job Objects restricting memory to 512 MB and process spawning (ActiveProcessLimit = 2). Linux utilizes the `resource` module inside `preexec_fn` (`RLIMIT_AS`, `RLIMIT_CPU`, `RLIMIT_NPROC`).
+- **Ed25519 Plugin Signature Verification**: Integrates the `cryptography` library. Validates `manifest.json` against `signature.sig` and `public_key.pem` in plugin directories. Automatically downgrades unsigned elevated plugins to `"danger"` trust level and blocks loading of corrupted plugins.
+- **FastAPI CSP & Rate Limiting Middlewares**:
+  - Configured strict Content Security Policy allowing connections only to loopback loop (connect-src / img-src for local Ollama, ComfyUI, websockets).
+  - Implemented in-memory per-IP rate limiting (120 req/min) returning HTTP 429 when exceeded.
+- **Audit Consent Logs**: Implemented database migration `migration_003` to track user consent decisions (approve/deny) on elevated operations.
+- **Encrypted Data Backups & Wipe**:
+  - Added export/import of all user data encrypted with PBKDF2 (100,000 iterations of SHA-256) and a Fernet (AES-128) cipher.
+  - Added a complete system wipe operation removing database files, keyring entries, LanceDB vector collections, and Vault documents.
+- **Memory TTL background loop**: Automatic enforcer deleting expired memories in the background every 10 minutes.
+- **PII Regex Prompt Scanning**: Scans prompt content for email, international/local phone numbers, and street address keywords. Displays warning badges in Svelte's Privacy Radar.
+- **Svelte UI Integration**:
+  - Implemented a glassmorphic Privacy Consent Modal overlay in `App.svelte` displaying operation risks and log approvals.
+  - Implemented backup export/import panels, OS wipe confirmations, and an Audit Logs table in `SystemTab.svelte`.
+- **Verification**: Wrote comprehensive unit and integration tests in `backend/tests/test_security.py`. All 7 test cases passed successfully. Vite production build completes cleanly.
+
+## 2026-06-06
+
 ### Phase 2E: API Tests (Block 4) & Phase 3: Desktop Shell Integration (Block 5)
 
 - **API Integration Tests**: Wrote comprehensive integration test suites using `httpx.AsyncClient` + `TestClient` for every major router (Chat, RAG, Memory, Rooms, Workflows, Plugins, Images, Analytics) with mock Ollama setups.

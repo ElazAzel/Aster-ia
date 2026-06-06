@@ -1,11 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-from pathlib import Path
-from typing import Any
 
 
-from asterion_api.schemas import AgentRunUpdateRequest
 from asterion_api.services.agent_registry import AgentRegistry
 from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
 
@@ -39,11 +36,11 @@ class AgentExecutor:
                 # Skill bindings
                 if "rag-indexing" in step.lower():
                     from asterion_api.dependencies import get_document_indexer
-                    indexer = get_document_indexer()
+                    get_document_indexer()
                     await self._log(run_id, "skill.rag_indexing", "AgentExecutor", "Calling DocumentIndexer (mock invocation)")
                 elif "privacy-radar" in step.lower():
                     from asterion_api.dependencies import get_privacy_analyzer
-                    analyzer = get_privacy_analyzer()
+                    get_privacy_analyzer()
                     await self._log(run_id, "skill.privacy_radar", "AgentExecutor", "Calling PrivacyAnalyzer (mock invocation)")
                 
                 await asyncio.sleep(0.5)

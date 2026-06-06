@@ -35,6 +35,8 @@ class EncryptedSQLiteStore(BaseHarness):
         self._state: dict[str, Any] = {"path": str(self.path)}
         self.logger = StructuredLogger("sqlite", self.privacy_level)
         self._local = threading.local()
+        self._open_conns: list[Any] = []
+        self._conns_lock = threading.Lock()
 
     async def execute(self, payload: Mapping[str, Any] | None = None) -> Any:
         action = (payload or {}).get("action", "health")
@@ -297,6 +299,30 @@ class EncryptedSQLiteStore(BaseHarness):
 
     async def list_agent_logs(self, run_id: str) -> list[dict[str, Any]]:
         return await asyncio.to_thread(self._list_agent_logs_sync, run_id)
+
+    async def record_audit_log(
+        self,
+        *,
+        action: str,
+        resource: str,
+        details: str | None = None,
+    ) -> dict[str, Any]:
+        return await asyncio.to_thread(self._record_audit_log_sync, action, resource, details)
+
+    async def list_audit_logs(self) -> list[dict[str, Any]]:
+        return await asyncio.to_thread(self._list_audit_logs_sync)
+
+    async def expire_memories(self) -> int:
+        return await asyncio.to_thread(self._expire_memories_sync)
+
+    async def wipe_all_data(self) -> None:
+        await asyncio.to_thread(self._wipe_all_data_sync)
+
+    async def dump_all_data(self) -> dict[str, Any]:
+        return await asyncio.to_thread(self._dump_all_data_sync)
+
+    async def restore_all_data(self, dump: dict[str, Any]) -> None:
+        await asyncio.to_thread(self._restore_all_data_sync, dump)
 
     def _ensure_schema_sync(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -978,6 +1004,192 @@ class EncryptedSQLiteStore(BaseHarness):
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def _record_audit_log_sync(
+        self,
+        action: str,
+        resource: str,
+        details: str | None = None,
+    ) -> dict[str, Any]:
+        log_id = str(uuid4())
+        ts = datetime.now(UTC).isoformat()
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO audit_logs (id, action, resource, details, ts)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (log_id, action, resource, details, ts),
+            )
+            conn.commit()
+        return {
+            "id": log_id,
+            "action": action,
+            "resource": resource,
+            "details": details,
+            "ts": ts,
+        }
+
+    def _list_audit_logs_sync(self) -> list[dict[str, Any]]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT id, action, resource, details, ts
+                FROM audit_logs
+                ORDER BY ts DESC
+                """
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def _expire_memories_sync(self) -> int:
+        now = datetime.now(UTC).isoformat()
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "DELETE FROM memories WHERE expires_at IS NOT NULL AND expires_at < ?",
+                (now,),
+            )
+            count = cursor.rowcount
+            conn.commit()
+        return count
+
+    def _wipe_all_data_sync(self) -> None:
+        import gc
+        import time
+
+        # 1. Close all active connections across all threads
+        with self._conns_lock:
+            for conn in self._open_conns:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+            self._open_conns.clear()
+        if hasattr(self._local, "conn"):
+            delattr(self._local, "conn")
+
+        gc.collect()
+            
+        # 2. Delete keyring secret
+        try:
+            keyring.delete_password(self.settings.keyring_service, self.settings.keyring_db_key_name)
+        except Exception as exc:
+            self.logger.emit("keyring.delete_failed", error=str(exc))
+            
+        # 3. Delete DB files with retries for Windows
+        db_path = self.path
+        for suffix in ["", "-wal", "-shm"]:
+            f = db_path.with_name(db_path.name + suffix)
+            if f.exists():
+                for attempt in range(10):
+                    try:
+                        f.unlink()
+                        break
+                    except Exception:
+                        if attempt == 9:
+                            try:
+                                f.unlink()
+                            except Exception as exc:
+                                self.logger.emit("db.delete_failed", path=str(f), error=str(exc))
+                        else:
+                            time.sleep(0.1)
+                    
+        # 4. Delete LanceDB
+        lancedb_dir = self.settings.data_dir / "lancedb"
+        if lancedb_dir.exists():
+            import shutil
+            try:
+                shutil.rmtree(lancedb_dir)
+            except Exception as exc:
+                self.logger.emit("lancedb.delete_failed", path=str(lancedb_dir), error=str(exc))
+                
+        # 5. Delete Vault files (uploaded RAG files)
+        vault_dir = self.settings.data_dir / "vault"
+        if vault_dir.exists():
+            import shutil
+            try:
+                shutil.rmtree(vault_dir)
+            except Exception as exc:
+                self.logger.emit("vault.delete_failed", path=str(vault_dir), error=str(exc))
+
+    def _dump_all_data_sync(self) -> dict[str, Any]:
+        with self._connect() as conn:
+            rooms = conn.execute("SELECT * FROM rooms").fetchall()
+            conversations = conn.execute("SELECT * FROM conversations").fetchall()
+            messages = conn.execute("SELECT * FROM messages").fetchall()
+            memories = conn.execute("SELECT * FROM memories").fetchall()
+            artifacts = conn.execute("SELECT * FROM artifacts").fetchall()
+            audit_logs = conn.execute("SELECT * FROM audit_logs").fetchall() if current_version(conn) >= 3 else []
+            
+        return {
+            "rooms": [dict(r) for r in rooms],
+            "conversations": [dict(c) for c in conversations],
+            "messages": [dict(m) for m in messages],
+            "memories": [dict(mem) for mem in memories],
+            "artifacts": [dict(art) for art in artifacts],
+            "audit_logs": [dict(log) for log in audit_logs],
+        }
+
+    def _restore_all_data_sync(self, dump: dict[str, Any]) -> None:
+        with self._connect() as conn:
+            conn.execute("PRAGMA foreign_keys = OFF")
+            try:
+                if "rooms" in dump:
+                    for room in dump["rooms"]:
+                        conn.execute(
+                            """
+                            INSERT OR REPLACE INTO rooms (id, name, color, allowed_models, memory_policy, retention_days, created_at, updated_at, system_prompt)
+                            VALUES (:id, :name, :color, :allowed_models, :memory_policy, :retention_days, :created_at, :updated_at, :system_prompt)
+                            """,
+                            room,
+                        )
+                if "conversations" in dump:
+                    for conv in dump["conversations"]:
+                        conn.execute(
+                            """
+                            INSERT OR REPLACE INTO conversations (id, room_id, created_at, title)
+                            VALUES (:id, :room_id, :created_at, :title)
+                            """,
+                            conv,
+                        )
+                if "messages" in dump:
+                    for msg in dump["messages"]:
+                        conn.execute(
+                            """
+                            INSERT OR REPLACE INTO messages (id, conv_id, role, content, model, artifact_id, ts)
+                            VALUES (:id, :conv_id, :role, :content, :model, :artifact_id, :ts)
+                            """,
+                            msg,
+                        )
+                if "memories" in dump:
+                    for mem in dump["memories"]:
+                        conn.execute(
+                            """
+                            INSERT OR REPLACE INTO memories (id, room_id, content, source, created_at, expires_at)
+                            VALUES (:id, :room_id, :content, :source, :created_at, :expires_at)
+                            """,
+                            mem,
+                        )
+                if "artifacts" in dump:
+                    for art in dump["artifacts"]:
+                        conn.execute(
+                            """
+                            INSERT OR REPLACE INTO artifacts (id, room_id, kind, title, blocks, source, created_at)
+                            VALUES (:id, :room_id, :kind, :title, :blocks, :source, :created_at)
+                            """,
+                            art,
+                        )
+                if "audit_logs" in dump and current_version(conn) >= 3:
+                    for log in dump["audit_logs"]:
+                        conn.execute(
+                            """
+                            INSERT OR REPLACE INTO audit_logs (id, action, resource, details, ts)
+                            VALUES (:id, :action, :resource, :details, :ts)
+                            """,
+                            log,
+                        )
+                conn.commit()
+            finally:
+                conn.execute("PRAGMA foreign_keys = ON")
+
     @staticmethod
     def _decode_room(row: dict[str, Any]) -> dict[str, Any]:
         room = dict(row)
@@ -986,7 +1198,14 @@ class EncryptedSQLiteStore(BaseHarness):
 
     def _connect(self) -> Any:
         if hasattr(self._local, "conn"):
-            return self._local.conn
+            try:
+                self._local.conn.execute("SELECT 1")
+                return self._local.conn
+            except Exception:
+                with self._conns_lock:
+                    if self._local.conn in self._open_conns:
+                        self._open_conns.remove(self._local.conn)
+                delattr(self._local, "conn")
 
         driver = self._driver()
         conn = driver.connect(str(self.path))
@@ -1002,6 +1221,8 @@ class EncryptedSQLiteStore(BaseHarness):
         conn.execute("PRAGMA synchronous = NORMAL;")
         
         self._local.conn = conn
+        with self._conns_lock:
+            self._open_conns.append(conn)
         return conn
 
     def _driver(self) -> Any:

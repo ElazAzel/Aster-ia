@@ -16,13 +16,23 @@
     systemPrompt,
     systemPromptSaved,
     saveSystemPrompt,
-    apiBase
+    apiBase,
+    auditLogs,
+    refreshAuditLogs
   } from './stores';
   import { getGpuInfo, installOllama } from './tauri';
+  import { exportSystemData, importSystemData, wipeSystemData } from './api';
 
   let detectedGpus: Array<{ name: string; vram_gb: number }> = [];
   let ollamaInstallStatus = '';
   let ollamaInstalling = false;
+
+  // Data management variables
+  let passphrase = '';
+  let importInputText = '';
+  let confirmWipe = false;
+  let operationStatus = '';
+  let operationError = '';
 
   async function detectHardware() {
     if ($desktopAvailable) {
@@ -53,8 +63,60 @@
     }
   }
 
+  async function handleExport() {
+    operationStatus = '';
+    operationError = '';
+    try {
+      const res = await exportSystemData($apiBase, passphrase);
+      if (res.backup) {
+        importInputText = res.backup;
+        operationStatus = 'Резервная копия успешно создана и скопирована в поле ввода ниже!';
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(res.backup);
+          operationStatus += ' Текст бэкапа также скопирован в ваш буфер обмена.';
+        }
+      }
+    } catch (err: any) {
+      operationError = `Ошибка экспорта: ${err.message || err}`;
+    }
+  }
+
+  async function handleImport() {
+    operationStatus = '';
+    operationError = '';
+    try {
+      const res = await importSystemData($apiBase, importInputText, passphrase);
+      if (res.ok) {
+        operationStatus = 'Данные успешно импортированы! Перезагрузите или обновите данные.';
+        importInputText = '';
+        passphrase = '';
+      }
+    } catch (err: any) {
+      operationError = `Ошибка импорта (неверный пароль или поврежденный файл): ${err.message || err}`;
+    }
+  }
+
+  async function handleWipe() {
+    operationStatus = '';
+    operationError = '';
+    if (!confirmWipe) return;
+    try {
+      const res = await wipeSystemData($apiBase);
+      if (res.ok) {
+        operationStatus = 'Все локальные данные безвозвратно удалены! Приложение очищено.';
+        confirmWipe = false;
+        passphrase = '';
+        importInputText = '';
+        void refreshAuditLogs();
+      }
+    } catch (err: any) {
+      operationError = `Ошибка очистки: ${err.message || err}`;
+    }
+  }
+
   onMount(() => {
     void detectHardware();
+    void refreshAuditLogs();
   });
 </script>
 
@@ -202,6 +264,111 @@
         <input bind:value={$apiBase} style="font-family: var(--font-mono);" aria-label="FastAPI base URL" />
       </label>
       <small style="color: var(--text-muted); line-height: 1.4;">Это адрес, по которому Tauri-клиент общается с серверным sidecar-модулем. Изменяйте только при переносе бэкенда на внешний сервер.</small>
+    </section>
+
+    <!-- Data Management & Backups -->
+    <section class="panel" style="grid-column: span 2;">
+      <div class="panel-heading compact">
+        <h2>Управление данными и резервное копирование</h2>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px;">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <label style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">Пароль шифрования бэкапа</span>
+            <input type="password" bind:value={passphrase} placeholder="Минимум 4 символа" style="font-size:12.5px" />
+          </label>
+          
+          <div style="display: flex; gap: 8px;">
+            <button type="button" on:click={handleExport} disabled={!passphrase || passphrase.length < 4} style="flex:1;font-size:12px;min-height:30px">
+              📥 Экспортировать бэкап
+            </button>
+            <button type="button" class="secondary" on:click={handleImport} disabled={!passphrase || passphrase.length < 4 || !importInputText} style="flex:1;font-size:12px;min-height:30px">
+              📤 Импортировать бэкап
+            </button>
+          </div>
+          
+          <label style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px;">
+            <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">Данные бэкапа (Base64 текст)</span>
+            <textarea bind:value={importInputText} rows="3" placeholder="Вставьте сюда зашифрованный Base64 текст для восстановления..." style="font-size:11px; font-family:var(--font-mono); padding:6px;"></textarea>
+          </label>
+        </div>
+
+        <div style="display: flex; flex-direction: column; justify-content: space-between; border-left: 1px solid var(--border-color); padding-left: 16px;">
+          <div>
+            <span style="font-size: 12px; font-weight: 600; color: var(--color-red-text);">⚠️ Опасная зона</span>
+            <p style="font-size: 12px; line-height: 1.5; color: var(--text-secondary); margin: 6px 0 12px 0;">
+              Полное удаление всех ваших диалогов, комнат, локальных воспоминаний, RAG-индексов и ключей из связки ключей ОС. Восстановление будет невозможно!
+            </p>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); user-select: none;">
+              <input type="checkbox" bind:checked={confirmWipe} />
+              <span>Я подтверждаю полное удаление данных</span>
+            </label>
+          </div>
+          
+          <button type="button" class="danger-btn" on:click={handleWipe} disabled={!confirmWipe} style="width:100%; margin-top: 12px; font-size:12.5px; background: #eb5757; color:#fff; border:none; min-height: 32px;">
+            💥 Безвозвратно удалить все данные
+          </button>
+        </div>
+      </div>
+
+      {#if operationStatus}
+        <div style="margin-top: 12px; padding: 10px; background: rgba(39, 174, 96, 0.15); border: 1px solid rgba(39, 174, 96, 0.3); border-radius: 6px; font-size: 12px; color: var(--color-green-text);">
+          {operationStatus}
+        </div>
+      {/if}
+      {#if operationError}
+        <div style="margin-top: 12px; padding: 10px; background: rgba(235, 87, 87, 0.15); border: 1px solid rgba(235, 87, 87, 0.3); border-radius: 6px; font-size: 12px; color: var(--color-red-text);">
+          {operationError}
+        </div>
+      {/if}
+    </section>
+
+    <!-- Audit & Consent Log Table -->
+    <section class="panel" style="grid-column: span 2;">
+      <div class="panel-heading compact">
+        <h2>Журнал безопасности и согласий</h2>
+        <button type="button" class="text-button" on:click={refreshAuditLogs} style="font-size:11px">Обновить</button>
+      </div>
+      
+      <div style="max-height: 280px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
+          <thead>
+            <tr style="background: var(--bg-input); border-bottom: 1px solid var(--border-color);">
+              <th style="padding: 10px;">Время</th>
+              <th style="padding: 10px;">Действие</th>
+              <th style="padding: 10px;">Ресурс</th>
+              <th style="padding: 10px;">Детали</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each $auditLogs as log}
+              <tr style="border-bottom: 1px solid var(--border-color); font-family: var(--font-mono);">
+                <td style="padding: 8px 10px; white-space: nowrap; color: var(--text-muted);">
+                  {new Date(log.ts).toLocaleString('ru')}
+                </td>
+                <td style="padding: 8px 10px;">
+                  <span class="status-badge" style="padding: 2px 6px; border-radius: 4px; font-size:10px; font-weight:700; text-transform:uppercase; background: {log.action === 'approve' ? 'rgba(39,174,96,0.15)' : 'rgba(235,87,87,0.15)'}; color: {log.action === 'approve' ? 'var(--color-green-text)' : 'var(--color-red-text)'};">
+                    {log.action === 'approve' ? 'Разрешено' : 'Отклонено'}
+                  </span>
+                </td>
+                <td style="padding: 8px 10px; color: var(--text-primary); font-weight: 500;">
+                  {log.resource}
+                </td>
+                <td style="padding: 8px 10px; color: var(--text-secondary); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title={log.details}>
+                  {log.details || '—'}
+                </td>
+              </tr>
+            {:else}
+              <tr>
+                <td colspan="4" style="padding: 24px; text-align: center; color: var(--text-muted);">
+                  Журнал действий пуст.
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
     </section>
   </div>
 </div>

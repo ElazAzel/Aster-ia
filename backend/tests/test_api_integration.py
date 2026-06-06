@@ -39,7 +39,6 @@ async def test_app(tmp_path):
     dependencies.get_workflow_runner.cache_clear()
     dependencies.get_plugin_manager.cache_clear()
     
-    from asterion_api.dependencies import get_store
     
     # Ensure database schema is created/migrated
     store = get_store()
@@ -388,9 +387,9 @@ def test_db_migration_v0_to_latest(tmp_path):
     
     assert current_version(conn) == 1
     
-    # Run remaining migrations (v2)
+    # Run remaining migrations (v3)
     new_version = run_migrations(conn)
-    assert new_version == 2
+    assert new_version == 3
     
     # Verify columns were added successfully and data was preserved
     cursor = conn.execute("SELECT * FROM rooms WHERE id='room_mig'")

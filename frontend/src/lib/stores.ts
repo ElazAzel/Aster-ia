@@ -30,6 +30,11 @@ import {
   listArtifacts,
   indexFile,
   indexFileByPath,
+  recordAuditLog,
+  listAuditLogs,
+  exportSystemData,
+  importSystemData,
+  wipeSystemData,
   type HealthResponse,
   type ModelInfo,
   type PrivacyReport,
@@ -47,7 +52,8 @@ import {
   type ArtifactRecord,
   type AgentPlan,
   type AgentRun,
-  type FlightRecorderEvent
+  type FlightRecorderEvent,
+  type AuditLogRecord
 } from './api';
 import {
   fastapiHealthCheck,
@@ -94,7 +100,7 @@ export const errorText = writable('');
 
 // Image Studio
 export const imagePrompt = writable('');
-export const imageResult = writable<Record<string, unknown> | null>(null);
+export const imageResult = writable<Record<string, any> | null>(null);
 export const imageGenerating = writable(false);
 
 // Deep Research
@@ -123,6 +129,17 @@ export const uploadResult = writable<any | null>(null);
 
 // Analytics
 export const analyticsStats = writable<Record<string, unknown> | null>(null);
+
+// Security & Audit Logs
+export type ConsentRequest = {
+  title: string;
+  description: string;
+  privacyLevel: 'local' | 'hybrid' | 'external';
+  onApprove: () => void;
+  onDeny: () => void;
+};
+export const auditLogs = writable<AuditLogRecord[]>([]);
+export const activeConsentRequest = writable<ConsentRequest | null>(null);
 
 // System prompt editor
 export const systemPrompt = writable(localStorage.getItem('asterion_system_prompt') ?? '');
@@ -416,7 +433,41 @@ export function startAgentRunEvents(runId: string) {
   agentRunEventSource.set(es);
 }
 
-export async function createPlannedAgentRun() {
+export async function refreshAuditLogs() {
+  const base = get(apiBase);
+  const result = await runStep('Читаю журнал аудита', () => listAuditLogs(base));
+  if (result) auditLogs.set(result);
+}
+
+export function requestUserConsent(
+  title: string,
+  description: string,
+  privacyLevel: 'local' | 'hybrid' | 'external',
+  onApprove: () => void,
+  onDeny?: () => void,
+) {
+  activeConsentRequest.set({
+    title,
+    description,
+    privacyLevel,
+    onApprove: async () => {
+      activeConsentRequest.set(null);
+      const base = get(apiBase);
+      await recordAuditLog(base, 'approve', title, description);
+      await refreshAuditLogs();
+      onApprove();
+    },
+    onDeny: async () => {
+      activeConsentRequest.set(null);
+      const base = get(apiBase);
+      await recordAuditLog(base, 'deny', title, description);
+      await refreshAuditLogs();
+      if (onDeny) onDeny();
+    }
+  });
+}
+
+export async function createPlannedAgentRun(permissions?: { allowed_folders: string[]; network: boolean; shell: boolean }) {
   const base = get(apiBase);
   const rid = get(roomId);
   const t = get(agentTask);
@@ -424,26 +475,37 @@ export async function createPlannedAgentRun() {
   if (!task) return;
   const agent = get(selectedAgent);
   const plan = get(agentPlan);
-  const result = await runStep('Создаю AgentRun', () =>
-    createAgentRun(base, {
-      agent_id: agent?.id ?? get(selectedAgentId),
-      room_id: rid,
-      task,
-      plan: plan,
-      permissions: {
-        allowed_folders: [],
-        network: false,
-        shell: false
-      }
-    })
-  );
-  if (result) {
-    agentRun.set(result);
-    activeWorkbenchTab.set('logs');
-    showRightPanel.set(true);
-    startAgentRunEvents(result.id);
-    const logs = await runStep('Читаю Flight Recorder', () => listAgentRunLogs(base, result.id));
-    if (logs) flightLogs.set(logs);
+  const perms = permissions || { allowed_folders: [], network: false, shell: false };
+  
+  const run = async () => {
+    const result = await runStep('Создаю AgentRun', () =>
+      createAgentRun(base, {
+        agent_id: agent?.id ?? get(selectedAgentId),
+        room_id: rid,
+        task,
+        plan: plan,
+        permissions: perms
+      })
+    );
+    if (result) {
+      agentRun.set(result);
+      activeWorkbenchTab.set('logs');
+      showRightPanel.set(true);
+      startAgentRunEvents(result.id);
+      const logs = await runStep('Читаю Flight Recorder', () => listAgentRunLogs(base, result.id));
+      if (logs) flightLogs.set(logs);
+    }
+  };
+
+  if (perms.network || perms.shell || (perms.allowed_folders && perms.allowed_folders.length > 0)) {
+    requestUserConsent(
+      `Запуск Агента с повышенными привилегиями`,
+      `Агент запрашивает доступ: ${perms.network ? 'Сеть ' : ''}${perms.shell ? 'Терминал ' : ''}${perms.allowed_folders.length > 0 ? 'Папки: ' + perms.allowed_folders.join(', ') : ''}`,
+      perms.shell ? 'external' : 'hybrid',
+      run
+    );
+  } else {
+    await run();
   }
 }
 
@@ -464,39 +526,59 @@ export async function runDeepResearch() {
   const base = get(apiBase);
   const dq = get(researchDeepQuery);
   if (!dq.trim()) return;
-  deepResearchBusy.set(true);
-  deepResearchResult.set(null);
-  const result = await runStep('Запускаю Deep Research', () =>
-    deepResearch(base, { query: dq, max_subtasks: 5, web_access: true })
+  
+  const run = async () => {
+    deepResearchBusy.set(true);
+    deepResearchResult.set(null);
+    const result = await runStep('Запускаю Deep Research', () =>
+      deepResearch(base, { query: dq, max_subtasks: 5, web_access: true })
+    );
+    if (result) deepResearchResult.set(result);
+    deepResearchBusy.set(false);
+  };
+
+  requestUserConsent(
+    `Deep Research: ${dq}`,
+    `Данная операция требует веб-доступа и сбора информации из внешних источников через SearXNG.`,
+    'hybrid',
+    run
   );
-  if (result) deepResearchResult.set(result);
-  deepResearchBusy.set(false);
 }
 
 export async function runDeepResearchStreaming() {
   const base = get(apiBase);
   const dq = get(researchDeepQuery);
   if (!dq.trim()) return;
-  deepResearchBusy.set(true);
-  deepResearchResult.set(null);
-  const accumResults = [] as DeepResearchResponse['results'];
-  try {
-    const gen = streamDeepResearch(base, { query: dq, max_subtasks: 5, web_access: true });
-    while (true) {
-      const { value, done } = await gen.next();
-      if (done) break;
-      if (value.type === 'subtask_start') {
-        statusText.set(`Исследую: ${value.subtask}`);
-      } else if (value.type === 'result_found') {
-        accumResults.push(value.result);
-      } else if (value.type === 'done') {
-        deepResearchResult.set(value.response);
+
+  const run = async () => {
+    deepResearchBusy.set(true);
+    deepResearchResult.set(null);
+    const accumResults = [] as DeepResearchResponse['results'];
+    try {
+      const gen = streamDeepResearch(base, { query: dq, max_subtasks: 5, web_access: true });
+      while (true) {
+        const { value, done } = await gen.next();
+        if (done) break;
+        if (value.type === 'subtask_start') {
+          statusText.set(`Исследую: ${value.subtask}`);
+        } else if (value.type === 'result_found') {
+          accumResults.push(value.result);
+        } else if (value.type === 'done') {
+          deepResearchResult.set(value.response);
+        }
       }
+    } catch (error) {
+      errorText.set(error instanceof Error ? error.message : String(error));
     }
-  } catch (error) {
-    errorText.set(error instanceof Error ? error.message : String(error));
-  }
-  deepResearchBusy.set(false);
+    deepResearchBusy.set(false);
+  };
+
+  requestUserConsent(
+    `Deep Research (Поток): ${dq}`,
+    `Данная операция требует веб-доступа и сбора информации из внешних источников через SearXNG.`,
+    'hybrid',
+    run
+  );
 }
 
 export async function runContradictionFinder() {
@@ -522,23 +604,33 @@ export async function startWorkflow() {
   const stepsStr = get(workflowSteps);
   let steps;
   try { steps = JSON.parse(stepsStr); } catch { errorText.set('Неверный JSON шагов'); return; }
-  workflowResult.set(null);
-  workflowPending.set(false);
 
-  let socket = get(workflowSocket);
-  if (!socket || socket.readyState > 1) {
-    socket = createWorkflowEventsSocket(base);
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'approval_required') workflowPending.set(true);
-    };
-    workflowSocket.set(socket);
-  }
+  const run = async () => {
+    workflowResult.set(null);
+    workflowPending.set(false);
 
-  const result = await runStep('Запускаю workflow', () =>
-    runWorkflow(base, { workflow: { name, steps } })
+    let socket = get(workflowSocket);
+    if (!socket || socket.readyState > 1) {
+      socket = createWorkflowEventsSocket(base);
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'approval_required') workflowPending.set(true);
+      };
+      workflowSocket.set(socket);
+    }
+
+    const result = await runStep('Запускаю workflow', () =>
+      runWorkflow(base, { workflow: { name, steps } })
+    );
+    if (result) { workflowResult.set(result); workflowPending.set(false); }
+  };
+
+  requestUserConsent(
+    `Запуск автоматизации: ${name}`,
+    `Запуск автоматического рабочего процесса.`,
+    'local',
+    run
   );
-  if (result) { workflowResult.set(result); workflowPending.set(false); }
 }
 
 export async function approveWorkflow(approved: boolean) {
@@ -613,7 +705,8 @@ export async function refreshAll() {
     refreshRagDocuments(),
     analyzeCurrentPrivacy(),
     refreshPlugins(),
-    refreshArtifacts()
+    refreshArtifacts(),
+    refreshAuditLogs()
   ]);
   statusText.set('Готово');
   busy.set(false);

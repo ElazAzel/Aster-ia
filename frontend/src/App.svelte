@@ -16,7 +16,8 @@
     apiBase,
     refreshAll,
     checkDesktopBackend,
-    privacyPopoverOpen
+    privacyPopoverOpen,
+    activeConsentRequest
   } from './lib/stores';
 
   // Import Svelte Components
@@ -180,6 +181,37 @@
         <PluginsTab />
       {/if}
     </main>
+    
+    {#if $activeConsentRequest}
+      <div class="modal-overlay" role="presentation" on:click|self={$activeConsentRequest.onDeny} on:keydown|self={$activeConsentRequest.onDeny}>
+        <div class="consent-modal">
+          <div class="modal-header">
+            <h3>🛡️ Запрос согласия на операцию</h3>
+            <span class="privacy-badge {$activeConsentRequest.privacyLevel}">
+              {$activeConsentRequest.privacyLevel === 'local' ? 'Локально' : $activeConsentRequest.privacyLevel === 'hybrid' ? 'Гибридно' : 'Внешний API'}
+            </span>
+          </div>
+          <div class="modal-body">
+            <strong>{$activeConsentRequest.title}</strong>
+            <p>{$activeConsentRequest.description}</p>
+            
+            <div class="privacy-info-box">
+              {#if $activeConsentRequest.privacyLevel === 'local'}
+                <p class="green">✔ Данные не покидают ваше устройство.</p>
+              {:else if $activeConsentRequest.privacyLevel === 'hybrid'}
+                <p class="yellow">⚠ Эта операция может передавать агрегированные запросы или данные на локальный поисковый провайдер.</p>
+              {:else}
+                <p class="red">✖ Внимание! Данные будут отправлены внешним провайдерам или моделям API.</p>
+              {/if}
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="secondary" on:click={$activeConsentRequest.onDeny}>Отклонить</button>
+            <button type="button" class="approve-btn" on:click={$activeConsentRequest.onApprove}>Разрешить</button>
+          </div>
+        </div>
+      </div>
+    {/if}
   </div>
 {/if}
 
@@ -241,5 +273,138 @@
   @keyframes pulse {
     0%, 100% { transform: scale(1); opacity: 0.8; }
     50% { transform: scale(1.1); opacity: 1; }
+  }
+
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(8, 8, 12, 0.75);
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  }
+
+  .consent-modal {
+    background: rgba(18, 18, 26, 0.85);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 480px;
+    padding: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    font-family: inherit;
+    animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes scaleUp {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 12px;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .privacy-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .privacy-badge.local {
+    background: rgba(39, 174, 96, 0.15);
+    color: var(--color-green-text);
+  }
+
+  .privacy-badge.hybrid {
+    background: rgba(242, 201, 76, 0.15);
+    color: var(--color-yellow-text);
+  }
+
+  .privacy-badge.external {
+    background: rgba(235, 87, 87, 0.15);
+    color: var(--color-red-text);
+  }
+
+  .modal-body {
+    font-size: 13.5px;
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }
+
+  .modal-body strong {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+  }
+
+  .modal-body p {
+    color: var(--text-secondary);
+    margin: 0 0 16px 0;
+  }
+
+  .privacy-info-box {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .privacy-info-box p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .privacy-info-box p.green {
+    color: var(--color-green-text);
+  }
+
+  .privacy-info-box p.yellow {
+    color: var(--color-yellow-text);
+  }
+
+  .privacy-info-box p.red {
+    color: var(--color-red-text);
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .modal-footer button {
+    font-size: 12.5px;
+    padding: 8px 18px;
+    min-height: 36px;
+  }
+
+  .modal-footer button.approve-btn {
+    background: #27ae60;
+    color: #fff;
+    border: none;
+  }
+
+  .modal-footer button.approve-btn:hover {
+    background: #219653;
   }
 </style>

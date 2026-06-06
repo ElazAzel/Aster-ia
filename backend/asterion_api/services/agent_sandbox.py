@@ -11,6 +11,102 @@ from uuid import uuid4
 from asterion_api.harness import BaseHarness
 from asterion_api.schemas import AgentPermissions, AgentPlan
 
+# Windows Job Objects definitions using ctypes
+if os.name == "nt":
+    import ctypes
+
+    # Constants
+    JobObjectExtendedLimitInformationType = 9
+    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
+    JOB_OBJECT_LIMIT_ACTIVE_PROCESS = 0x00000008
+    JOB_OBJECT_LIMIT_PROCESS_MEMORY = 0x00000100
+    JOB_OBJECT_LIMIT_JOB_MEMORY = 0x00000200
+
+    class IO_COUNTERS(ctypes.Structure):
+        _fields_ = [
+            ("ReadOperationCount", ctypes.c_uint64),
+            ("WriteOperationCount", ctypes.c_uint64),
+            ("OtherOperationCount", ctypes.c_uint64),
+            ("ReadTransferCount", ctypes.c_uint64),
+            ("WriteTransferCount", ctypes.c_uint64),
+            ("OtherTransferCount", ctypes.c_uint64),
+        ]
+
+    class JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
+        _fields_ = [
+            ("PerProcessUserTimeLimit", ctypes.c_int64),
+            ("PerJobUserTimeLimit", ctypes.c_int64),
+            ("LimitFlags", ctypes.c_uint32),
+            ("MinimumWorkingSetSize", ctypes.c_size_t),
+            ("MaximumWorkingSetSize", ctypes.c_size_t),
+            ("ActiveProcessLimit", ctypes.c_uint32),
+            ("Affinity", ctypes.c_size_t),
+            ("PriorityClass", ctypes.c_uint32),
+            ("SchedulingClass", ctypes.c_uint32),
+        ]
+
+    class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
+        _fields_ = [
+            ("BasicLimitInformation", JOBOBJECT_BASIC_LIMIT_INFORMATION),
+            ("IoInfo", IO_COUNTERS),
+            ("ProcessMemoryLimit", ctypes.c_size_t),
+            ("JobMemoryLimit", ctypes.c_size_t),
+            ("PeakProcessMemoryUsed", ctypes.c_size_t),
+            ("PeakJobMemoryUsed", ctypes.c_size_t),
+        ]
+
+    def _apply_windows_job_limits(pid: int, memory_limit_bytes: int = 512 * 1024 * 1024) -> Any:
+        kernel32 = ctypes.windll.kernel32
+        job = kernel32.CreateJobObjectW(None, None)
+        if not job:
+            return None
+
+        info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
+        info.BasicLimitInformation.LimitFlags = (
+            JOB_OBJECT_LIMIT_PROCESS_MEMORY |
+            JOB_OBJECT_LIMIT_JOB_MEMORY |
+            JOB_OBJECT_LIMIT_ACTIVE_PROCESS |
+            JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+        )
+        info.ProcessMemoryLimit = memory_limit_bytes
+        info.JobMemoryLimit = memory_limit_bytes
+        info.BasicLimitInformation.ActiveProcessLimit = 2  # main python process + 1 subprocess max
+
+        res = kernel32.SetInformationJobObject(
+            job,
+            JobObjectExtendedLimitInformationType,
+            ctypes.byref(info),
+            ctypes.sizeof(info)
+        )
+        if not res:
+            kernel32.CloseHandle(job)
+            return None
+
+        # PROCESS_SET_QUOTA (0x0100) | PROCESS_TERMINATE (0x0001)
+        process_handle = kernel32.OpenProcess(0x0100 | 0x0001, False, pid)
+        if not process_handle:
+            kernel32.CloseHandle(job)
+            return None
+
+        success = kernel32.AssignProcessToJobObject(job, process_handle)
+        kernel32.CloseHandle(process_handle)
+        if not success:
+            kernel32.CloseHandle(job)
+            return None
+
+        return job
+
+
+def _set_linux_limits() -> None:
+    import resource
+    # 512 MB memory limit
+    mem_limit = 512 * 1024 * 1024
+    resource.setrlimit(resource.RLIMIT_AS, (mem_limit, mem_limit))
+    # 30 seconds CPU time limit
+    resource.setrlimit(resource.RLIMIT_CPU, (30, 30))
+    # 10 processes limit
+    resource.setrlimit(resource.RLIMIT_NPROC, (10, 10))
+
 
 class TaskSimulator(BaseHarness):
     privacy_level = "local"
@@ -71,6 +167,10 @@ class AgentSandbox(BaseHarness):
         if not permissions.network:
             env["NO_PROXY"] = "*"
             env["ASTERION_NETWORK_DISABLED"] = "1"
+        kwargs = {}
+        if os.name != "nt":
+            kwargs["preexec_fn"] = _set_linux_limits
+
         proc = await asyncio.create_subprocess_exec(
             sys.executable,
             str(script_path),
@@ -78,8 +178,20 @@ class AgentSandbox(BaseHarness):
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             env=env,
+            **kwargs
         )
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30)
+        
+        job_handle = None
+        if os.name == "nt":
+            job_handle = _apply_windows_job_limits(proc.pid, 512 * 1024 * 1024)
+
+        try:
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30)
+        finally:
+            if job_handle and os.name == "nt":
+                import ctypes
+                ctypes.windll.kernel32.CloseHandle(job_handle)
+
         return {
             "exit_code": proc.returncode,
             "stdout": stdout.decode("utf-8", errors="replace"),

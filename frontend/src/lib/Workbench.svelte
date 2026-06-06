@@ -80,7 +80,7 @@
           <div class="plan-box" style="padding: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <strong style="font-size: 12px;">~{$agentPlan.estimated_tokens} токенов</strong>
-              <button type="button" class="text-button" on:click={createPlannedAgentRun}>Запустить</button>
+              <button type="button" class="text-button" on:click={() => createPlannedAgentRun(permissionPreset.permissions)}>Запустить</button>
             </div>
             <ol style="font-size: 12px; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; color: var(--text-secondary);">
               {#each $agentPlan.steps as step}

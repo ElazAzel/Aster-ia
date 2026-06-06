@@ -454,8 +454,8 @@ export type ImageGenerateResponse = {
   history: Record<string, unknown>;
 };
 
-export function generateImage(apiBase: string, payload: ImageGenerateRequest) {
-  return request(apiBase, '/api/images/generate', {
+export function generateImage(apiBase: string, payload: ImageGenerateRequest): Promise<Record<string, any>> {
+  return request<Record<string, any>>(apiBase, '/api/images/generate', {
     method: 'POST',
     body: payload
   });
@@ -678,4 +678,52 @@ export function runAgentCode(apiBase: string, runId: string, code: string, permi
       }
     }
   );
+}
+
+// ─── Audit Logs ──────────────────────────────────────────────────────────────
+
+export type AuditLogRecord = {
+  id: string;
+  action: string;
+  resource: string;
+  details?: string | null;
+  ts: string;
+};
+
+export function recordAuditLog(
+  apiBase: string,
+  action: string,
+  resource: string,
+  details?: string | null,
+) {
+  return request<AuditLogRecord>(apiBase, '/api/audit/logs', {
+    method: 'POST',
+    body: { action, resource, details },
+  });
+}
+
+export function listAuditLogs(apiBase: string) {
+  return request<AuditLogRecord[]>(apiBase, '/api/audit/logs');
+}
+
+// ─── System Operations ───────────────────────────────────────────────────────
+
+export function exportSystemData(apiBase: string, passphrase?: string) {
+  return request<{ backup: string }>(apiBase, '/api/system/export', {
+    method: 'POST',
+    body: { passphrase },
+  });
+}
+
+export function importSystemData(apiBase: string, backup: string, passphrase?: string) {
+  return request<{ ok: boolean }>(apiBase, '/api/system/import', {
+    method: 'POST',
+    body: { backup, passphrase },
+  });
+}
+
+export function wipeSystemData(apiBase: string) {
+  return request<{ ok: boolean }>(apiBase, '/api/system/wipe', {
+    method: 'POST',
+  });
 }

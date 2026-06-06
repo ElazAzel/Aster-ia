@@ -234,3 +234,23 @@ def migration_001(conn: Any) -> None:
 def migration_002(conn: Any) -> None:
     conn.execute("ALTER TABLE rooms ADD COLUMN system_prompt TEXT NOT NULL DEFAULT ''")
     conn.execute("ALTER TABLE conversations ADD COLUMN title TEXT")
+
+
+# ── Migration 003: Phase 4 Security and Privacy Hardening ─────────────────────
+
+
+@_register(3, "Create audit_logs table for user consent and privacy decisions")
+def migration_003(conn: Any) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id TEXT PRIMARY KEY,
+            action TEXT NOT NULL,       -- 'approve', 'deny', 'grant', 'revoke', etc.
+            resource TEXT NOT NULL,     -- 'plugin:name', 'agent:run_id', 'deep_research', etc.
+            details TEXT,               -- JSON details or text
+            ts TEXT NOT NULL            -- ISO timestamp
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_audit_logs_ts ON audit_logs(ts)")
+
