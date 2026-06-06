@@ -29,6 +29,7 @@ import {
   createWorkflowEventsSocket,
   listArtifacts,
   indexFile,
+  indexFileByPath,
   type HealthResponse,
   type ModelInfo,
   type PrivacyReport,
@@ -568,6 +569,26 @@ export async function uploadVaultFile() {
     indexFile(base, file, rid)
   );
   if (result) { uploadResult.set(result); await refreshRagDocuments(); }
+  uploadBusy.set(false);
+}
+
+export const localFilePath = writable('');
+
+export async function indexLocalVaultFile() {
+  const base = get(apiBase);
+  const rid = get(roomId);
+  const path = get(localFilePath);
+  if (!path) return;
+  uploadBusy.set(true);
+  uploadResult.set(null);
+  const result = await runStep('Индексирую локальный файл', () =>
+    indexFileByPath(base, path, rid)
+  );
+  if (result) {
+    localFilePath.set('');
+    uploadResult.set(result);
+    await refreshRagDocuments();
+  }
   uploadBusy.set(false);
 }
 

@@ -16,7 +16,18 @@
         "title": "Asterion AI",
         "width": 1350,
         "height": 973,
-        "resizable": true
+        "resizable": true,
+        "visible": false
+      },
+      {
+        "label": "splashscreen",
+        "title": "Asterion AI Loading...",
+        "width": 400,
+        "height": 300,
+        "resizable": false,
+        "decorations": false,
+        "center": true,
+        "url": "index.html?splash=true"
       }
     ],
     "security": {

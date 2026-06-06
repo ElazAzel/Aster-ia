@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import {
     desktopAvailable,
     desktopStatus,
@@ -17,6 +18,44 @@
     saveSystemPrompt,
     apiBase
   } from './stores';
+  import { getGpuInfo, installOllama } from './tauri';
+
+  let detectedGpus: Array<{ name: string; vram_gb: number }> = [];
+  let ollamaInstallStatus = '';
+  let ollamaInstalling = false;
+
+  async function detectHardware() {
+    if ($desktopAvailable) {
+      try {
+        const info = await getGpuInfo();
+        detectedGpus = info;
+        if (info.length > 0) {
+          // Auto-select the max VRAM among detected GPUs
+          const maxVram = Math.max(...info.map(g => g.vram_gb));
+          vramGb.set(maxVram);
+        }
+      } catch (e) {
+        console.error('Failed to get GPU info:', e);
+      }
+    }
+  }
+
+  async function handleInstallOllama() {
+    ollamaInstalling = true;
+    ollamaInstallStatus = 'Начало скачивания и запуска установщика...';
+    try {
+      const res = await installOllama();
+      ollamaInstallStatus = res;
+    } catch (err: any) {
+      ollamaInstallStatus = `Ошибка: ${err.message || err}`;
+    } finally {
+      ollamaInstalling = false;
+    }
+  }
+
+  onMount(() => {
+    void detectHardware();
+  });
 </script>
 
 <div class="tab-content">
@@ -36,6 +75,18 @@
         <button type="button" class="secondary" on:click={checkDesktopBackend} disabled={!$desktopAvailable}>Проверить Health</button>
         <button type="button" class="secondary" on:click={stopDesktopBackend} disabled={!$desktopAvailable}>Остановить</button>
       </div>
+
+      {#if $desktopAvailable}
+        <div style="margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+          <span style="font-size:12px;color:var(--text-secondary)">Не установлен Ollama?</span>
+          <button type="button" class="secondary" style="width:100%;margin-top:6px;min-height:30px;font-size:12px" on:click={handleInstallOllama} disabled={ollamaInstalling}>
+            {ollamaInstalling ? 'Установка...' : '📥 Скачать и установить Ollama'}
+          </button>
+          {#if ollamaInstallStatus}
+            <div style="font-size:11px;color:var(--color-yellow-text);margin-top:6px">{ollamaInstallStatus}</div>
+          {/if}
+        </div>
+      {/if}
 
       {#if $desktopStatus}
         <div style="background: var(--bg-input); padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-family: var(--font-mono); font-size: 12px; margin-top: 8px;">
@@ -66,6 +117,15 @@
         </label>
       </div>
 
+      {#if detectedGpus.length > 0}
+        <div style="font-size: 12px; color: var(--text-secondary); background: var(--bg-input); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 4px;">
+          <span>Обнаружено аппаратное обеспечение:</span>
+          {#each detectedGpus as gpu}
+            <div style="margin-top:4px">🖥️ <strong>{gpu.name}</strong> ({gpu.vram_gb} GB VRAM)</div>
+          {/each}
+        </div>
+      {/if}
+
       <button type="button" style="margin-top: 8px;" on:click={routeModel}>Рассчитать оптимальную модель</button>
 
       {#if $modelSelection}
@@ -83,8 +143,9 @@
         <h2>Горячие клавиши</h2>
       </div>
       <div style="font-size:12px;display:flex;flex-direction:column;gap:6px;color:var(--text-secondary)">
-        <div style="display:flex;justify-content:space-between"><kbd style="background:var(--bg-input);padding:2px 8px;border-radius:4px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border-color)">Ctrl+1-0</kbd><span>Переключить вкладку</span></div>
+        <div style="display:flex;justify-content:space-between"><kbd style="background:var(--bg-input);padding:2px 8px;border-radius:4px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border-color)">Ctrl+1-9</kbd><span>Переключить вкладку</span></div>
         <div style="display:flex;justify-content:space-between"><kbd style="background:var(--bg-input);padding:2px 8px;border-radius:4px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border-color)">Ctrl+K</kbd><span>Следующая вкладка</span></div>
+        <div style="display:flex;justify-content:space-between"><kbd style="background:var(--bg-input);padding:2px 8px;border-radius:4px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border-color)">Ctrl+Shift+Space</kbd><span>Свернуть / Развернуть окно</span></div>
         <div style="display:flex;justify-content:space-between"><kbd style="background:var(--bg-input);padding:2px 8px;border-radius:4px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border-color)">Esc</kbd><span>Закрыть Privacy Radar</span></div>
         <div style="display:flex;justify-content:space-between"><kbd style="background:var(--bg-input);padding:2px 8px;border-radius:4px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border-color)">Enter</kbd><span>Отправить сообщение / создать комнату</span></div>
       </div>

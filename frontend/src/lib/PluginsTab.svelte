@@ -4,8 +4,19 @@
     uploadFile,
     uploadBusy,
     uploadResult,
-    uploadVaultFile
+    uploadVaultFile,
+    desktopAvailable,
+    localFilePath,
+    indexLocalVaultFile
   } from './stores';
+  import { pickRagFile } from './tauri';
+
+  async function handleBrowse() {
+    const path = await pickRagFile();
+    if (path) {
+      $localFilePath = path;
+    }
+  }
 </script>
 
 <div class="tab-content">
@@ -35,24 +46,38 @@
         {/each}
       </div>
     </section>
+    
     <section class="panel">
       <div class="panel-heading compact"><h2>Загрузить файл в Vault</h2></div>
-      <p style="font-size:13px;color:var(--text-secondary)">Загрузите PDF или TXT для индексации в Knowledge Vault текущей комнаты.</p>
-      <label
-        style="display:block;cursor:pointer;padding:20px;border:2px dashed var(--border-color);border-radius:10px;text-align:center;transition:var(--transition-smooth)"
-        on:dragover|preventDefault
-        on:drop|preventDefault={(e) => { $uploadFile = e.dataTransfer?.files[0] ?? null; }}
-      >
-        <input type="file" accept=".pdf,.txt,.md,.docx,.csv" style="display:none" on:change={(e) => { $uploadFile = (e.target as HTMLInputElement).files?.[0] ?? null; }} />
-        {#if $uploadFile}
-          <span style="font-size:14px;color:var(--color-brand)">{$uploadFile.name}</span>
-        {:else}
-          <span style="font-size:13px;color:var(--text-muted)">Нажмите или перетащите файл сюда</span>
-        {/if}
-      </label>
-      <button type="button" on:click={uploadVaultFile} disabled={!$uploadFile || $uploadBusy} style="margin-top:8px">
-        {$uploadBusy ? 'Индексирую...' : '📁 Загрузить и индексировать'}
-      </button>
+      
+      {#if $desktopAvailable}
+        <p style="font-size:13px;color:var(--text-secondary)">Выберите локальный файл для индексации в Knowledge Vault текущей комнаты.</p>
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <input type="text" readonly placeholder="Путь к файлу..." bind:value={$localFilePath} style="flex:1" />
+          <button type="button" class="secondary" on:click={handleBrowse} style="min-height:38px">Обзор...</button>
+        </div>
+        <button type="button" on:click={indexLocalVaultFile} disabled={!$localFilePath || $uploadBusy} style="margin-top:8px;width:100%">
+          {$uploadBusy ? 'Индексирую...' : '📁 Проиндексировать локально'}
+        </button>
+      {:else}
+        <p style="font-size:13px;color:var(--text-secondary)">Загрузите PDF, DOCX, TXT или MD для индексации в Knowledge Vault текущей комнаты.</p>
+        <label
+          style="display:block;cursor:pointer;padding:20px;border:2px dashed var(--border-color);border-radius:10px;text-align:center;transition:var(--transition-smooth)"
+          on:dragover|preventDefault
+          on:drop|preventDefault={(e) => { $uploadFile = e.dataTransfer?.files[0] ?? null; }}
+        >
+          <input type="file" accept=".pdf,.txt,.md,.docx,.csv" style="display:none" on:change={(e) => { $uploadFile = (e.target as HTMLInputElement).files?.[0] ?? null; }} />
+          {#if $uploadFile}
+            <span style="font-size:14px;color:var(--color-brand)">{$uploadFile.name}</span>
+          {:else}
+            <span style="font-size:13px;color:var(--text-muted)">Нажмите или перетащите файл сюда</span>
+          {/if}
+        </label>
+        <button type="button" on:click={uploadVaultFile} disabled={!$uploadFile || $uploadBusy} style="margin-top:8px;width:100%">
+          {$uploadBusy ? 'Индексирую...' : '📁 Загрузить и индексировать'}
+        </button>
+      {/if}
+
       {#if $uploadResult}
         <div class="plan-box" style="margin-top:8px">
           <strong>✓ Проиндексировано</strong>

@@ -39,6 +39,8 @@
 
   import { isTauriRuntime } from './lib/tauri';
 
+  const isSplash = typeof window !== 'undefined' && window.location.search.includes('splash=true');
+
   const TAB_TABS = [
     'chat',
     'agents',
@@ -80,15 +82,19 @@
 
   onMount(() => {
     $desktopAvailable = isTauriRuntime();
-    void refreshAll();
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
+    if (!isSplash) {
+      void refreshAll();
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+      document.addEventListener('keydown', handleKeydown);
     }
-    document.addEventListener('keydown', handleKeydown);
   });
 
   onDestroy(() => {
-    document.removeEventListener('keydown', handleKeydown);
+    if (!isSplash) {
+      document.removeEventListener('keydown', handleKeydown);
+    }
   });
 </script>
 
@@ -96,74 +102,144 @@
   <title>Asterion AI Workspace</title>
 </svelte:head>
 
-<div class="app-shell">
-  <!-- Background mesh gradient glow spheres -->
-  <div class="bg-gradient-glow">
-    <div class="glow-sphere-3"></div>
+{#if isSplash}
+  <div class="splashscreen-view">
+    <div class="splash-logo">✦</div>
+    <div class="splash-title">Asterion AI</div>
+    <div class="splash-subtitle">Инициализация локального AI-окружения...</div>
+    <div class="spinner"></div>
   </div>
+{:else}
+  <div class="app-shell">
+    <!-- Background mesh gradient glow spheres -->
+    <div class="bg-gradient-glow">
+      <div class="glow-sphere-3"></div>
+    </div>
 
-  <SideRail />
+    <SideRail />
 
-  <!-- Workspace Canvas -->
-  <main class="workspace">
-    <TopBar />
+    <!-- Workspace Canvas -->
+    <main class="workspace">
+      <TopBar />
 
-    <!-- Error/Status notice -->
-    {#if $errorText}
-      <div class="notice error" style="display:flex;justify-content:space-between;align-items:center">
-        <span>{$errorText}</span>
-        <button type="button" class="text-button" on:click={clearError} style="font-size:12px;margin-left:12px">✕</button>
-      </div>
-    {:else if $statusText && $statusText !== 'Готово'}
-      <p class="notice">{$statusText}</p>
-    {/if}
+      <!-- Error/Status notice -->
+      {#if $errorText}
+        <div class="notice error" style="display:flex;justify-content:space-between;align-items:center">
+          <span>{$errorText}</span>
+          <button type="button" class="text-button" on:click={clearError} style="font-size:12px;margin-left:12px">✕</button>
+        </div>
+      {:else if $statusText && $statusText !== 'Готово'}
+        <p class="notice">{$statusText}</p>
+      {/if}
 
-    <!-- Tab Contents -->
-    {#if $activeTab === 'chat'}
-      <!-- Three-column Workbench Layout -->
-      <div class="workbench-layout {workbenchLayoutClass}">
-        <ContextPanel />
+      <!-- Tab Contents -->
+      {#if $activeTab === 'chat'}
+        <!-- Three-column Workbench Layout -->
+        <div class="workbench-layout {workbenchLayoutClass}">
+          <ContextPanel />
 
-        <!-- Center Panel — Chat -->
-        <main class="center-panel" style="display: flex; flex-direction: column; height: 100%; overflow: hidden;">
-          <StreamingChat
-            apiBase={$apiBase}
-            roomId={$roomId}
-            model={$selectedModel}
-            rooms={$rooms}
-            modelNames={$models.map(m => m.name)}
-          />
-        </main>
+          <!-- Center Panel — Chat -->
+          <main class="center-panel" style="display: flex; flex-direction: column; height: 100%; overflow: hidden;">
+            <StreamingChat
+              apiBase={$apiBase}
+              roomId={$roomId}
+              model={$selectedModel}
+              rooms={$rooms}
+              modelNames={$models.map(m => m.name)}
+            />
+          </main>
 
-        <Workbench />
-      </div>
+          <Workbench />
+        </div>
 
-    {:else if $activeTab === 'agents'}
-      <AgentLabTab />
+      {:else if $activeTab === 'agents'}
+        <AgentLabTab />
 
-    {:else if $activeTab === 'vault'}
-      <VaultTab />
+      {:else if $activeTab === 'vault'}
+        <VaultTab />
 
-    {:else if $activeTab === 'research'}
-      <ResearchTab />
+      {:else if $activeTab === 'research'}
+        <ResearchTab />
 
-    {:else if $activeTab === 'system'}
-      <SystemTab />
+      {:else if $activeTab === 'system'}
+        <SystemTab />
 
-    {:else if $activeTab === 'research_deep'}
-      <DeepResearchTab />
+      {:else if $activeTab === 'research_deep'}
+        <DeepResearchTab />
 
-    {:else if $activeTab === 'images'}
-      <ImageStudioTab />
+      {:else if $activeTab === 'images'}
+        <ImageStudioTab />
 
-    {:else if $activeTab === 'automation'}
-      <AutomationTab />
+      {:else if $activeTab === 'automation'}
+        <AutomationTab />
 
-    {:else if $activeTab === 'artifacts_browser'}
-      <ArtifactsTab />
+      {:else if $activeTab === 'artifacts_browser'}
+        <ArtifactsTab />
 
-    {:else if $activeTab === 'plugins'}
-      <PluginsTab />
-    {/if}
-  </main>
-</div>
+      {:else if $activeTab === 'plugins'}
+        <PluginsTab />
+      {/if}
+    </main>
+  </div>
+{/if}
+
+<style>
+  .splashscreen-view {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100vw;
+    height: 100vh;
+    background: #08080c;
+    color: #f3f4f6;
+    font-family: 'Outfit', sans-serif;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .splash-logo {
+    font-size: 64px;
+    background: linear-gradient(135deg, #7c6dfa 0%, #a89eff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 24px;
+    animation: pulse 2s infinite ease-in-out;
+  }
+
+  .splash-title {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 8px;
+    background: linear-gradient(to right, #ffffff, #9ca3af);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .splash-subtitle {
+    font-size: 13px;
+    color: #9ca3af;
+    margin-bottom: 32px;
+  }
+
+  .spinner {
+    width: 28px;
+    height: 28px;
+    border: 2px solid rgba(124, 109, 250, 0.1);
+    border-top: 2px solid #7c6dfa;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.1); opacity: 1; }
+  }
+</style>

@@ -653,6 +653,13 @@ export async function indexFile(apiBase: string, file: File, roomId: string): Pr
   return response.json() as Promise<RagIndexResponse>;
 }
 
+export function indexFileByPath(apiBase: string, filePath: string, roomId: string): Promise<RagIndexResponse> {
+  return request<RagIndexResponse>(apiBase, '/api/rag/index', {
+    method: 'POST',
+    body: { file_path: filePath, room_id: roomId }
+  });
+}
+
 // ─── Agent Run detail ────────────────────────────────────────────────────────
 
 export function getAgentRun(apiBase: string, runId: string) {

@@ -2,9 +2,11 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Default Asterion AI desktop permissions",
-  "windows": ["main"],
+  "windows": ["main", "splashscreen"],
   "permissions": [
     "core:default",
+    "notification:allow-notify",
+    "global-shortcut:allow-register",
     {
       "identifier": "shell:allow-spawn",
       "allow": [

@@ -2,6 +2,20 @@
 
 ## 2026-06-06
 
+### Phase 2E: API Tests (Block 4) & Phase 3: Desktop Shell Integration (Block 5)
+
+- **API Integration Tests**: Wrote comprehensive integration test suites using `httpx.AsyncClient` + `TestClient` for every major router (Chat, RAG, Memory, Rooms, Workflows, Plugins, Images, Analytics) with mock Ollama setups.
+- **DB Migration Tests**: Added test cases verifying database schema upgrades from `v0` (clean) up to current schema version `v2`.
+- **Degraded Health Checks**: Tested degraded health-check states when Ollama services are offline, verifying response handling.
+- **Coverage**: Exceeded the minimum required coverage threshold by reaching **81%** statement coverage.
+- **Tauri Multi-Window Splashscreen**: Implemented a frameless centered splashscreen window loading `index.html?splash=true` while starting the sidecar in the background. Close the splashscreen and focus the main window automatically when the FastAPI server is healthy.
+- **Native System Tray**: Built a tray icon in Rust with options to show workspace, restart sidecar, or exit, including a transparent icon fallback.
+- **GPU and Hardware Auto-Detection**: Implemented a Rust command to query system video controllers via PowerShell, allowing Svelte to auto-fill optimal model routing parameters.
+- **Native File Dialog Picker**: Integrated the `rfd` crate in Rust for local file selection, linking it to the RAG Vault upload panel.
+- **Global Hotkeys and Deep Links**: Configured `Ctrl+Shift+Space` global hotkey to toggle workspace visibility, and handled `asterion://` deep links on launch.
+- **Ollama Installer helper**: Spawns official Ollama setup downloader from `ollama.com` directly from the Svelte interface.
+- **Verification**: Clean backend compilation, 58/58 pytest suites passed, 100% Meta-Harness success, and Svelte production Vite compilation success.
+
 ### Phase 2D: Research & Analytics (Block 3)
 
 - **SQLCipher Data Connection**: Added database methods to `EncryptedSQLiteStore` (`get_all_research_receipts()`, `get_all_agent_runs()`, and `get_all_agent_logs()`) to pull raw data with full room and metadata context.
