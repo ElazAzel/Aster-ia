@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from asterion_api.config import get_settings
-from asterion_api.dependencies import get_store
+from asterion_api.dependencies import get_ollama_service, get_store
 from asterion_api.routers import (
     agents,
     analytics,
@@ -28,8 +28,13 @@ from asterion_api.routers import (
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    settings = get_settings()
     await get_store().ensure_schema()
+    # Auto-pull required models (graceful — does not block if Ollama is offline)
+    ollama = get_ollama_service()
+    await ollama.ensure_models(settings.required_models)
     yield
+    await ollama.aclose()
 
 
 settings = get_settings()

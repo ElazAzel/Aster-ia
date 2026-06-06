@@ -13,6 +13,7 @@ import keyring.errors
 
 from asterion_api.config import Settings
 from asterion_api.harness import BaseHarness
+from asterion_api.storage.migrations import current_version, run_migrations
 from asterion_api.structured_logging import StructuredLogger
 
 try:
@@ -50,6 +51,10 @@ class EncryptedSQLiteStore(BaseHarness):
 
     async def ensure_schema(self) -> None:
         await asyncio.to_thread(self._ensure_schema_sync)
+
+    async def schema_version(self) -> int:
+        """Return the current schema migration version."""
+        return await asyncio.to_thread(self._schema_version_sync)
 
     async def health_check(self) -> dict[str, Any]:
         return await asyncio.to_thread(self._health_check_sync)
@@ -271,155 +276,12 @@ class EncryptedSQLiteStore(BaseHarness):
     def _ensure_schema_sync(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self._connect() as conn:
-            conn.execute("PRAGMA foreign_keys = ON")
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS rooms (
-                    id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    color TEXT NOT NULL,
-                    allowed_models TEXT NOT NULL,
-                    memory_policy TEXT NOT NULL CHECK(memory_policy IN ('off', 'session', 'persistent')),
-                    retention_days INTEGER NOT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
-                )
-                """
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS conversations (
-                    id TEXT PRIMARY KEY,
-                    room_id TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                )
-                """
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS messages (
-                    id TEXT PRIMARY KEY,
-                    conv_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
-                    role TEXT NOT NULL CHECK(role IN ('system', 'user', 'assistant', 'tool')),
-                    content TEXT NOT NULL,
-                    model TEXT,
-                    artifact_id TEXT,
-                    ts TEXT NOT NULL
-                )
-                """
-            )
-            message_columns = {
-                str(column["name"])
-                for column in conn.execute("PRAGMA table_info(messages)").fetchall()
-            }
-            if "artifact_id" not in message_columns:
-                conn.execute("ALTER TABLE messages ADD COLUMN artifact_id TEXT")
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_conversations_room_id ON conversations(room_id)"
-            )
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_messages_conv_ts ON messages(conv_id, ts)")
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS memories (
-                    id TEXT PRIMARY KEY,
-                    room_id TEXT NOT NULL,
-                    content TEXT NOT NULL,
-                    source TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    expires_at TEXT
-                )
-                """
-            )
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_memories_room_id ON memories(room_id)")
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS rag_documents (
-                    id TEXT PRIMARY KEY,
-                    room_id TEXT NOT NULL,
-                    source TEXT NOT NULL,
-                    indexed_chunks INTEGER NOT NULL,
-                    created_at TEXT NOT NULL
-                )
-                """
-            )
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_rag_documents_room_id ON rag_documents(room_id)"
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS artifacts (
-                    id TEXT PRIMARY KEY,
-                    room_id TEXT NOT NULL,
-                    kind TEXT NOT NULL,
-                    title TEXT NOT NULL,
-                    blocks TEXT NOT NULL,
-                    source TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                )
-                """
-            )
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_artifacts_room_id ON artifacts(room_id)")
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS research_receipts (
-                    id TEXT PRIMARY KEY,
-                    report_id TEXT NOT NULL,
-                    source_title TEXT NOT NULL,
-                    url TEXT,
-                    quote TEXT,
-                    claim TEXT NOT NULL,
-                    confidence TEXT NOT NULL,
-                    ts TEXT NOT NULL
-                )
-                """
-            )
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_research_receipts_report ON research_receipts(report_id)"
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS agent_runs (
-                    id TEXT PRIMARY KEY,
-                    agent_id TEXT NOT NULL,
-                    room_id TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    plan TEXT NOT NULL,
-                    permissions TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
-                )
-                """
-            )
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_agent_runs_room ON agent_runs(room_id)")
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS agent_logs (
-                    id TEXT PRIMARY KEY,
-                    run_id TEXT NOT NULL REFERENCES agent_runs(id) ON DELETE CASCADE,
-                    ts TEXT NOT NULL,
-                    action TEXT NOT NULL,
-                    tool TEXT NOT NULL,
-                    input TEXT,
-                    output TEXT,
-                    model TEXT,
-                    privacy_level TEXT NOT NULL,
-                    error TEXT
-                )
-                """
-            )
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_agent_logs_run_ts ON agent_logs(run_id, ts)")
-            now = datetime.now(UTC).isoformat()
-            conn.execute(
-                """
-                INSERT OR IGNORE INTO rooms (
-                    id, name, color, allowed_models, memory_policy, retention_days, created_at, updated_at
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                ("default", "Default Room", "#2f80ed", "[]", "session", 30, now, now),
-            )
-            conn.commit()
-        self.logger.emit("schema.ready", db_path=str(self.path))
+            version = run_migrations(conn)
+            self.logger.emit("schema.ready", db_path=str(self.path), schema_version=version)
+
+    def _schema_version_sync(self) -> int:
+        with self._connect() as conn:
+            return current_version(conn)
 
     def _health_check_sync(self) -> dict[str, Any]:
         try:

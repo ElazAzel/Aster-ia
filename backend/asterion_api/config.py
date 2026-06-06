@@ -16,6 +16,9 @@ class Settings:
     keyring_service: str = os.getenv("ASTERION_KEYRING_SERVICE", "asterion-ai")
     keyring_db_key_name: str = os.getenv("ASTERION_KEYRING_DB_KEY_NAME", "sqlcipher-main")
     local_first: bool = True
+    required_models: tuple[str, ...] = ("llama3.2", "nomic-embed-text")
+    duckdb_memory_limit: str = os.getenv("ASTERION_DUCKDB_MEMORY_LIMIT", "512MB")
+    duckdb_threads: int = int(os.getenv("ASTERION_DUCKDB_THREADS", "2"))
 
     @property
     def data_dir(self) -> Path:

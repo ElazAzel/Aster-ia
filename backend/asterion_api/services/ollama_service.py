@@ -108,3 +108,61 @@ class OllamaService(BaseHarness):
         if not isinstance(embeddings, list):
             raise ValueError("Ollama embed response did not include embeddings")
         return embeddings
+
+    async def is_available(self) -> bool:
+        """Quick connectivity check for Ollama (2s timeout)."""
+        try:
+            client = self._get_client(httpx.Timeout(2.0, connect=1.0))
+            response = await client.get(f"{self.base_url}/api/tags")
+            return response.status_code == 200
+        except (httpx.HTTPError, OSError):
+            return False
+
+    async def pull_model(self, model: str) -> AsyncIterator[dict[str, Any]]:
+        """Stream Ollama model pull progress as dicts with status/completed/total."""
+        timeout = httpx.Timeout(600.0, connect=5.0, read=None)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            async with client.stream(
+                "POST",
+                f"{self.base_url}/api/pull",
+                json={"name": model, "stream": True},
+            ) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if not line:
+                        continue
+                    try:
+                        yield json.loads(line)
+                    except json.JSONDecodeError:
+                        yield {"status": line}
+
+    async def ensure_models(self, required: list[str] | tuple[str, ...]) -> dict[str, str]:
+        """Check required models and pull missing ones. Returns {model: status}."""
+        result: dict[str, str] = {}
+        try:
+            models = await self.list_models()
+            installed = {m.get("name", "").split(":")[0] for m in models}
+        except (httpx.HTTPError, OSError):
+            self.logger.emit("ensure_models.ollama_unavailable", error="cannot connect")
+            return {m: "ollama_unavailable" for m in required}
+
+        for model_name in required:
+            base_name = model_name.split(":")[0]
+            if base_name in installed or model_name in installed:
+                result[model_name] = "already_installed"
+                self.logger.emit("ensure_models.present", model=model_name)
+                continue
+            try:
+                self.logger.emit("ensure_models.pulling", model=model_name)
+                async for chunk in self.pull_model(model_name):
+                    status = chunk.get("status", "")
+                    if status == "success":
+                        break
+                result[model_name] = "pulled"
+                self.logger.emit("ensure_models.pulled", model=model_name)
+            except (httpx.HTTPError, OSError) as exc:
+                result[model_name] = f"pull_failed: {exc}"
+                self.logger.emit(
+                    "ensure_models.pull_failed", model=model_name, error=str(exc)
+                )
+        return result

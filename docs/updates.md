@@ -2,6 +2,18 @@
 
 ## 2026-06-06
 
+### Реализация рекомендаций аудита платформы
+
+- **CI/CD Windows-матрица**: Backend и Harness джобы теперь запускаются на `ubuntu-latest` и `windows-latest`. Добавлен отдельный `tauri-check` джоб с `cargo check` на Windows, Rust-кэшированием.
+- **Расширенный Health-check**: `GET /api/health` теперь проверяет доступность Ollama (`is_available`), показывает `schema_version` и количество моделей. Статус `degraded` если Ollama недоступен.
+- **Система миграций БД**: Создан `storage/migrations.py` — лёгкая встроенная система миграций с таблицей `schema_migrations`. DDL вынесен из `_ensure_schema_sync` в декларативные миграции. Migration 001 содержит полную текущую схему.
+- **Автоуправление моделями Ollama**: Добавлены `OllamaService.ensure_models()`, `pull_model()`, `is_available()`. В `lifespan` добавлен auto-pull обязательных моделей. Новые API-эндпоинты: `POST /api/models/pull` (SSE прогресс), `POST /api/models/ensure`.
+- **DuckDB лимиты ресурсов**: Добавлены `Settings.duckdb_memory_limit` (512MB) и `duckdb_threads` (2). Лимиты применяются при каждом подключении в analytics роутере.
+- **Обновлён Meta-Harness**: Контракты DDL-схем перенаправлены на `storage/migrations.py`.
+- **Верификация**: compileall clean, 38/38 tests pass, Meta-Harness 100% (40.3ms avg latency).
+
+## 2026-06-06
+
 ### Phase 4: Chat History, Analytics, Plugin Watcher, Real-time Logs
 
 - **Chat history persistence**: `StreamingChat.svelte` now imports real `listChatConversations`/`listChatMessages` from `api.ts`, with conversation selector (`<select>` + «+ Новый»), `loadHistory()`/`loadMessages()`/`newChat()` functions, and `onMount` auto-load.

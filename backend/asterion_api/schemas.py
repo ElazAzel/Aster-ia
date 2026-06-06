@@ -11,6 +11,8 @@ class HealthResponse(BaseModel):
     app: str
     uptime_seconds: float
     database: dict[str, Any]
+    ollama: dict[str, Any]
+    schema_version: int
     privacy: dict[str, Any]
 
 
@@ -24,6 +26,14 @@ class ModelInfo(BaseModel):
 class ModelsResponse(BaseModel):
     models: list[ModelInfo]
     privacy_level: Literal["local"] = "local"
+
+
+class ModelPullRequest(BaseModel):
+    model: str = Field(min_length=1, max_length=256)
+
+
+class ModelEnsureResponse(BaseModel):
+    results: dict[str, str]
 
 
 class ChatRequest(BaseModel):
