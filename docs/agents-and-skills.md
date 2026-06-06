@@ -22,7 +22,7 @@ uv run python -c "from asterion_api.services.agent_registry import AgentRegistry
 Ожидаемый результат:
 
 ```json
-{"ok": true, "agents_count": 10, "skills_count": 16, "errors": [], "warnings": []}
+{"ok": true, "agents_count": 10, "skills_count": 20, "errors": [], "warnings": []}
 ```
 
 ## API
@@ -57,15 +57,19 @@ uv run python -c "from asterion_api.services.agent_registry import AgentRegistry
 | `agent-catalog-governance` | agents | `AgentRegistry` validation |
 | `conversation-orchestration` | chat | `ChatService`, `PrivacyAnalyzer`, `ModelRouter` |
 | `streaming-chat` | chat | `StreamingResponse`, SSE, Svelte `EventSource` |
+| `adaptive-artifacts` | artifacts | `EncryptedSQLiteStore`, artifact blocks |
 | `privacy-radar` | safety | `PrivacyAnalyzer` |
 | `model-routing` | models | `ModelRouter` |
 | `ollama-operations` | models | `OllamaService`, async `httpx` |
 | `sqlcipher-storage` | storage | `EncryptedSQLiteStore`, `keyring`, `sqlcipher3` |
+| `context-rooms` | knowledge | room-scoped policy and retention |
 | `rag-indexing` | knowledge | `DocumentIndexer`, LanceDB, BM25 |
 | `memory-ledger` | memory | `MemoryLedger`, SQLCipher |
 | `deep-research` | research | `SupervisorAgent`, SearXNG, DuckDB |
+| `research-receipts` | research | structured source-backed report export |
 | `contradiction-finder` | research | embeddings plus sentiment opposition |
 | `task-simulation` | agents | `TaskSimulator` |
+| `flight-recorder` | agents | AgentRun and action log persistence |
 | `sandboxed-code` | agents | `AgentSandbox` |
 | `comfyui-generation` | images | `ComfyUIService` |
 | `workflow-automation` | automation | `WorkflowRunner`, WebSocket events |

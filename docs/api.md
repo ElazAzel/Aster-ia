@@ -167,6 +167,32 @@ Creates a memory only after privacy analysis.
 
 `DELETE /api/memory/{memory_id}` deletes a memory.
 
+## Context Rooms
+
+`GET /api/rooms`
+
+Lists room-scoped context policies.
+
+`POST /api/rooms`
+
+```json
+{
+  "name": "Research Room",
+  "color": "#2f80ed",
+  "allowed_models": ["llama3.2"],
+  "memory_policy": "session",
+  "retention_days": 30
+}
+```
+
+`GET /api/rooms/{room_id}`
+
+`PATCH /api/rooms/{room_id}`
+
+`DELETE /api/rooms/{room_id}`
+
+The default room cannot be deleted.
+
 ## RAG
 
 `POST /api/rag/index`
@@ -191,6 +217,38 @@ The indexer parses local files, chunks text, embeds with `nomic-embed-text` thro
 ```
 
 Search combines dense cosine scoring with BM25.
+
+Vault document metadata:
+
+- `GET /api/rag/documents`
+- `GET /api/rag/documents?room_id=default`
+- `DELETE /api/rag/documents/{document_id}`
+
+Deleting a document record removes metadata from SQLCipher. LanceDB vector deletion is a later hardening step.
+
+## Artifacts
+
+`POST /api/artifacts`
+
+```json
+{
+  "room_id": "default",
+  "kind": "chat",
+  "title": "Answer",
+  "source": "chat",
+  "blocks": [
+    {
+      "type": "text",
+      "title": "Summary",
+      "content": "Local-first response"
+    }
+  ]
+}
+```
+
+`GET /api/artifacts/{artifact_id}`
+
+Artifacts support block types: `text`, `code`, `table`, `source`, and `action`.
 
 ## Research
 
@@ -221,6 +279,27 @@ With `web_access=false`, the agent returns decomposition and privacy state witho
 ```
 
 Returns pairs that are semantically similar and have opposing sentiment.
+
+`POST /api/research/report/export`
+
+Creates a `research_report` artifact and stores Research Receipts.
+
+```json
+{
+  "room_id": "default",
+  "query": "Compare local and API routing",
+  "title": "Research Receipt",
+  "receipts": [
+    {
+      "source_title": "Local note",
+      "url": null,
+      "quote": "Local routing reduces exposure.",
+      "claim": "Local routing reduces external data exposure.",
+      "confidence": "medium"
+    }
+  ]
+}
+```
 
 ## Agents
 
@@ -279,6 +358,15 @@ Sandboxed code:
   }
 }
 ```
+
+Agent runs and Flight Recorder:
+
+- `POST /api/agents/runs`
+- `GET /api/agents/runs/{run_id}`
+- `GET /api/agents/runs/{run_id}/logs`
+- `GET /api/agents/runs/{run_id}/events`
+
+`POST /api/agents/runs` creates a planned run and writes the initial `plan.created` Flight Recorder event.
 
 ## Images
 

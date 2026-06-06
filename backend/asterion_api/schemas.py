@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -105,6 +105,34 @@ class MemoryRecord(BaseModel):
     privacy: PrivacyReport | None = None
 
 
+class ContextRoomCreateRequest(BaseModel):
+    id: str | None = Field(default=None, min_length=1, max_length=128)
+    name: str = Field(min_length=1, max_length=128)
+    color: str = Field(default="#2f80ed", min_length=3, max_length=32)
+    allowed_models: list[str] = Field(default_factory=list)
+    memory_policy: Literal["off", "session", "persistent"] = "session"
+    retention_days: int = Field(default=30, ge=1, le=3650)
+
+
+class ContextRoomUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=128)
+    color: str | None = Field(default=None, min_length=3, max_length=32)
+    allowed_models: list[str] | None = None
+    memory_policy: Literal["off", "session", "persistent"] | None = None
+    retention_days: int | None = Field(default=None, ge=1, le=3650)
+
+
+class ContextRoom(BaseModel):
+    id: str
+    name: str
+    color: str
+    allowed_models: list[str]
+    memory_policy: Literal["off", "session", "persistent"]
+    retention_days: int
+    created_at: datetime
+    updated_at: datetime
+
+
 class RagIndexRequest(BaseModel):
     file_path: str
     room_id: str = "default"
@@ -122,6 +150,43 @@ class RagChunk(BaseModel):
     content: str
     source: str
     score: float = 0
+
+
+class RagDocumentRecord(BaseModel):
+    id: str
+    room_id: str
+    source: str
+    indexed_chunks: int
+    created_at: datetime
+
+
+class ArtifactBlock(BaseModel):
+    type: Literal["text", "code", "table", "source", "action"]
+    title: str | None = None
+    content: str | None = None
+    language: str | None = None
+    rows: list[dict[str, Any]] = Field(default_factory=list)
+    source: str | None = None
+    action: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ArtifactCreateRequest(BaseModel):
+    room_id: str = Field(default="default", min_length=1, max_length=256)
+    kind: Literal["chat", "research_report", "code", "table", "image", "workflow"] = "chat"
+    title: str = Field(min_length=1, max_length=256)
+    blocks: list[ArtifactBlock] = Field(default_factory=list)
+    source: str = Field(default="manual", min_length=1, max_length=256)
+
+
+class ArtifactRecord(BaseModel):
+    id: str
+    room_id: str
+    kind: str
+    title: str
+    blocks: list[ArtifactBlock]
+    source: str
+    created_at: datetime
 
 
 class DeepResearchRequest(BaseModel):
@@ -142,6 +207,27 @@ class DeepResearchResponse(BaseModel):
     subtasks: list[str]
     results: list[ResearchResult]
     privacy: PrivacyReport
+
+
+class ResearchReceipt(BaseModel):
+    source_title: str
+    url: str | None = None
+    quote: str | None = None
+    claim: str
+    confidence: Literal["high", "medium", "low"] = "medium"
+    ts: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class ResearchReportExportRequest(BaseModel):
+    room_id: str = Field(default="default", min_length=1, max_length=256)
+    query: str = Field(min_length=1, max_length=16_000)
+    title: str = Field(default="Research Report", min_length=1, max_length=256)
+    receipts: list[ResearchReceipt] = Field(default_factory=list)
+
+
+class ResearchReportExportResponse(BaseModel):
+    artifact: ArtifactRecord
+    receipts_count: int
 
 
 class ContradictionRequest(BaseModel):
@@ -214,6 +300,38 @@ class AgentPlan(BaseModel):
 class AgentRunCodeRequest(BaseModel):
     code: str = Field(min_length=1, max_length=32_000)
     permissions: AgentPermissions = Field(default_factory=AgentPermissions)
+
+
+class AgentRunCreateRequest(BaseModel):
+    agent_id: str = Field(min_length=1, max_length=128)
+    room_id: str = Field(default="default", min_length=1, max_length=256)
+    task: str = Field(min_length=1, max_length=16_000)
+    plan: AgentPlan | None = None
+    permissions: AgentPermissions = Field(default_factory=AgentPermissions)
+
+
+class AgentRun(BaseModel):
+    id: str
+    agent_id: str
+    room_id: str
+    status: Literal["planned", "running", "paused", "completed", "failed", "cancelled"]
+    plan: AgentPlan
+    permissions: AgentPermissions
+    created_at: datetime
+    updated_at: datetime
+
+
+class FlightRecorderEvent(BaseModel):
+    id: str
+    run_id: str
+    ts: datetime
+    action: str
+    tool: str
+    privacy_level: Literal["local", "hybrid", "external"]
+    input: str | None = None
+    output: str | None = None
+    model: str | None = None
+    error: str | None = None
 
 
 class ComfyGenerateRequest(BaseModel):

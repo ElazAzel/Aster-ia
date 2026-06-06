@@ -92,6 +92,17 @@ http://127.0.0.1:8000
 | `PluginManager` | local plugin manifest loading | local |
 | `AgentRegistry` | manifest loading and validation | local |
 
+## MVP Data Contracts
+
+New MVP contracts persist in SQLCipher:
+
+- `rooms`: Context Rooms and retention/model/memory policy.
+- `rag_documents`: Knowledge Vault document metadata.
+- `artifacts`: Adaptive Artifact blocks.
+- `research_receipts`: source-backed research claims.
+- `agent_runs`: Agent Lab run state and permission snapshot.
+- `agent_logs`: Flight Recorder events.
+
 ## Agent Runtime
 
 Runtime agents are declarative. The backend does not hard-code an agent list; it reads `agents/*.json` and `skills/*.json`.
@@ -199,6 +210,12 @@ Tables:
 - `conversations(id, room_id, created_at)`
 - `messages(id, conv_id, role, content, model, ts)`
 - `memories(id, room_id, content, source, created_at, expires_at)`
+- `rooms(id, name, color, allowed_models, memory_policy, retention_days, created_at, updated_at)`
+- `rag_documents(id, room_id, source, indexed_chunks, created_at)`
+- `artifacts(id, room_id, kind, title, blocks, source, created_at)`
+- `research_receipts(id, report_id, source_title, url, quote, claim, confidence, ts)`
+- `agent_runs(id, agent_id, room_id, status, plan, permissions, created_at, updated_at)`
+- `agent_logs(id, run_id, ts, action, tool, input, output, model, privacy_level, error)`
 
 Vector store:
 

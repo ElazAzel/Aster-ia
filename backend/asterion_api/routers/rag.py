@@ -4,9 +4,10 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends
 
-from asterion_api.dependencies import get_document_indexer
-from asterion_api.schemas import RagChunk, RagIndexRequest, RagSearchRequest
+from asterion_api.dependencies import get_document_indexer, get_store
+from asterion_api.schemas import RagChunk, RagDocumentRecord, RagIndexRequest, RagSearchRequest
 from asterion_api.services.rag import DocumentIndexer
+from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
 
 router = APIRouter(prefix="/api/rag", tags=["rag"])
 
@@ -15,8 +16,31 @@ router = APIRouter(prefix="/api/rag", tags=["rag"])
 async def index_document(
     request: RagIndexRequest,
     indexer: DocumentIndexer = Depends(get_document_indexer),
+    store: EncryptedSQLiteStore = Depends(get_store),
 ) -> dict[str, object]:
-    return await indexer.index_file(file_path=Path(request.file_path), room_id=request.room_id)
+    result = await indexer.index_file(file_path=Path(request.file_path), room_id=request.room_id)
+    document = await store.record_rag_document(
+        room_id=request.room_id,
+        source=str(result["source"]),
+        indexed_chunks=int(result["indexed_chunks"]),
+    )
+    return {**result, "document": document}
+
+
+@router.get("/documents", response_model=list[RagDocumentRecord])
+async def list_documents(
+    room_id: str | None = None,
+    store: EncryptedSQLiteStore = Depends(get_store),
+) -> list[RagDocumentRecord]:
+    return [RagDocumentRecord(**row) for row in await store.list_rag_documents(room_id)]
+
+
+@router.delete("/documents/{document_id}")
+async def delete_document(
+    document_id: str,
+    store: EncryptedSQLiteStore = Depends(get_store),
+) -> dict[str, bool]:
+    return {"deleted": await store.delete_rag_document(document_id)}
 
 
 @router.post("/search", response_model=list[RagChunk])

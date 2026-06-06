@@ -1,12 +1,25 @@
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter, Depends
 from fastapi import HTTPException
+from fastapi.responses import StreamingResponse
 
-from asterion_api.dependencies import get_agent_registry, get_agent_sandbox, get_task_simulator
-from asterion_api.schemas import AgentCatalog, AgentManifest, AgentPlan, AgentRunCodeRequest, RuntimeSkillManifest
+from asterion_api.dependencies import get_agent_registry, get_agent_sandbox, get_store, get_task_simulator
+from asterion_api.schemas import (
+    AgentCatalog,
+    AgentManifest,
+    AgentPlan,
+    AgentRun,
+    AgentRunCodeRequest,
+    AgentRunCreateRequest,
+    FlightRecorderEvent,
+    RuntimeSkillManifest,
+)
 from asterion_api.services.agent_registry import AgentRegistry
 from asterion_api.services.agent_sandbox import AgentSandbox, TaskSimulator
+from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
 
 router = APIRouter(prefix="/api/agents", tags=["agents"])
 
@@ -64,3 +77,63 @@ async def run_code(
     sandbox: AgentSandbox = Depends(get_agent_sandbox),
 ) -> dict[str, object]:
     return await sandbox.run_code(code=request.code, permissions=request.permissions)
+
+
+@router.post("/runs", response_model=AgentRun)
+async def create_agent_run(
+    request: AgentRunCreateRequest,
+    simulator: TaskSimulator = Depends(get_task_simulator),
+    store: EncryptedSQLiteStore = Depends(get_store),
+) -> AgentRun:
+    plan = request.plan or simulator.plan(request.task)
+    row = await store.create_agent_run(
+        agent_id=request.agent_id,
+        room_id=request.room_id,
+        status="planned",
+        plan=plan.model_dump(),
+        permissions=request.permissions.model_dump(),
+    )
+    await store.append_agent_log(
+        run_id=str(row["id"]),
+        action="plan.created",
+        tool="TaskSimulator",
+        privacy_level="local",
+        input_text=request.task,
+        output_text=json.dumps(plan.model_dump(), ensure_ascii=False),
+        model=None,
+        error=None,
+    )
+    return AgentRun(**row)
+
+
+@router.get("/runs/{run_id}", response_model=AgentRun)
+async def get_agent_run(
+    run_id: str,
+    store: EncryptedSQLiteStore = Depends(get_store),
+) -> AgentRun:
+    row = await store.get_agent_run(run_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Agent run not found")
+    return AgentRun(**row)
+
+
+@router.get("/runs/{run_id}/logs", response_model=list[FlightRecorderEvent])
+async def list_agent_run_logs(
+    run_id: str,
+    store: EncryptedSQLiteStore = Depends(get_store),
+) -> list[FlightRecorderEvent]:
+    return [FlightRecorderEvent(**row) for row in await store.list_agent_logs(run_id)]
+
+
+@router.get("/runs/{run_id}/events")
+async def stream_agent_run_events(
+    run_id: str,
+    store: EncryptedSQLiteStore = Depends(get_store),
+) -> StreamingResponse:
+    async def events():
+        rows = await store.list_agent_logs(run_id)
+        for row in rows:
+            yield f"data: {json.dumps(row, ensure_ascii=False)}\n\n"
+        yield "event: done\ndata: {}\n\n"
+
+    return StreamingResponse(events(), media_type="text/event-stream")

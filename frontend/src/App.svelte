@@ -3,12 +3,19 @@
   import {
     DEFAULT_API_BASE,
     analyzePrivacy,
+    createAgentRun,
     createMemory,
+    createRoom,
     deleteMemory,
+    deleteRagDocument,
+    exportResearchReport,
     getAgentCatalog,
     getHealth,
     getModels,
+    listAgentRunLogs,
     listMemories,
+    listRagDocuments,
+    listRooms,
     searchRag,
     selectModel,
     simulateAgentTask,
@@ -16,13 +23,18 @@
     type AgentCatalog,
     type AgentManifest,
     type AgentPlan,
+    type AgentRun,
     type CatalogValidation,
+    type ContextRoom,
+    type FlightRecorderEvent,
     type HealthResponse,
     type MemoryRecord,
     type ModelInfo,
     type ModelSelection,
     type PrivacyReport,
     type RagChunk,
+    type RagDocumentRecord,
+    type ResearchReportExportResponse,
     type RiskLevel
   } from './lib/api';
   import StreamingChat from './lib/StreamingChat.svelte';
@@ -48,12 +60,21 @@
   let catalog: AgentCatalog | null = null;
   let catalogValidation: CatalogValidation | null = null;
   let selectedAgentId = 'chat-orchestrator';
+  let rooms: ContextRoom[] = [];
+  let roomDraft = '';
   let memories: MemoryRecord[] = [];
   let memoryDraft = '';
+  let ragDocuments: RagDocumentRecord[] = [];
   let ragQuery = '';
   let ragResults: RagChunk[] = [];
+  let researchQuery = 'Сравнить приватность локального и API маршрута';
+  let researchSourceTitle = 'Manual source';
+  let researchClaim = 'Local-first routing reduces external data exposure.';
+  let exportedReport: ResearchReportExportResponse | null = null;
   let agentTask = 'Проверить локальный документ и найти противоречия';
   let agentPlan: AgentPlan | null = null;
+  let agentRun: AgentRun | null = null;
+  let flightLogs: FlightRecorderEvent[] = [];
   let desktopStatus: BackendStatus | null = null;
   let desktopAvailable = false;
   let statusText = 'Ожидание проверки';
@@ -147,14 +168,37 @@
     if (validationResult) catalogValidation = validationResult;
   }
 
+  async function refreshRooms() {
+    const result = await runStep('Читаю Context Rooms', () => listRooms(apiBase));
+    if (result) {
+      rooms = result;
+      if (!rooms.some((room) => room.id === roomId) && rooms[0]) {
+        roomId = rooms[0].id;
+      }
+    }
+  }
+
   async function refreshMemories() {
     const result = await runStep('Читаю память комнаты', () => listMemories(apiBase, roomId));
     if (result) memories = result;
   }
 
+  async function refreshRagDocuments() {
+    const result = await runStep('Читаю Vault документы', () => listRagDocuments(apiBase, roomId));
+    if (result) ragDocuments = result;
+  }
+
   async function refreshAll() {
     busy = true;
-    await Promise.allSettled([refreshHealth(), refreshModels(), refreshCatalog(), refreshMemories(), analyzeCurrentPrivacy()]);
+    await Promise.allSettled([
+      refreshHealth(),
+      refreshModels(),
+      refreshCatalog(),
+      refreshRooms(),
+      refreshMemories(),
+      refreshRagDocuments(),
+      analyzeCurrentPrivacy()
+    ]);
     statusText = 'Готово';
     busy = false;
   }
@@ -186,6 +230,19 @@
     }
   }
 
+  async function addRoom() {
+    const name = roomDraft.trim();
+    if (!name) return;
+    const result = await runStep('Создаю Context Room', () => createRoom(apiBase, name));
+    if (result) {
+      roomDraft = '';
+      roomId = result.id;
+      await refreshRooms();
+      await refreshMemories();
+      await refreshRagDocuments();
+    }
+  }
+
   async function removeMemory(memoryId: string) {
     const result = await runStep('Удаляю память', () => deleteMemory(apiBase, memoryId));
     if (result) await refreshMemories();
@@ -198,11 +255,61 @@
     if (result) ragResults = result;
   }
 
+  async function removeRagDocument(documentId: string) {
+    const result = await runStep('Удаляю запись Vault', () => deleteRagDocument(apiBase, documentId));
+    if (result) await refreshRagDocuments();
+  }
+
+  async function exportResearchArtifact() {
+    const query = researchQuery.trim();
+    const claim = researchClaim.trim();
+    if (!query || !claim) return;
+    const result = await runStep('Экспортирую Research Receipt', () =>
+      exportResearchReport(apiBase, {
+        room_id: roomId,
+        query,
+        title: 'Research Receipt',
+        receipts: [
+          {
+            source_title: researchSourceTitle.trim() || 'Manual source',
+            claim,
+            quote: claim,
+            confidence: 'medium'
+          }
+        ]
+      })
+    );
+    if (result) exportedReport = result;
+  }
+
   async function simulatePlan() {
     const task = agentTask.trim();
     if (!task) return;
     const result = await runStep('Генерирую AgentPlan', () => simulateAgentTask(apiBase, task));
     if (result) agentPlan = result;
+  }
+
+  async function createPlannedAgentRun() {
+    const task = agentTask.trim();
+    if (!task) return;
+    const result = await runStep('Создаю AgentRun', () =>
+      createAgentRun(apiBase, {
+        agent_id: selectedAgent?.id ?? selectedAgentId,
+        room_id: roomId,
+        task,
+        plan: agentPlan,
+        permissions: {
+          allowed_folders: [],
+          network: false,
+          shell: false
+        }
+      })
+    );
+    if (result) {
+      agentRun = result;
+      const logs = await runStep('Читаю Flight Recorder', () => listAgentRunLogs(apiBase, result.id));
+      if (logs) flightLogs = logs;
+    }
   }
 
   function agentGroupTitle(agent: AgentManifest) {
@@ -236,8 +343,10 @@
       <a href="#desktop">Desktop</a>
       <a href="#agents">Агенты</a>
       <a href="#privacy">Privacy</a>
+      <a href="#rooms">Rooms</a>
       <a href="#memory">Память</a>
       <a href="#rag">RAG</a>
+      <a href="#research">Research</a>
     </nav>
 
     <div class="system-meter">
@@ -280,7 +389,21 @@
           <div class="inline-controls">
             <label>
               <span>Комната</span>
-              <input bind:value={roomId} on:change={() => void refreshMemories()} />
+              <select
+                bind:value={roomId}
+                on:change={() => {
+                  void refreshMemories();
+                  void refreshRagDocuments();
+                }}
+              >
+                {#if rooms.length === 0}
+                  <option value={roomId}>{roomId}</option>
+                {:else}
+                  {#each rooms as room}
+                    <option value={room.id}>{room.name}</option>
+                  {/each}
+                {/if}
+              </select>
             </label>
             <label>
               <span>Модель</span>
@@ -404,6 +527,29 @@
           {/if}
         </section>
 
+        <section id="rooms" class="panel">
+          <div class="panel-heading compact">
+            <h2>Context Rooms</h2>
+            <span class="count">{rooms.length}</span>
+          </div>
+          <form on:submit|preventDefault={addRoom} class="stack-form">
+            <input bind:value={roomDraft} placeholder="Новая комната контекста" />
+            <button type="submit" disabled={!roomDraft.trim()}>Создать</button>
+          </form>
+          <div class="memory-list">
+            {#each rooms as room}
+              <article>
+                <p>
+                  <strong>{room.name}</strong>
+                </p>
+                <small>{room.memory_policy} · {room.retention_days} дней · {room.allowed_models.length} models</small>
+              </article>
+            {:else}
+              <p class="empty">Комнаты еще не загружены.</p>
+            {/each}
+          </div>
+        </section>
+
         <section id="memory" class="panel">
           <div class="panel-heading compact">
             <h2>Memory Ledger</h2>
@@ -515,11 +661,46 @@
             <p class="empty">Результатов пока нет.</p>
           {/each}
         </div>
+        <div class="panel-subsection">
+          <div class="panel-heading compact">
+            <h3>Vault documents</h3>
+            <button type="button" class="text-button" on:click={refreshRagDocuments}>Обновить</button>
+          </div>
+          <div class="result-list">
+            {#each ragDocuments as document}
+              <article>
+                <strong>{document.source}</strong>
+                <small>{document.indexed_chunks} chunks · {document.room_id}</small>
+                <button type="button" class="text-button" on:click={() => removeRagDocument(document.id)}>Удалить запись</button>
+              </article>
+            {:else}
+              <p class="empty">Indexed documents пока нет.</p>
+            {/each}
+          </div>
+        </div>
+      </section>
+
+      <section id="research" class="panel">
+        <div class="panel-heading compact">
+          <h2>Research Receipts</h2>
+        </div>
+        <form on:submit|preventDefault={exportResearchArtifact} class="stack-form">
+          <input bind:value={researchQuery} placeholder="Research goal" />
+          <input bind:value={researchSourceTitle} placeholder="Source title" />
+          <textarea bind:value={researchClaim} rows="3" placeholder="Claim or evidence note"></textarea>
+          <button type="submit" disabled={!researchQuery.trim() || !researchClaim.trim()}>Экспортировать artifact</button>
+        </form>
+        {#if exportedReport}
+          <div class="plan-box">
+            <strong>{exportedReport.artifact.title}</strong>
+            <small>{exportedReport.receipts_count} receipt · artifact {exportedReport.artifact.id}</small>
+          </div>
+        {/if}
       </section>
 
       <section class="panel">
         <div class="panel-heading compact">
-          <h2>Task Simulator</h2>
+          <h2>Agent Lab</h2>
         </div>
         <form on:submit|preventDefault={simulatePlan} class="stack-form">
           <textarea bind:value={agentTask} rows="3"></textarea>
@@ -536,6 +717,24 @@
             <div class="chip-row">
               {#each agentPlan.required_permissions as permission}
                 <span>{permission}</span>
+              {/each}
+            </div>
+            <button type="button" on:click={createPlannedAgentRun}>Создать AgentRun</button>
+          </div>
+        {/if}
+        {#if agentRun}
+          <div class="plan-box">
+            <strong>{agentRun.status} · {agentRun.agent_id}</strong>
+            <small>run {agentRun.id}</small>
+            <div class="result-list">
+              {#each flightLogs as log}
+                <article>
+                  <strong>{log.action}</strong>
+                  <small>{log.tool} · {log.privacy_level}</small>
+                  {#if log.output}
+                    <p>{log.output}</p>
+                  {/if}
+                </article>
               {/each}
             </div>
           </div>

@@ -1,0 +1,17 @@
+{
+  "id": "context-rooms",
+  "name": "Context Rooms",
+  "version": "0.3.0",
+  "owner": "asterion",
+  "category": "knowledge",
+  "description": "Manages room-scoped model policy, memory policy, retention, and context boundaries.",
+  "privacy_level": "local",
+  "triggers": ["room_created", "room_selected", "room_policy_changed"],
+  "inputs": ["ContextRoomCreateRequest", "ContextRoomUpdateRequest"],
+  "outputs": ["ContextRoom"],
+  "tools": ["EncryptedSQLiteStore"],
+  "guardrails": ["Keep context room data local.", "Never use documents from another room without explicit user action."],
+  "requires_consent": ["broad_folder_indexing", "cross_room_context"],
+  "failure_modes": ["Room not found.", "Invalid retention policy.", "Cross-room context leak."],
+  "acceptance_checks": ["GET /api/rooms returns the default room.", "PATCH /api/rooms/{room_id} updates policy.", "Default room cannot be deleted."]
+}

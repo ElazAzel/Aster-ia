@@ -2,6 +2,11 @@
 
 ## 2026-06-06
 
+- Added MVP backend contracts for Context Rooms, Adaptive Artifacts, Research Receipts, AgentRun persistence, and Flight Recorder logs.
+- Added `GET/POST/PATCH/DELETE /api/rooms`, `POST/GET /api/artifacts`, `GET/DELETE /api/rag/documents`, `POST /api/research/report/export`, and AgentRun log/event endpoints.
+- Added Svelte UI controls for Context Rooms, Vault document metadata, Research Receipt export, and AgentRun/Flight Recorder preview.
+- Added runtime skill manifests for `context-rooms`, `adaptive-artifacts`, `research-receipts`, and `flight-recorder`.
+- Added `docs/product-mvp-plan.md` and `docs/launch-kit.md` for product design and creative-production launch planning.
 - Expanded runtime agent catalog from 6 to 10 agents with `chat-orchestrator`, `model-curator`, `memory-curator`, and `plugin-auditor`.
 - Expanded runtime skill catalog from 12 to 16 skills with `conversation-orchestration`, `ollama-operations`, `sqlcipher-storage`, and `agent-catalog-governance`.
 - Added manifest lifecycle metadata: `triggers`, `lifecycle`, `outputs`, `handoff_targets`, `acceptance_checks`, `requires_consent`, and `failure_modes`.

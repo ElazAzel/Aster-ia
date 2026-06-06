@@ -10,6 +10,7 @@ from asterion_api.config import get_settings
 from asterion_api.dependencies import get_store
 from asterion_api.routers import (
     agents,
+    artifacts,
     chat,
     health,
     images,
@@ -19,6 +20,7 @@ from asterion_api.routers import (
     privacy,
     rag,
     research,
+    rooms,
     workflows,
 )
 
@@ -48,7 +50,7 @@ app.add_middleware(
         "tauri://localhost",
     ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -56,10 +58,12 @@ app.include_router(health.router)
 app.include_router(models.router)
 app.include_router(chat.router)
 app.include_router(privacy.router)
+app.include_router(rooms.router)
 app.include_router(memory.router)
 app.include_router(rag.router)
 app.include_router(research.router)
 app.include_router(agents.router)
+app.include_router(artifacts.router)
 app.include_router(images.router)
 app.include_router(workflows.router)
 app.include_router(plugins.router)

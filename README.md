@@ -14,6 +14,7 @@ The current scaffold contains:
 - Agent catalog validation through `/api/agents/catalog/validate`.
 - Workflow, plugin, sandbox, and privacy contracts.
 - Svelte/Vite frontend shell wired to the FastAPI sidecar.
+- Context Rooms, Adaptive Artifacts, Research Receipts, and AgentRun Flight Recorder APIs.
 - Static HTML/Stitch UI prototypes.
 
 ## Quick Start
@@ -73,6 +74,8 @@ cargo check
 - [Agents and Skills](docs/agents-and-skills.md)
 - [Local Development](docs/local-dev.md)
 - [Privacy and Security](docs/privacy-security.md)
+- [Power-user MVP Product Plan](docs/product-mvp-plan.md)
+- [Launch Kit](docs/launch-kit.md)
 - [Updates](docs/updates.md)
 
 ## Repository Layout

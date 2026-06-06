@@ -1,0 +1,17 @@
+{
+  "id": "research-receipts",
+  "name": "Research Receipts",
+  "version": "0.3.0",
+  "owner": "asterion",
+  "category": "research",
+  "description": "Exports source-backed research claims as receipts and structured report artifacts.",
+  "privacy_level": "hybrid",
+  "triggers": ["research_report_exported", "evidence_claim_captured"],
+  "inputs": ["ResearchReceipt", "ResearchReportExportRequest"],
+  "outputs": ["ResearchReportExportResponse"],
+  "tools": ["SupervisorAgent", "EncryptedSQLiteStore"],
+  "guardrails": ["Preserve source title, URL, claim, confidence, and timestamp.", "Do not fabricate source facts."],
+  "requires_consent": ["web_access", "external_source_export"],
+  "failure_modes": ["Receipt missing claim.", "Source unavailable.", "Report artifact cannot be created."],
+  "acceptance_checks": ["POST /api/research/report/export returns an artifact.", "Receipts are counted in the response.", "Each source block includes confidence metadata."]
+}

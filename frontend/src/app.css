@@ -166,6 +166,7 @@ nav a:hover {
 
 .topbar h1,
 .panel h2,
+.panel h3,
 .agent-detail h3 {
   margin: 0;
 }
@@ -232,6 +233,18 @@ nav a:hover {
   border-radius: 8px;
   padding: 16px;
   background: #ffffff;
+}
+
+.panel h3 {
+  font-size: 15px;
+}
+
+.panel-subsection {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  border-top: 1px solid #e3e8ef;
+  padding-top: 12px;
 }
 
 .right-stack {

@@ -45,6 +45,10 @@ Status: in progress.
 - Memory Ledger UI with source and delete controls.
 - RAG search UI over the local index.
 - Task Simulator UI for AgentPlan generation.
+- Context Rooms API and UI selector.
+- Adaptive Artifacts API for block-level outputs.
+- Research Receipt export API and UI surface.
+- AgentRun and Flight Recorder API with UI log preview.
 - Agent Lab UI for plan approval and sandbox runs.
 - RAG file picker with explicit approval and indexed-source list.
 - Workflow approval gate UI over WebSocket.
@@ -93,3 +97,6 @@ Required API checks:
 - `GET /api/agents/catalog/validate`
 - `POST /api/privacy/analyze`
 - `GET /api/chat/stream`
+- `GET /api/rooms`
+- `POST /api/artifacts`
+- `POST /api/agents/runs`
