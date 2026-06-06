@@ -5,6 +5,7 @@
 ### CI Hermeticity and Public Docs Refresh
 
 - Fixed the current `main` CI backend failure by making `test_rag_crud` hermetic: the integration test now mocks `DocumentIndexer.hybrid_search()` instead of reaching real local Ollama embeddings.
+- Fixed the `tauri-check` CI blocker by creating a temporary Windows sidecar placeholder before `cargo check`; release builds still use the real PyInstaller sidecar from `.github/workflows/release.yml`.
 - Replaced stale README scaffold wording and mojibake-heavy quick start text with the current Power-user MVP feature set, verification commands, Docker dev loop, and Voice Mode notes.
 - Updated `docs/roadmap.md` to mark Phase 3 as implemented and split Phase 4 into implemented hardening foundations versus remaining release-grade work.
 - Verified locally: `uv run pytest` (76 passed), `uv run ruff check .`, `npm run build`, `npx tsc --noEmit`, and compileall.

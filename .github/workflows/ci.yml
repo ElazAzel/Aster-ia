@@ -87,6 +87,13 @@ jobs:
         with:
           workspaces: src-tauri
 
+      - name: Prepare sidecar placeholder
+        working-directory: src-tauri
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force binaries | Out-Null
+          New-Item -ItemType File -Force binaries\asterion-backend-x86_64-pc-windows-msvc.exe | Out-Null
+
       - name: Cargo check
         working-directory: src-tauri
         run: cargo check

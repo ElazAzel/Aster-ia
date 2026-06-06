@@ -3,6 +3,7 @@
 backend/.venv/
 node_modules/
 src-tauri/target/
+src-tauri/binaries/
 __pycache__/
 *.py[cod]
 *.db
@@ -19,4 +20,3 @@ harness/candidates/
 # Playwright E2E test directories
 frontend/playwright-report/
 frontend/test-results/
-
