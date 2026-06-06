@@ -10,6 +10,7 @@ from asterion_api.config import get_settings
 from asterion_api.dependencies import get_store
 from asterion_api.routers import (
     agents,
+    analytics,
     artifacts,
     chat,
     health,
@@ -67,3 +68,4 @@ app.include_router(artifacts.router)
 app.include_router(images.router)
 app.include_router(workflows.router)
 app.include_router(plugins.router)
+app.include_router(analytics.router)

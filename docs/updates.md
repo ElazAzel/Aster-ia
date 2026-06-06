@@ -2,6 +2,18 @@
 
 ## 2026-06-06
 
+### Phase 4: Chat History, Analytics, Plugin Watcher, Real-time Logs
+
+- **Chat history persistence**: `StreamingChat.svelte` now imports real `listChatConversations`/`listChatMessages` from `api.ts`, with conversation selector (`<select>` + «+ Новый»), `loadHistory()`/`loadMessages()`/`newChat()` functions, and `onMount` auto-load.
+- **Analytics router**: Added `GET /api/analytics/research/stats` DuckDB-powered endpoint in `backend/asterion_api/routers/analytics.py`. Registered in `main.py` and `__init__.py`.
+- **Analytics Dashboard UI**: Three-metric grid (Исследований, Источников, Утверждений) in System tab with «Обновить» button.
+- **Plugin hot-reload watcher**: `PluginManager.start_watcher()`/`stop_watcher()` with background thread polling `plugins_dir` for manifest changes. Added `get_plugin_names()` convenience.
+- **Real-time agent log streaming**: `createPlannedAgentRun()` now calls `startAgentRunEvents(runId)` which opens `EventSource` on `GET /api/agents/runs/{run_id}/events` and appends events to `flightLogs`.
+- **SSE event source cleanup**: `agentRunEventSource` state variable for proper lifecycle.
+- **Verification**: compileall clean, 38/38 tests pass, tsc 0 errors, npm build clean (131.62 kB), meta-harness 100%.
+
+## 2026-06-06
+
 ### Phase 3: E2E Integration, UX Polish, Testing & Hardening, New Features
 
 - **SSE streaming for Deep Research**: Added `POST /api/research/deep/stream` endpoint with `subtask_start`, `result_found`, and `done` events. Frontend `streamDeepResearch()` async generator in `api.ts` for progressive UI updates.

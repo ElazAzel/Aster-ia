@@ -121,14 +121,16 @@
   let workflowResult: WorkflowRunResponse | null = null;
   let workflowPending = false;
   let workflowSocket: WebSocket | null = null;
+  let agentRunEventSource: EventSource | null = null;
 
   // Artifacts browser
   let allArtifacts: ArtifactRecordFull[] = [];
-
-  // File upload
   let uploadFile: File | null = null;
   let uploadBusy = false;
   let uploadResult: RagIndexResponse | null = null;
+
+  // Analytics
+  let analyticsStats: Record<string, unknown> | null = null;
 
   // System prompt editor (localStorage)
   let systemPrompt = localStorage.getItem('asterion_system_prompt') ?? '';
@@ -394,6 +396,7 @@
       agentRun = result;
       activeWorkbenchTab = 'logs';
       showRightPanel = true;
+      startAgentRunEvents(result.id);
       const logs = await runStep('Читаю Flight Recorder', () => listAgentRunLogs(apiBase, result.id));
       if (logs) flightLogs = logs;
     }
@@ -501,6 +504,29 @@
     );
     if (result) { uploadResult = result; await refreshRagDocuments(); }
     uploadBusy = false;
+  }
+
+  function startAgentRunEvents(runId: string) {
+    agentRunEventSource?.close();
+    agentRunEventSource = new EventSource(`${apiBase}/api/agents/runs/${runId}/events`);
+    agentRunEventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.id && data.action) {
+          const eventRow = data as FlightRecorderEvent;
+          flightLogs = [...flightLogs.filter(l => l.id !== eventRow.id), eventRow];
+        }
+      } catch { /* ignore */ }
+    };
+  }
+
+  async function fetchAnalyticsStats() {
+    const result = await runStep('Загружаю статистику', async () => {
+      const response = await fetch(`${apiBase}/api/analytics/research/stats`);
+      if (!response.ok) throw new Error(await response.text());
+      return response.json() as Promise<Record<string, unknown>>;
+    });
+    if (result) analyticsStats = result;
   }
 
   function agentGroupTitle(agent: AgentManifest) {
@@ -1353,6 +1379,32 @@
               <div style="display:flex;justify-content:space-between"><kbd style="background:var(--bg-input);padding:2px 8px;border-radius:4px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border-color)">Esc</kbd><span>Закрыть Privacy Radar</span></div>
               <div style="display:flex;justify-content:space-between"><kbd style="background:var(--bg-input);padding:2px 8px;border-radius:4px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border-color)">Enter</kbd><span>Отправить сообщение / создать комнату</span></div>
             </div>
+          </section>
+
+          <!-- Analytics Dashboard -->
+          <section class="panel">
+            <div class="panel-heading compact">
+              <h2>Аналитика</h2>
+              <button type="button" class="text-button" on:click={fetchAnalyticsStats} style="font-size:11px">Обновить</button>
+            </div>
+            {#if analyticsStats}
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+                <div style="background:var(--bg-input);padding:12px;border-radius:8px;text-align:center">
+                  <strong style="font-size:24px;color:var(--color-brand)">{analyticsStats.total_research_queries}</strong>
+                  <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Исследований</p>
+                </div>
+                <div style="background:var(--bg-input);padding:12px;border-radius:8px;text-align:center">
+                  <strong style="font-size:24px;color:var(--color-green-text)">{analyticsStats.sources_consulted}</strong>
+                  <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Источников</p>
+                </div>
+                <div style="background:var(--bg-input);padding:12px;border-radius:8px;text-align:center">
+                  <strong style="font-size:24px;color:var(--color-yellow-text)">{analyticsStats.claims_verified}</strong>
+                  <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Утверждений</p>
+                </div>
+              </div>
+            {:else}
+              <p class="empty" style="font-size:12px">Нажмите «Обновить» для загрузки статистики DuckDB.</p>
+            {/if}
           </section>
 
           <!-- System Prompt Editor -->

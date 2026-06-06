@@ -1,10 +1,6 @@
 <script lang="ts">
-  import { onDestroy, tick } from 'svelte';
-
-  // Contract helper for history listing
-  export function listChatConversations() {
-    return [];
-  }
+  import { onMount, onDestroy, tick } from 'svelte';
+  import { listChatConversations, listChatMessages } from './api';
 
   type ChatMessage = {
     role: 'user' | 'assistant';
@@ -52,6 +48,9 @@
   let activeSource: EventSource | null = null;
   let streaming = false;
   let errorText = '';
+  let conversations: Awaited<ReturnType<typeof listChatConversations>> = [];
+  let conversationId: string | null = null;
+  let loadingHistory = false;
   let messagesEl: HTMLDivElement;
   let textareaEl: HTMLTextAreaElement;
 
@@ -153,6 +152,38 @@
     if (!textareaEl) return;
     textareaEl.style.height = 'auto';
     textareaEl.style.height = `${Math.min(textareaEl.scrollHeight, 200)}px`;
+  }
+
+  async function loadHistory() {
+    const convs = await listChatConversations(apiBase, roomId);
+    conversations = convs;
+    if (convs.length > 0 && !conversationId) {
+      conversationId = convs[0].id;
+      await loadMessages(conversationId);
+    }
+  }
+
+  async function loadMessages(convId: string) {
+    loadingHistory = true;
+    try {
+      const records = await listChatMessages(apiBase, convId);
+      messages = records.map(r => ({ role: r.role === 'user' ? 'user' as const : 'assistant' as const, content: r.content }));
+      if (messages.length === 0) {
+        messages = [{ role: 'assistant', content: 'Привет! Я Asterion. Готов к локальному диалогу.' }];
+      }
+    } catch {
+      messages = [{ role: 'assistant', content: 'Привет! Я Asterion. Готов к локальному диалогу.' }];
+    }
+    loadingHistory = false;
+    scrollToBottom();
+  }
+
+  function newChat() {
+    messages = [{ role: 'assistant', content: 'Привет! Я Asterion. Готов к локальному диалогу.' }];
+    conversationId = null;
+    errorText = '';
+    activeSource?.close();
+    streaming = false;
   }
 
   function updateAutocomplete() {
@@ -268,6 +299,11 @@
     const message = input.trim();
     if (!message || streaming) return;
 
+    if (message === '/clear') {
+      newChat();
+      return;
+    }
+
     errorText = '';
     input = '';
     autocompleteVisible = false;
@@ -283,6 +319,7 @@
       room_id: roomId
     });
     if (model) params.set('model', model);
+    if (conversationId) params.set('conversation_id', conversationId);
 
     activeSource?.close();
     activeSource = new EventSource(`${apiBase}/api/chat/stream?${params.toString()}`);
@@ -306,6 +343,8 @@
         if (payload.type === 'done' || payload.done) {
           streaming = false;
           activeSource?.close();
+          if (payload.conversation_id) conversationId = payload.conversation_id;
+          loadHistory();
           return;
         }
 
@@ -331,12 +370,27 @@
     streaming = false;
   }
 
+  onMount(() => {
+    loadHistory();
+  });
+
   onDestroy(() => {
     activeSource?.close();
   });
 </script>
 
 <div class="chat-container">
+  {#if conversations.length > 0}
+    <div class="chat-history-bar">
+      <select bind:value={conversationId} on:change={(e) => { if (e.currentTarget.value) loadMessages(e.currentTarget.value); }} style="font-size:11px;padding:4px 8px;max-width:200px">
+        <option value={null}>Новый чат</option>
+        {#each conversations as conv}
+          <option value={conv.id}>Чат {new Date(conv.created_at).toLocaleString('ru')} ({conv.message_count})</option>
+        {/each}
+      </select>
+      <button type="button" class="text-button" on:click={newChat} style="font-size:11px">+ Новый</button>
+    </div>
+  {/if}
   <div class="chat-messages" bind:this={messagesEl}>
     {#each messages as message}
       <div class="chat-bubble-row {message.role}">
@@ -372,6 +426,10 @@
         <span class="status-dot warn"></span>
         <p>{errorText}</p>
       </div>
+    {/if}
+
+    {#if loadingHistory}
+      <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">Загрузка истории...</div>
     {/if}
   </div>
 
@@ -473,6 +531,25 @@
     flex-direction: column;
     gap: 24px;
     scroll-behavior: smooth;
+  }
+
+  .chat-history-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 32px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-sidebar);
+    flex-shrink: 0;
+  }
+
+  .chat-history-bar select {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 11px;
+    padding: 4px 8px;
   }
 
   .chat-bubble-row {

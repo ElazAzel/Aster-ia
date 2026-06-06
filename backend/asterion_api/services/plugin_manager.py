@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import threading
+import time
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -15,6 +17,8 @@ class PluginManager(BaseHarness):
 
     def __init__(self, settings: Settings) -> None:
         self.plugins_dir = settings.data_dir / "plugins"
+        self._watcher_active: bool = False
+        self._watcher_thread: threading.Thread | None = None
 
     async def execute(self, payload: Mapping[str, Any] | None = None) -> list[PluginManifest]:
         return self.load()
@@ -43,3 +47,23 @@ class PluginManager(BaseHarness):
                 )
             )
         return manifests
+
+    def start_watcher(self, interval: float = 5.0) -> None:
+        self._watcher_active = True
+        self._last_plugins: list[PluginManifest] = []
+        def _watch() -> None:
+            while self._watcher_active:
+                current = self.load()
+                current_dump = [p.model_dump() for p in current]
+                last_dump = [p.model_dump() for p in self._last_plugins]
+                if current_dump != last_dump:
+                    self._last_plugins = current
+                time.sleep(interval)
+        self._watcher_thread = threading.Thread(target=_watch, daemon=True)
+        self._watcher_thread.start()
+
+    def stop_watcher(self) -> None:
+        self._watcher_active = False
+
+    def get_plugin_names(self) -> list[str]:
+        return [p.name for p in self.load()]
