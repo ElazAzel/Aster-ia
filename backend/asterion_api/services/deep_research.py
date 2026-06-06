@@ -6,7 +6,7 @@ from typing import Any, Mapping
 import httpx
 
 from asterion_api.harness import BaseHarness
-from asterion_api.schemas import DeepResearchResponse, PrivacyReport, ResearchResult
+from asterion_api.schemas import DeepResearchResponse, ResearchResult
 from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
 
 

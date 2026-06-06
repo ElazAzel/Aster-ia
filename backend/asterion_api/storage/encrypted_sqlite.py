@@ -5,7 +5,6 @@ import json
 import secrets
 import sqlite3
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any, Mapping
 from uuid import uuid4
 

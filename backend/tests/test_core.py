@@ -1,9 +1,6 @@
 """Smoke-tests для критических сервисов Asterion AI."""
 from __future__ import annotations
 
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
-
 import pytest
 
 
@@ -99,7 +96,7 @@ def test_all_services_implement_harness():
     from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
     from asterion_api.services.rag import DocumentIndexer
     from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
-    for cls in [OllamaService, PrivacyAnalyzer, EncryptedSQLiteStore]:
+    for cls in [OllamaService, PrivacyAnalyzer, DocumentIndexer, EncryptedSQLiteStore]:
         assert issubclass(cls, BaseHarness), f"{cls.__name__} не реализует BaseHarness"
 
 
@@ -229,7 +226,8 @@ def test_plugin_manager_empty_dir(tmp_path):
 
 
 def test_plugin_manager_loads_manifest(tmp_path):
-    import json, os
+    import json
+    import os
     os.environ["ASTERION_DATA_DIR"] = str(tmp_path)
     from asterion_api.config import get_settings
     get_settings.cache_clear()
