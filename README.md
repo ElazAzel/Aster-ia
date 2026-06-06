@@ -6,102 +6,98 @@
 [![Svelte 5](https://img.shields.io/badge/svelte-5.0-orange.svg)](https://svelte.dev)
 [![Tauri v2](https://img.shields.io/badge/tauri-v2-24C8D8.svg)](https://tauri.app)
 
-Asterion AI is a local-first desktop AI workspace.
+Asterion AI is a local-first desktop AI workspace: a control room for models, documents, research, voice notes, workflows, and transparent agents.
 
-The current scaffold contains:
+Core principle: prompts, files, memories, embeddings, generated artifacts, and agent logs stay on the user's machine unless the user explicitly approves a hybrid or external action.
 
-- Tauri v2 desktop shell.
-- FastAPI sidecar backend.
-- Ollama chat and embeddings.
-- SQLCipher-encrypted SQLite storage with keys in the OS keychain.
-- LanceDB RAG pipeline.
-- DuckDB-backed research aggregation.
-- Runtime Agent Registry with 10 agents and 20 skills.
-- Agent catalog validation through `/api/agents/catalog/validate`.
-- Workflow, plugin, sandbox, and privacy contracts.
-- Svelte/Vite frontend shell wired to the FastAPI sidecar.
-- Context Rooms, Adaptive Artifacts, Research Receipts, and AgentRun Flight Recorder APIs.
-- Static HTML/Stitch UI prototypes.
+## What Works
+
+- Tauri v2 desktop shell with FastAPI sidecar lifecycle commands.
+- FastAPI backend with async services and `BaseHarness` contracts.
+- Ollama local chat, streaming SSE, model pull, and embedding flows.
+- SQLCipher-oriented SQLite storage with OS keychain key material.
+- LanceDB RAG indexing and hybrid dense plus BM25 search.
+- Context Rooms, Memory Ledger, Adaptive Artifacts, Research Receipts, and Flight Recorder persistence.
+- Deep Research via local SearXNG and DuckDB aggregation.
+- Agent catalog with 10 runtime agents and 20 runtime skills.
+- Agent sandbox, TaskSimulator, workflow approval gates, plugin manifest loading, ComfyUI bridge, and Voice Mode.
+- Svelte/Vite workspace with Smart Chat, Knowledge Vault, Research Studio, Agent Lab, Image Studio, Automation, Plugins, System Console, Model Cookbook, and Voice Mode.
+- Docker dev profile for backend/frontend/SearXNG.
+- Release workflow that builds the Python sidecar and Tauri bundles on tags.
 
 ## Quick Start
 
-### 1. Предварительные требования
+Install local dependencies:
 
 ```bash
-# Ollama
-curl -fsSL https://ollama.ai/install.sh | sh
-ollama pull llama3.2
-ollama pull nomic-embed-text
-
-# Python
 curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Node.js 22+
-# Скачай с https://nodejs.org
-```
-
-### 2. Backend (FastAPI sidecar)
-
-```bash
-cd backend
-uv sync
-uv run python -m asterion_api --host 127.0.0.1 --port 8000
-
-# Проверка
-curl http://127.0.0.1:8000/api/health
-```
-
-### 3. Frontend (dev mode)
-
-```bash
-cd frontend
-npm install
-npm run dev
-# Открой http://127.0.0.1:5173
-```
-
-### 4. Запуск тестов
-
-```bash
-cd backend
-ASTERION_ALLOW_PLAINTEXT_SQLITE_FOR_DEV=1 uv run pytest tests/ -v
-```
-
-### 5. Desktop (Tauri) — требует Rust + MSVC
-
-```bash
-npm run tauri dev
-```
-
-Recommended local models:
-
-```powershell
 ollama pull llama3.2
 ollama pull nomic-embed-text
 ```
 
-Frontend:
+Run the backend:
 
-```powershell
+```bash
+cd backend
+uv sync --extra dev
+uv run python -m asterion_api --host 127.0.0.1 --port 8000
+```
+
+Run the frontend:
+
+```bash
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
-Default frontend URL:
+Open:
 
 ```text
 http://127.0.0.1:5173
 ```
 
-Desktop shell:
+Optional Docker dev loop:
 
-```powershell
-cd src-tauri
-cargo check
+```bash
+docker compose up --build
 ```
 
-`cargo check` on Windows requires Visual Studio Build Tools with the C++ workload so `link.exe` is available.
+Docker mode is for local development and uses `ASTERION_ALLOW_PLAINTEXT_SQLITE_FOR_DEV=1` because generic containers do not have reliable OS keychain access. Normal desktop/local runs keep SQLCipher + keyring as the default path.
+
+## Voice Mode
+
+Voice Mode never falls back to an external speech API. Real transcription uses local `faster-whisper` when installed:
+
+```bash
+cd backend
+uv sync --extra dev --extra voice
+```
+
+Without the optional extra, `/api/voice/transcribe` returns a local setup hint.
+
+## Desktop
+
+```bash
+cd src-tauri
+cargo check
+cargo tauri dev
+```
+
+On Windows, `cargo check` requires Visual Studio Build Tools with the C++ workload so `link.exe` is available.
+
+## Verification
+
+```powershell
+uv run python -m compileall backend\asterion_api harness\meta_harness.py
+uv run python harness/meta_harness.py --phase 1 --iterations 3
+cd backend
+uv run ruff check .
+uv run pytest
+cd ..\frontend
+npm run build
+npx tsc --noEmit
+```
 
 ## Key Documentation
 
@@ -127,16 +123,3 @@ harness/       Meta-Harness checks and candidate scores
 docs/          Product and engineering docs
 stitch/        UI prototype exports
 ```
-
-## Verification
-
-```powershell
-uv run python -m compileall backend\asterion_api harness\meta_harness.py
-uv run python harness/meta_harness.py --phase 1 --iterations 3
-cd frontend
-npm run build
-cd ..\src-tauri
-cargo check
-```
-
-Tauri check currently requires a complete Windows C++ build toolchain with `link.exe`.

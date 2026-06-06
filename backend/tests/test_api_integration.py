@@ -211,7 +211,13 @@ async def test_memory_crud(test_app):
 
 
 @pytest.mark.asyncio
-async def test_rag_crud(test_app):
+async def test_rag_crud(test_app, monkeypatch):
+    async def mock_hybrid_search(self, query, room_id, limit, source_filter=None):
+        return []
+
+    from asterion_api.services.rag import DocumentIndexer
+    monkeypatch.setattr(DocumentIndexer, "hybrid_search", mock_hybrid_search)
+
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
         # Search empty RAG
         search_payload = {"query": "secure documentation"}

@@ -34,7 +34,7 @@ Status: implemented as backend/runtime foundation.
 
 ## Phase 3 - Desktop Product Integration
 
-Status: in progress.
+Status: implemented.
 
 - Svelte/Vite app shell connected to FastAPI routes.
 - Chat history reload and conversation continuity.
@@ -55,19 +55,23 @@ Status: in progress.
 - Workflow approval gate UI over WebSocket.
 - ComfyUI recipe picker and local generation queue.
 - Tauri sidecar binary packaging with bundled Python backend.
+- Voice Mode backend and Svelte UI with local `faster-whisper` optional extra.
+- Model Cookbook with Ollama pull progress.
+- Research Canvas and Flight Recorder components.
+- Docker dev profile and release/community docs.
 
 ## Phase 4 - Production Hardening
 
-Status: planned.
+Status: partially implemented; hardening continues.
 
 - Durable workflow state across app restarts.
-- Stronger OS-level sandbox isolation on Windows, macOS, and Linux.
-- Plugin signature verification.
-- SearXNG deployment helper.
-- ComfyUI recipe library and validation.
-- RAG file watcher with opt-in folder scopes.
+- Stronger OS-level sandbox isolation on Windows, macOS, and Linux. Windows and Linux foundations are implemented; macOS isolation still needs a release-grade profile.
+- Plugin signature verification. Ed25519 manifest verification is implemented; key distribution policy still needs a documented release process.
+- SearXNG deployment helper. Docker dev profile includes SearXNG; native desktop helper remains open.
+- ComfyUI recipe library and validation. Bridge is implemented; recipe validation needs expansion.
+- RAG file watcher with opt-in folder scopes. Backend watcher exists; user-facing folder scope management needs hardening.
 - Secrets scanner in CI.
-- Full frontend E2E tests.
+- Full frontend E2E tests. Basic Playwright smoke exists; more production journeys are needed.
 - Tauri `cargo check` and packaging in CI after Windows C++ toolchain is available.
 
 ## Phase 5 - Power User Runtime
@@ -101,3 +105,4 @@ Required API checks:
 - `GET /api/rooms`
 - `POST /api/artifacts`
 - `POST /api/agents/runs`
+- `GET /api/voice/status`
