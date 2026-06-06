@@ -10,6 +10,7 @@ from typing import Any, Mapping
 from uuid import uuid4
 
 import keyring
+import keyring.errors
 
 from asterion_api.config import Settings
 from asterion_api.harness import BaseHarness
@@ -972,13 +973,20 @@ class EncryptedSQLiteStore(BaseHarness):
         )
 
     def _get_or_create_key(self) -> str:
-        key = keyring.get_password(self.settings.keyring_service, self.settings.keyring_db_key_name)
-        if key:
+        try:
+            key = keyring.get_password(self.settings.keyring_service, self.settings.keyring_db_key_name)
+            if key:
+                return key
+            key = secrets.token_urlsafe(48)
+            keyring.set_password(self.settings.keyring_service, self.settings.keyring_db_key_name, key)
+            self.logger.emit("keyring.created", key_name=self.settings.keyring_db_key_name)
             return key
-        key = secrets.token_urlsafe(48)
-        keyring.set_password(self.settings.keyring_service, self.settings.keyring_db_key_name, key)
-        self.logger.emit("keyring.created", key_name=self.settings.keyring_db_key_name)
-        return key
+        except keyring.errors.KeyringError:
+            if self.settings.allow_plaintext_dev_db:
+                fallback = f"dev-key-{self.settings.keyring_service}-{self.settings.keyring_db_key_name}"
+                self.logger.emit("keyring.fallback_dev", reason="keyring unavailable")
+                return fallback
+            raise
 
     @staticmethod
     def _sql_literal(value: str) -> str:
