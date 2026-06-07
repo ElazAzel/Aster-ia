@@ -17,6 +17,7 @@ class Settings:
     keyring_db_key_name: str = os.getenv("ASTERION_KEYRING_DB_KEY_NAME", "sqlcipher-main")
     local_first: bool = True
     required_models: tuple[str, ...] = ("llama3.2", "nomic-embed-text")
+    searxng_base_url: str = os.getenv("SEARXNG_BASE_URL", "http://127.0.0.1:8080")
     duckdb_memory_limit: str = os.getenv("ASTERION_DUCKDB_MEMORY_LIMIT", "512MB")
     duckdb_threads: int = int(os.getenv("ASTERION_DUCKDB_THREADS", "2"))
 

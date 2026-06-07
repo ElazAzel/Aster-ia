@@ -5,6 +5,7 @@ from typing import Any, Mapping
 
 import httpx
 
+from asterion_api.config import Settings
 from asterion_api.harness import BaseHarness
 from asterion_api.schemas import DeepResearchResponse, ResearchResult
 from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
@@ -13,9 +14,10 @@ from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
 class SupervisorAgent(BaseHarness):
     privacy_level = "local"
 
-    def __init__(self, analyzer: PrivacyAnalyzer) -> None:
+    def __init__(self, analyzer: PrivacyAnalyzer, settings: Settings | None = None) -> None:
         self.analyzer = analyzer
-        self.searxng_url = "http://127.0.0.1:8080"
+        self.searxng_url = (settings.searxng_base_url if settings
+                            else "http://127.0.0.1:8080")
 
     async def execute(self, payload: Mapping[str, Any] | None = None) -> DeepResearchResponse:
         payload = payload or {}

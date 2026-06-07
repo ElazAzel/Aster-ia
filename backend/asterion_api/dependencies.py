@@ -40,6 +40,7 @@ def get_chat_service() -> ChatService:
         settings=settings,
         ollama=get_ollama_service(),
         store=get_store(),
+        vllm=get_vllm_service(),
     )
 
 
@@ -65,7 +66,7 @@ def get_document_indexer() -> DocumentIndexer:
 
 @lru_cache(maxsize=1)
 def get_supervisor_agent() -> SupervisorAgent:
-    return SupervisorAgent(get_privacy_analyzer())
+    return SupervisorAgent(get_privacy_analyzer(), get_settings())
 
 
 @lru_cache(maxsize=1)

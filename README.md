@@ -21,7 +21,12 @@ Core principle: prompts, files, memories, embeddings, generated artifacts, and a
 - Deep Research via local SearXNG and DuckDB aggregation.
 - Agent catalog with 10 runtime agents and 20 runtime skills.
 - Agent sandbox, TaskSimulator, workflow approval gates, plugin manifest loading, ComfyUI bridge, and Voice Mode.
-- Svelte/Vite workspace with Smart Chat, Knowledge Vault, Research Studio, Agent Lab, Image Studio, Automation, Plugins, System Console, Model Cookbook, and Voice Mode.
+- Svelte/Vite workspace with Smart Chat, Knowledge Vault, Research Studio, Agent Lab, Image Studio, Automation, Plugins, System Console, Model Cookbook, Voice Mode, **Benchmark**, and **Analytics**.
+- Model benchmark cache (`BenchmarkService`) with VRAM estimates for 20 models, sortable results, and vLLM status panel.
+- Analytics dashboard with 6 metrics (queries, sources, claims, conversations, agents, reports) and chart panels.
+- Export router (`POST /api/export`) with JSON / Markdown / CSV output across artifacts, memories, conversations, research receipts, and audit logs.
+- vLLM runtime profile (`VllmService`) with OpenAI-compatible client, graceful fallback, and SSE streaming generation.
+- macOS sandbox profile with RLIMIT_AS/CPU/NOFILE isolation.
 - Docker dev profile for backend/frontend/SearXNG.
 - Release workflow that builds the Python sidecar and Tauri bundles on tags.
 

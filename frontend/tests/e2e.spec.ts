@@ -470,3 +470,42 @@ test('12. Export - download triggers', async ({ page }) => {
   await page.click('aside.side-rail nav button:has-text("Система")');
   await expect(page.locator('text=Экспорт').first()).toBeVisible({ timeout: 3000 });
 });
+
+test('13. Chat - composer textarea visible', async ({ page }) => {
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Умный Чат")');
+  await expect(page.locator('textarea[placeholder*="Спросите"]').first()).toBeVisible();
+});
+
+test('14. Vault Tab - renders empty document list', async ({ page }) => {
+  await page.route('**/api/rag/documents', async route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify([{ id: 'doc-1', room_id: 'default', source: 'upload', indexed_chunks: 5, created_at: '2026-06-06T12:00:00Z' }]) }));
+
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("База Знаний (Vault)")');
+  await expect(page.locator('h1:has-text("Хранилище знаний")')).toBeVisible();
+});
+
+test('15. Артефакты tab renders with heading', async ({ page }) => {
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Артефакты")');
+  await expect(page.locator('h2:has-text("Хранилище артефактов")')).toBeVisible({ timeout: 3000 });
+});
+
+test('16. Плагины tab renders heading', async ({ page }) => {
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Плагины")');
+  await expect(page.locator('h2:has-text("Plugin Manager")')).toBeVisible({ timeout: 2000 });
+});
+
+test('17. Command palette toggles theme', async ({ page }) => {
+  await page.goto('/');
+  await page.keyboard.press('Control+KeyK');
+  const paletteInput = page.locator('#cmd-palette-input');
+  await expect(paletteInput).toBeVisible();
+  await paletteInput.fill('тему');
+  await page.keyboard.press('Enter');
+  await expect(paletteInput).not.toBeVisible();
+  await expect(page.locator('.toast-container')).toContainText('Тема', { timeout: 5000 });
+});

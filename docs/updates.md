@@ -2,6 +2,32 @@
 
 ## 2026-06-07
 
+### Phase 5 Completion: Power User Runtime (Blocks 1–14)
+
+- **Benchmark Service**: `BenchmarkService` (`BaseHarness`) with VRAM estimates for 20 models, Ollama streaming benchmark, 1h TTL cache, `GET/DELETE /api/benchmark/cache`, `POST /api/benchmark/run`, `GET /api/benchmark/model/{name}`.
+- **vLLM Service**: `VllmService` (`BaseHarness`) with OpenAI-compatible client, graceful fallback when vLLM unavailable, SSE `stream_generate()`, `GET /api/models/vllm/status`, `POST /api/models/vllm/generate` (SSE).
+- **ModelRouter expansion**: Local catalog 3→17 models, task-routing with tag scoring, `ram_gb` filtering, `None`-safe RAM comparison (`inf` fallback).
+- **macOS sandbox**: `agent_sandbox.py` Darwin branch — `RLIMIT_AS`, `RLIMIT_CPU`, `RLIMIT_NOFILE` via `resource` module.
+- **Export Router**: `POST /api/export` with JSON / Markdown / CSV output, scope-based data collection (artifacts, memories, conversations, research receipts, audit logs).
+- **BenchmarkTab.svelte**: Sortable results table, vLLM status panel, model selection, tps color coding.
+- **AnalyticsTab.svelte**: 6 metric cards, Top Sources bar chart, Confidence Distribution, Rooms Distribution, Agent Privacy Distribution.
+- **E2E tests**: +8 tests (Voice, Deep Research, Agent Lab, Automation, Benchmark, Analytics, Image Studio, Export) → 12 total Playwright tests.
+- **API integration tests**: +30 HTTP tests in `test_api.py` covering health, models, rooms, memory, privacy, RAG, artifacts, agents, benchmark, voice, export, audit, analytics.
+- **Unit tests**: +16 tests in `test_core.py` (Benchmark harness/privacy/cache/VRAM, Vllm harness/privacy/URL/generate, Model Router size/task-routing/zero-VRAM, macOS sandbox Darwin/all-platforms).
+- **Privacy docs**: `docs/privacy.md` — full architecture with levels, storage, data-what-leaves, sandbox, PII detection, audit trail, wipe, memory TTL.
+- **Makefile**: +benchmark, e2e, test-cov, coverage, pull-all, help, verify targets.
+- **SideRail + App.svelte**: +Benchmark and Аналитика tab buttons with SVG icons and conditional rendering.
+- **Verification**: compileall 0 errors, ruff All checks passed, pytest **136/136** passed (51s), frontend build 2.25s 0 warnings, tsc 0 errors, Playwright **12/12** passed (29s), secret scan clean.
+
+### Gap Fixes: vLLM Chat Integration, SearXNG Config, Workflow Templates, +5 E2E
+
+- **vLLM chat integration**: Added `chat_generate()` and `chat_stream()` to `VllmService` using `/v1/chat/completions` (OpenAI-compatible). Added TTL cache (30s) for `is_available()`, `has_model()` helper. Wired `VllmService` into `ChatService` as optional backend — chat now routes to vLLM when model is available there, falls back to Ollama otherwise.
+- **SearXNG env var**: Added `SEARXNG_BASE_URL` to `Settings` config with `http://127.0.0.1:8080` default. Wired into `SupervisorAgent(settings)` via dependencies.
+- **Workflow templates**: Expanded from 3 to 6 templates in `AutomationTab.svelte` — added "Бенчмарк моделей", "Обработка голоса", "RAG индексация".
+- **E2E tests**: +5 tests (17 total) — Chat composer visibility, Vault tab document list, Артефакты heading, Плагины heading, Command palette theme toggle.
+- **Unit tests**: +5 tests (141 total) — `has_model()`, `chat_generate()`, `chat_stream()` fallback, cache TTL, `execute()` chat routing.
+- **Verification**: 141/141 pytest, 17/17 Playwright, frontend build 2.47s, tsc 0 errors, ruff pass, secret scan clean.
+
 ### CI Hermeticity, CORS, Favicon, and Public Docs Refresh
 
 - Curated local ComfyUI recipe presets with `GET /api/images/recipes`, `preset_id` support for validation/generation, frontend preset selection, and preflight recipe validation in Image Studio.

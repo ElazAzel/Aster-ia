@@ -9,6 +9,7 @@ from asterion_api.config import Settings
 from asterion_api.harness import BaseHarness
 from asterion_api.schemas import ArtifactBlock, ChatRequest, ChatResponse
 from asterion_api.services.ollama_service import OllamaService
+from asterion_api.services.vllm_service import VllmService
 from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
 from asterion_api.structured_logging import StructuredLogger
 
@@ -24,12 +25,19 @@ class ChatService(BaseHarness):
         settings: Settings,
         ollama: OllamaService,
         store: EncryptedSQLiteStore,
+        vllm: VllmService | None = None,
     ) -> None:
         self.settings = settings
         self.ollama = ollama
         self.store = store
+        self.vllm = vllm
         self._state: dict[str, Any] = {"default_model": settings.default_model}
         self.logger = StructuredLogger("chat", self.privacy_level)
+
+    async def _provider_for(self, model: str) -> str | None:
+        if self.vllm and await self.vllm.has_model(model):
+            return "vllm"
+        return "ollama"
 
     async def execute(self, payload: Mapping[str, Any] | None = None) -> Any:
         payload = payload or {}
@@ -58,7 +66,14 @@ class ChatService(BaseHarness):
             model=model,
         )
         prompt_msgs = await self._build_messages(conv_id, request.room_id)
-        text = await self.ollama.chat(model=model, messages=prompt_msgs)
+        provider = await self._provider_for(model)
+        if provider == "vllm" and self.vllm:
+            vllm_resp = await self.vllm.chat_generate(model=model, messages=prompt_msgs)
+            text = vllm_resp.get("text", "")
+            if not text:
+                text = await self.ollama.chat(model=model, messages=prompt_msgs)
+        else:
+            text = await self.ollama.chat(model=model, messages=prompt_msgs)
         artifact = await self._persist_response_artifact(
             room_id=request.room_id,
             prompt=request.message,
@@ -101,9 +116,12 @@ class ChatService(BaseHarness):
         prompt_msgs = await self._build_messages(conv_id, request.room_id)
         parts: list[str] = []
         started = time.perf_counter()
-        async for chunk in self.ollama.stream_chat(model=model, messages=prompt_msgs):
-            message = chunk.get("message", {})
-            token = str(message.get("content", ""))
+        provider = await self._provider_for(model)
+        if provider == "vllm" and self.vllm:
+            token_iter = self.vllm.chat_stream(model=model, messages=prompt_msgs)
+        else:
+            token_iter = self._ollama_token_stream(model, prompt_msgs)
+        async for token in token_iter:
             if token:
                 parts.append(token)
                 yield {
@@ -136,6 +154,13 @@ class ChatService(BaseHarness):
             "latency_ms": (time.perf_counter() - started) * 1000,
             "privacy_level": self.privacy_level,
         }
+
+    async def _ollama_token_stream(self, model: str, messages: list[dict[str, Any]]) -> AsyncIterator[str]:
+        async for chunk in self.ollama.stream_chat(model=model, messages=messages):
+            message = chunk.get("message", {})
+            token = str(message.get("content", ""))
+            if token:
+                yield token
 
     async def _build_messages(self, conv_id: str, room_id: str) -> list[dict[str, Any]]:
         room = await self.store.get_room(room_id)

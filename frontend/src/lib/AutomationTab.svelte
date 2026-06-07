@@ -12,6 +12,9 @@
     { name: 'Проверка файлов', steps: [{"name":"Сканировать файлы","type":"action"},{"name":"Проверить на вирусы","type":"action"},{"name":"Отчёт","type":"action"}] },
     { name: 'Ревью кода', steps: [{"name":"Загрузить код","type":"action"},{"name":"Проверить стиль","type":"action"},{"name":"Утвердить изменения","type":"human_approval"},{"name":"Создать PR","type":"action"}] },
     { name: 'Исследование', steps: [{"name":"Собрать источники","type":"action"},{"name":"Анализировать","type":"action"},{"name":"Создать отчёт","type":"human_approval"}] },
+    { name: 'Бенчмарк моделей', steps: [{"name":"Выбрать модели","type":"action"},{"name":"Запустить тесты","type":"action"},{"name":"Сравнить результаты","type":"human_approval"},{"name":"Сохранить отчёт","type":"action"}] },
+    { name: 'Обработка голоса', steps: [{"name":"Загрузить аудио","type":"action"},{"name":"Транскрибировать","type":"action"},{"name":"Извлечь задачи","type":"action"},{"name":"Создать заметки","type":"human_approval"}] },
+    { name: 'RAG индексация', steps: [{"name":"Собрать документы","type":"action"},{"name":"Векторизовать","type":"action"},{"name":"Проверить качество","type":"human_approval"},{"name":"Опубликовать индекс","type":"action"}] },
   ];
 
   function applyWorkflowTemplate(index: number) {

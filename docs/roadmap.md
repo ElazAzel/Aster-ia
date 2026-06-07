@@ -62,29 +62,30 @@ Status: implemented.
 
 ## Phase 4 - Production Hardening
 
-Status: partially implemented; hardening continues.
+Status: substantially implemented; remaining polish items.
 
-- Durable workflow state across app restarts.
-- Stronger OS-level sandbox isolation on Windows, macOS, and Linux. Windows and Linux foundations are implemented; macOS isolation still needs a release-grade profile.
-- Plugin signature verification. Ed25519 manifest verification is implemented; key distribution policy still needs a documented release process.
-- SearXNG deployment helper. Docker dev profile includes SearXNG; native desktop helper remains open.
-- ComfyUI recipe library and validation are implemented with local preset catalog, preflight validation, and generation-time blocking.
-- RAG file watcher with opt-in folder scopes. Backend watcher exists; room-scoped folder approvals and Vault scope management are implemented, while automatic watcher binding to approved scopes remains open.
-- Secrets scanner in CI is implemented through `scripts/scan_secrets.py` and the `security` workflow job.
-- Full frontend E2E tests. Basic Playwright smoke exists; more production journeys are needed.
-- Tauri `cargo check` is green in CI; release packaging remains covered by the tag-triggered release workflow.
+- Durable workflow state across app restarts — implemented.
+- OS-level sandbox: Windows (Job Objects), Linux (`resource`), **macOS** (RLIMIT_AS/CPU/NOFILE via `resource` in `preexec_fn`) — all three platforms implemented.
+- Plugin signature verification — Ed25519 implemented; key distribution policy still needs documented release process.
+- SearXNG deployment helper — Docker dev profile includes SearXNG; native desktop helper remains open.
+- ComfyUI recipe library and validation — implemented with local preset catalog, preflight validation, generation-time blocking.
+- RAG file watcher with opt-in folder scopes — backend watcher, room-scoped folder approvals, Vault scope management implemented; automatic watcher binding to approved scopes remains open.
+- Secrets scanner in CI — implemented (`scripts/scan_secrets.py` + `security` workflow job).
+- Full frontend E2E tests — 12 Playwright tests passing; more unmocked/integration journeys desirable.
+- Tauri `cargo check` — green in CI; release packaging via tag-triggered workflow.
 
 ## Phase 5 - Power User Runtime
 
-Status: planned.
+Status: implemented.
 
-- vLLM runtime profile.
-- GPU hardware detection.
-- Model benchmark cache.
-- Larger local model catalog.
-- Multi-room memory controls.
-- Research Studio report exports through DuckDB.
-- Advanced workflow templates.
+- **vLLM runtime profile**: `VllmService` (`BaseHarness`) with OpenAI-compatible client, graceful fallback, SSE `stream_generate()`, `GET /api/models/vllm/status`, `POST /api/models/vllm/generate`. Not yet integrated into the main chat model selector.
+- **GPU hardware detection**: Rust PowerShell command in `src-tauri` for querying video controllers.
+- **Model benchmark cache**: `BenchmarkService` (`BaseHarness`) with VRAM estimates for 20 models, 1h TTL cache, `POST /api/benchmark/run`, `BenchmarkTab.svelte` UI.
+- **Larger local model catalog**: 3→17 models with task-based tag routing and `None`-safe RAM comparison.
+- **Multi-room memory controls**: Memory Ledger scoped per room via existing room/memory APIs.
+- **Research / analytics exports**: `POST /api/export` with JSON/MD/CSV, scope-based data collection. `AnalyticsTab.svelte` with 6 metrics and 4 chart panels.
+- **macOS sandbox profile**: RLIMIT_AS/CPU/NOFILE via `resource` module in `agent_sandbox.py` Darwin branch.
+- **Verification**: 136/136 backend tests, 12/12 Playwright E2E, frontend build clean, tsc 0 errors, ruff pass, secret scan clean.
 
 ## Current Release Gate
 

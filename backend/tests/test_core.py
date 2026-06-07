@@ -806,6 +806,49 @@ async def test_vllm_generate_returns_error_when_unavailable():
     assert "error" in result and "hint" in result
 
 
+@pytest.mark.asyncio
+async def test_vllm_has_model_returns_false_when_unavailable():
+    from asterion_api.services.vllm_service import VllmService
+    svc = VllmService(base_url="http://127.0.0.1:19999/v1")
+    assert await svc.has_model("test-model") is False
+
+
+@pytest.mark.asyncio
+async def test_vllm_chat_generate_returns_error_when_unavailable():
+    from asterion_api.services.vllm_service import VllmService
+    svc = VllmService(base_url="http://127.0.0.1:19999/v1")
+    result = await svc.chat_generate(model="test", messages=[{"role": "user", "content": "hi"}])
+    assert "error" in result and "hint" in result
+
+
+@pytest.mark.asyncio
+async def test_vllm_chat_stream_returns_fallback_when_unavailable():
+    from asterion_api.services.vllm_service import VllmService
+    svc = VllmService(base_url="http://127.0.0.1:19999/v1")
+    tokens = [t async for t in svc.chat_stream(model="test", messages=[{"role": "user", "content": "hi"}])]
+    assert tokens == ["[vLLM not available]"]
+
+
+@pytest.mark.asyncio
+async def test_vllm_cache_ttl_does_not_refresh_on_every_call():
+    from asterion_api.services.vllm_service import VllmService
+    svc = VllmService(base_url="http://127.0.0.1:19999/v1")
+    await svc.is_available()
+    cached_available = svc._available
+    assert cached_available is False
+    cached_check = svc._last_check
+    await svc.is_available()
+    assert svc._last_check == cached_check
+
+
+def test_vllm_execute_uses_chat_when_messages_provided():
+    from asterion_api.services.vllm_service import VllmService
+    svc = VllmService(base_url="http://127.0.0.1:19999/v1")
+    import asyncio
+    result = asyncio.run(svc.execute({"model": "test", "messages": [{"role": "user", "content": "hi"}]}))
+    assert "error" in result
+
+
 # ── Extended ModelRouter ──────────────────────────────────────────────────────
 
 def test_model_router_has_20_plus_models():
