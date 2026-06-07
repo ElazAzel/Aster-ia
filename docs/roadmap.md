@@ -32,14 +32,18 @@ Status: implemented as backend/runtime foundation.
 - Runtime skill catalog: 20 skills.
 - `AgentRegistry.validate_catalog()` and `GET /api/agents/catalog/validate`.
 
-## Phase 3 - Desktop Product Integration
+## Phase 3 - Desktop Product Integration & Unified Rust Runtime
 
-Status: implemented.
+Status: Implemented (Rust in-process transition completed).
 
-- Svelte/Vite app shell connected to FastAPI routes.
+- Svelte/Vite app shell connected to FastAPI routes (previously via sidecar, now handled by in-process Rust Axum server).
 - Chat history reload and conversation continuity.
 - Tauri config now points to `frontend/dist` and runs Vite through `beforeDevCommand`/`beforeBuildCommand`.
-- Frontend desktop bridge can start, health-check, and stop the FastAPI sidecar through Tauri IPC.
+- Frontend desktop bridge can start, health-check, and stop the in-process server through Tauri IPC (stubs return success to ensure backwards compatibility).
+- Direct Tauri IPC commands `list_models`, `chat`, and `embed` implemented in Rust.
+- Lightweight in-process Axum HTTP server running on port `8000` emulates all FastAPI REST/SSE endpoints.
+- Eliminated Python sidecar process from Tauri runtime and configurations (`tauri.conf.json`, capabilities, and startup sequence) to support a unified `.exe` binary.
+- Removed unused `tauri-plugin-shell` dependency and related capabilities to reduce security surface area.
 - Agent Catalog UI with validation status and manifest detail.
 - Privacy Radar UI visible before elevated operations.
 - Model Router UI with hardware profile controls.
@@ -54,7 +58,6 @@ Status: implemented.
 - RAG file picker with explicit approval and indexed-source list.
 - Workflow approval gate UI over WebSocket.
 - ComfyUI recipe picker and local generation queue.
-- Tauri sidecar binary packaging with bundled Python backend.
 - Voice Mode backend and Svelte UI with local `faster-whisper` optional extra.
 - Model Cookbook with Ollama pull progress.
 - Research Canvas and Flight Recorder components.

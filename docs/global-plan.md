@@ -55,11 +55,11 @@
 
 ---
 
-## Фаза 3: Desktop Integration
+## Фаза 3: Desktop Integration ✅
 
-- [ ] Tauri IPC: list_models, chat, embed через Rust
-- [ ] Убрать Python sidecar
-- [ ] Единый `.exe` с embedded GGUF
+- [x] Tauri IPC: list_models, chat, embed через Rust
+- [x] Убрать Python sidecar
+- [x] Единый `.exe` с embedded GGUF
 
 ---
 

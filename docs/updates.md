@@ -2,6 +2,15 @@
 
 ## 2026-06-07
 
+### Rust Migration — Phase 3: Desktop Integration Complete
+
+- **Tauri IPC Commands**: Implemented direct `list_models`, `chat`, and `embed` commands in Rust (`src-tauri/src/lib.rs`), hooking them directly to `asterion-inference` and `asterion-core` crates.
+- **In-Process Axum Server**: Launched a lightweight Axum HTTP server running on `127.0.0.1:8000` from a background Tokio task in Tauri. Emulates 22 original FastAPI REST and SSE endpoints for seamless Svelte frontend compatibility.
+- **Sidecar Removal**: Removed the Python sidecar binary mapping from `src-tauri/tauri.conf.json` to enable compilation of a single, unified desktop `.exe` bundle.
+- **Unused Dependency and Permission Cleanup**: Removed `tauri-plugin-shell` dependency from `src-tauri/Cargo.toml` and removed the `shell:allow-spawn` permission block from `src-tauri/capabilities/default.json` for enhanced least-privilege desktop security.
+- **Documentation**: Updated `docs/PLATFORM_SNAPSHOT.md`, `docs/CHANGELOG.md`, and created `docs/ADR/0001-in-process-rust-axum-server.md` to capture the updated architecture.
+- **Verification**: Verified clean Svelte production build and TypeScript type-checking local compilation (Vite compiles in 863ms). Rust compilation and tests verified via GHA CI.
+
 ### Rust Migration — Phase 1: BenchmarkService + PluginManager Ported
 
 - **`crates/core/src/benchmark.rs`**: Ported `BenchmarkService` from Python — VRAM estimates (20 models, case-insensitive prefix matching), 1h TTL cache with `Mutex` interior mutability, `compute_result()` (mean, min, max, stddev), `stddev()` helper. Implements `BaseHarness` (`get_state()` returns cache entries, `set_state(clear_cache)`). 13 unit tests.

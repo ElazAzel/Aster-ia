@@ -36,10 +36,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
-    "externalBin": [
-      "binaries/asterion-backend"
-    ]
+    "targets": "all"
   },
   "plugins": {
     "updater": {

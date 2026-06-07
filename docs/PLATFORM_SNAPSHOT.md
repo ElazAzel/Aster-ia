@@ -13,26 +13,28 @@ Asterion AI is a local-first desktop AI workspace designed for developers, resea
 
 ## 2. Current Architecture & Components
 
-The application is structured as a hybrid desktop-sidecar application transitioning into a pure Rust architecture.
+The application has transitioned to a unified Rust-based desktop architecture.
 
 ```mermaid
 flowchart LR
-    UI["Svelte 5 UI (Vite)"] --> Tauri["Tauri v2 IPC (Rust)"]
-    Tauri --> API["FastAPI Sidecar (Python 3.12)"]
-    API --> Services["Async Services"]
-    Services --> Ollama["Ollama (llama3.2 & nomic-embed-text)"]
-    Services --> SQLCipher["SQLite + SQLCipher (keyring)"]
-    Services --> LanceDB["LanceDB (Vector RAG)"]
-    Services --> DuckDB["DuckDB (Analytics)"]
-    Services --> SearXNG["SearXNG (127.0.0.1:8080)"]
-    Services --> ComfyUI["ComfyUI (127.0.0.1:8188)"]
+    UI["Svelte 5 UI (Vite)"] -->|"Tauri IPC commands"| Tauri["Tauri v2 Core (Rust)"]
+    UI -->|"HTTP / SSE requests (Port 8000)"| Axum["In-Process Axum Server (Rust)"]
+    Tauri -->|"Direct call"| Inference["asterion-inference Crate"]
+    Axum -->|"Direct call"| Core["asterion-core Crate"]
+    Axum -->|"Direct call"| Inference
+    Inference -->|"Local Inference"| Ollama["Ollama (llama3.2 & nomic-embed-text)"]
+    Core --> SQLCipher["SQLite + SQLCipher (keyring)"]
+    Core --> LanceDB["LanceDB (Vector RAG)"]
+    Core --> DuckDB["DuckDB (Analytics)"]
+    Core --> SearXNG["SearXNG (127.0.0.1:8080)"]
+    Core --> ComfyUI["ComfyUI (127.0.0.1:8188)"]
 ```
 
 ### Components Summary
 
 - **Frontend (`/frontend`)**: Svelte 5 / Vite single-page application. Features a three-column Workbench layout (Context panel, Chat composer, right-aligned tabs for plans, logs, and artifacts), Ctrl+K Command Palette, and custom Markdown rendering.
-- **Desktop Shell (`/src-tauri`)**: Tauri v2 application written in Rust. Manages the sidecar lifecycle, native system tray, hardware GPU detection, native file picker dialogs, and keyboard hotkeys.
-- **Backend (`/backend`)**: FastAPI Python 3.12 application running as a PyInstaller-packaged sidecar. Houses the orchestrators for agents, databases, and third-party loopbacks.
+- **Desktop Shell (`/src-tauri`)**: Tauri v2 application written in Rust. Hosts the in-process Axum HTTP server on port 8000, handles native system tray, hardware GPU detection, native file picker dialogs, keyboard hotkeys, and exposes direct model/chat Tauri commands.
+- **Backend (`/backend`)**: Legacy FastAPI Python 3.12 application. Houses the original orchestrators, now deprecated/removed from desktop packaging and runtime in Phase 3. Left for testing and parity validation.
 - **Core Rust Library (`/crates/core`)**: Implements ported business logic (ModelRouter, PrivacyAnalyzer, BenchmarkService, PluginManager, ContradictionFinder, TaskSimulator).
 - **Agent Sandbox**: Subprocess execution isolation. Uses Windows native `ctypes` Job Objects and macOS/Linux `RLIMIT` parameters.
 
@@ -42,16 +44,16 @@ flowchart LR
 
 ### A. Smart Chat Flow
 1. User enters message and hits submit.
-2. Svelte UI requests `POST /api/chat/stream`.
+2. Svelte UI requests `POST /api/chat/stream` or invokes `chat` Tauri IPC command.
 3. `PrivacyAnalyzer` scans content for PII and checks dependencies.
 4. `ModelRouter` scores model compatibility based on VRAM/RAM constraints.
-5. `ChatService` orchestrates streams from local Ollama (or vLLM fallback if active) to the UI via Server-Sent Events (SSE).
+5. Axum server / Tauri command orchestrates streams from local Ollama (or vLLM fallback if active) to the UI via Server-Sent Events (SSE) or direct Rust channel.
 6. Message is persisted to SQLCipher SQLite; responses generate Adaptive Artifact blocks.
 
 ### B. RAG indexing and Search Flow
 1. Documents are dragged-and-dropped into Svelte UI or selected via native file dialog.
 2. File paths are verified against Approved Folder Scopes.
-3. FastAPI reads, chunks, embeds (via Ollama `nomic-embed-text`), and registers vectors in LanceDB.
+3. In-process Axum/Rust server reads, chunks, embeds (via Ollama `nomic-embed-text`), and registers vectors in LanceDB.
 4. Searches run hybrid dense cosine plus BM25 search.
 
 ### C. Deep Research Flow
@@ -65,14 +67,13 @@ flowchart LR
 ## 4. Environments & Deployment Flow
 
 - **Local Development**:
-  - Backend: `uv run python -m asterion_api` (default port 8000)
   - Frontend: `npm run dev` (Vite, default port 5173)
-  - Tauri: `cargo tauri dev` (starts sidecar and dev console)
+  - Tauri: `cargo tauri dev` (starts the in-process Axum server and dev console)
   - Docker Profile: `docker compose up --build` (runs backend, frontend, and SearXNG)
 - **CI/CD Pipeline** (`.github/workflows/ci.yml`):
   - Automatically runs Python pytest/ruff validation, Rust workspace checks/tests, and frontend build validation on push/PR.
 - **Release Pipeline** (`.github/workflows/release.yml`):
-  - Compiles the Python sidecar using PyInstaller and packages it within Tauri build artifacts.
+  - Compiles the unified Rust Tauri app without PyInstaller python sidecar packaging.
 
 ---
 
@@ -91,4 +92,4 @@ flowchart LR
 
 1. **Compilation Toolchain**: Tauri Cargo compilation on Windows requires Visual Studio MSVC Build Tools. If `link.exe` is missing, Cargo builds fail.
 2. **LanceDB deletion**: LanceDB vector data deletion needs to be hardened (currently, document references are deleted from SQLite metadata, but raw LanceDB vector blobs are scheduled for future cleanup optimization).
-3. **Rust Port Completeness**: Phase 1 is complete (Router, Privacy, Benchmarks, Plugins, Contradictions, Sandbox). Core services like `ChatService` and DB layer are still running on Python FastAPI sidecar.
+3. **Rust Port Completeness**: Phase 3 is complete. The Python FastAPI sidecar has been completely eliminated from the Tauri runtime in favor of an in-process Rust Axum server and Tauri IPC commands (`list_models`, `chat`, `embed`).

@@ -6,21 +6,6 @@
   "permissions": [
     "core:default",
     "notification:allow-notify",
-    "global-shortcut:allow-register",
-    {
-      "identifier": "shell:allow-spawn",
-      "allow": [
-        {
-          "name": "binaries/asterion-backend",
-          "sidecar": true,
-          "args": [
-            "--host",
-            "127.0.0.1",
-            "--port",
-            "8000"
-          ]
-        }
-      ]
-    }
+    "global-shortcut:allow-register"
   ]
 }
