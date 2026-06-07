@@ -467,19 +467,80 @@ Agent runs and Flight Recorder:
 
 ## Images
 
+`GET /api/images/recipes`
+
+Returns the curated local ComfyUI preset catalog. Presets are parameter templates; generation still targets the local ComfyUI instance and can be overridden with a manual `recipe`.
+
+```json
+{
+  "privacy_level": "local",
+  "recipes": [
+    {
+      "id": "sdxl-square",
+      "title": "SDXL Square",
+      "description": "Balanced square image preset for local product, concept, and scene drafts.",
+      "tags": ["general", "square", "draft"],
+      "estimated_vram_gb": 8.0,
+      "recipe": {
+        "width": 1024,
+        "height": 1024,
+        "steps": 20,
+        "cfg": 7.0
+      },
+      "validation": {
+        "ok": true,
+        "errors": [],
+        "warnings": [],
+        "nodes_count": 7,
+        "privacy_level": "local"
+      },
+      "privacy_level": "local"
+    }
+  ]
+}
+```
+
+`POST /api/images/validate`
+
+Validates a local ComfyUI recipe before generation. The validator rejects external URI inputs, absolute paths, path traversal, unsafe network/download node classes, missing node references, oversized workflows, and non-loopback ComfyUI base URLs.
+
+```json
+{
+  "prompt": "local product mockup",
+  "preset_id": "sdxl-square",
+  "recipe": {
+    "width": 1024,
+    "height": 1024,
+    "steps": 20
+  }
+}
+```
+
+Response:
+
+```json
+{
+  "ok": true,
+  "errors": [],
+  "warnings": [],
+  "nodes_count": 7,
+  "privacy_level": "local"
+}
+```
+
 `POST /api/images/generate`
 
 ```json
 {
   "prompt": "local product mockup",
+  "preset_id": "wide-concept",
   "recipe": {
-    "width": 1024,
-    "height": 1024
+    "steps": 18
   }
 }
 ```
 
-Uses local ComfyUI on `127.0.0.1:8188`.
+Uses local ComfyUI on `127.0.0.1:8188`. Generation runs the same recipe validator first and returns `422` when the recipe is unsafe or malformed.
 
 ## Workflows
 
