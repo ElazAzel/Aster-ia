@@ -4,6 +4,7 @@
 
 ### CI Hermeticity and Public Docs Refresh
 
+- Added curated local ComfyUI recipe presets with `GET /api/images/recipes`, `preset_id` support for validation/generation, frontend preset selection, and preflight recipe validation in Image Studio.
 - Added local ComfyUI recipe validation with `/api/images/validate`, generation-time `422` rejection for unsafe recipes, default 7-node ComfyUI workflow construction, and tests for external URI, broken node reference, and non-loopback base URL blocking.
 - Added a local-first CI secret scanner (`scripts/scan_secrets.py`) with pytest coverage, `make security-scan`, and a dedicated GitHub Actions `security` job to prevent committed provider keys or high-entropy secret assignments.
 - Fixed the current `main` CI backend failure by making `test_rag_crud` hermetic: the integration test now mocks `DocumentIndexer.hybrid_search()` instead of reaching real local Ollama embeddings.

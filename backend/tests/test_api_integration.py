@@ -337,18 +337,43 @@ async def test_plugins_router(test_app):
 
 @pytest.mark.asyncio
 async def test_images_router(test_app, monkeypatch):
+    generated: dict[str, object] = {}
+
     async def mock_generate(self, prompt, recipe):
+        generated["recipe"] = recipe
         return {"image": "mock_base64_data"}
+
     monkeypatch.setattr(ComfyUIService, "generate", mock_generate)
 
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
+        recipes = await ac.get("/api/images/recipes")
+        assert recipes.status_code == 200
+        assert recipes.json()["privacy_level"] == "local"
+        assert len(recipes.json()["recipes"]) >= 4
+
         validation = await ac.post("/api/images/validate", json={"prompt": "beautiful gradient"})
         assert validation.status_code == 200
         assert validation.json()["ok"] is True
 
-        res = await ac.post("/api/images/generate", json={"prompt": "beautiful gradient"})
+        preset_validation = await ac.post(
+            "/api/images/validate",
+            json={"prompt": "beautiful gradient", "preset_id": "wide-concept"},
+        )
+        assert preset_validation.status_code == 200
+        assert preset_validation.json()["ok"] is True
+
+        res = await ac.post(
+            "/api/images/generate",
+            json={
+                "prompt": "beautiful gradient",
+                "preset_id": "wide-concept",
+                "recipe": {"steps": 9},
+            },
+        )
         assert res.status_code == 200
         assert res.json()["image"] == "mock_base64_data"
+        assert generated["recipe"]["width"] == 1344
+        assert generated["recipe"]["steps"] == 9
 
 
 @pytest.mark.asyncio

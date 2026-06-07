@@ -68,7 +68,7 @@ Status: partially implemented; hardening continues.
 - Stronger OS-level sandbox isolation on Windows, macOS, and Linux. Windows and Linux foundations are implemented; macOS isolation still needs a release-grade profile.
 - Plugin signature verification. Ed25519 manifest verification is implemented; key distribution policy still needs a documented release process.
 - SearXNG deployment helper. Docker dev profile includes SearXNG; native desktop helper remains open.
-- ComfyUI recipe library and validation. Local recipe validation is implemented; curated preset library still needs expansion.
+- ComfyUI recipe library and validation are implemented with local preset catalog, preflight validation, and generation-time blocking.
 - RAG file watcher with opt-in folder scopes. Backend watcher exists; user-facing folder scope management needs hardening.
 - Secrets scanner in CI is implemented through `scripts/scan_secrets.py` and the `security` workflow job.
 - Full frontend E2E tests. Basic Playwright smoke exists; more production journeys are needed.

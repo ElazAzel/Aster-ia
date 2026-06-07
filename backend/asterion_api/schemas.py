@@ -380,11 +380,13 @@ class FlightRecorderEvent(BaseModel):
 
 class ComfyGenerateRequest(BaseModel):
     prompt: str = Field(min_length=1, max_length=16_000)
+    preset_id: str | None = Field(default=None, max_length=80)
     recipe: dict[str, Any] = Field(default_factory=dict)
 
 
 class ComfyRecipeValidateRequest(BaseModel):
     prompt: str = Field(default="{{prompt}}", max_length=16_000)
+    preset_id: str | None = Field(default=None, max_length=80)
     recipe: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -393,6 +395,22 @@ class ComfyRecipeValidationResponse(BaseModel):
     errors: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     nodes_count: int
+    privacy_level: Literal["local"] = "local"
+
+
+class ComfyRecipePreset(BaseModel):
+    id: str
+    title: str
+    description: str
+    tags: list[str] = Field(default_factory=list)
+    estimated_vram_gb: float
+    recipe: dict[str, Any]
+    validation: ComfyRecipeValidationResponse
+    privacy_level: Literal["local"] = "local"
+
+
+class ComfyRecipeListResponse(BaseModel):
+    recipes: list[ComfyRecipePreset]
     privacy_level: Literal["local"] = "local"
 
 

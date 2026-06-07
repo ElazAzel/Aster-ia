@@ -644,6 +644,29 @@ def test_comfyui_recipe_validation_allows_default_local_workflow():
     assert result["nodes_count"] == 7
 
 
+def test_comfyui_recipe_presets_are_unique_and_valid():
+    from asterion_api.services.comfyui_service import ComfyUIService
+
+    service = ComfyUIService()
+    presets = service.list_recipe_presets()
+    preset_ids = [preset["id"] for preset in presets]
+
+    assert len(presets) >= 4
+    assert len(preset_ids) == len(set(preset_ids))
+    assert all(preset["privacy_level"] == "local" for preset in presets)
+    assert all(preset["validation"]["ok"] for preset in presets)
+
+
+def test_comfyui_recipe_preset_overrides_merge_safely():
+    from asterion_api.services.comfyui_service import ComfyUIService
+
+    recipe = ComfyUIService().build_recipe("portrait-fast", {"steps": 7, "width": 768})
+
+    assert recipe["height"] == 1216
+    assert recipe["steps"] == 7
+    assert recipe["width"] == 768
+
+
 def test_comfyui_recipe_validation_rejects_external_uri_input():
     from asterion_api.services.comfyui_service import ComfyUIService
 

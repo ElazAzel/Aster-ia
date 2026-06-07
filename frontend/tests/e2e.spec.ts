@@ -179,6 +179,56 @@ test.beforeEach(async ({ page }, testInfo) => {
     });
   });
 
+  await page.route('**/api/images/recipes', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        privacy_level: 'local',
+        recipes: [
+          {
+            id: 'sdxl-square',
+            title: 'SDXL Square',
+            description: 'Balanced square image preset.',
+            tags: ['general', 'square'],
+            estimated_vram_gb: 8,
+            recipe: { width: 1024, height: 1024, steps: 20, cfg: 7 },
+            validation: {
+              ok: true,
+              errors: [],
+              warnings: [],
+              nodes_count: 7,
+              privacy_level: 'local',
+            },
+            privacy_level: 'local',
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.route('**/api/images/validate', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ok: true,
+        errors: [],
+        warnings: [],
+        nodes_count: 7,
+        privacy_level: 'local',
+      }),
+    });
+  });
+
+  await page.route('**/api/images/generate', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ image: 'data:image/png;base64,AA==' }),
+    });
+  });
+
   await page.route('**/api/audit/logs', async (route) => {
     await route.fulfill({
       status: 200,

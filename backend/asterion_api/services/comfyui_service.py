@@ -34,6 +34,74 @@ class ComfyUIService(BaseHarness):
         "batch_size",
         "filename_prefix",
     }
+    RECIPE_PRESETS: tuple[dict[str, Any], ...] = (
+        {
+            "id": "sdxl-square",
+            "title": "SDXL Square",
+            "description": "Balanced square image preset for local product, concept, and scene drafts.",
+            "tags": ["general", "square", "draft"],
+            "estimated_vram_gb": 8.0,
+            "recipe": {
+                "width": 1024,
+                "height": 1024,
+                "steps": 20,
+                "cfg": 7.0,
+                "sampler_name": "euler",
+                "scheduler": "normal",
+                "filename_prefix": "asterion-square",
+            },
+        },
+        {
+            "id": "portrait-fast",
+            "title": "Portrait Fast",
+            "description": "Vertical composition with fewer steps for quick local iteration.",
+            "tags": ["portrait", "fast"],
+            "estimated_vram_gb": 6.0,
+            "recipe": {
+                "width": 832,
+                "height": 1216,
+                "steps": 16,
+                "cfg": 6.5,
+                "sampler_name": "euler",
+                "scheduler": "normal",
+                "negative_prompt": "low quality, blurry, distorted anatomy, extra fingers",
+                "filename_prefix": "asterion-portrait",
+            },
+        },
+        {
+            "id": "wide-concept",
+            "title": "Wide Concept",
+            "description": "Wide scene layout for product decks, environment concepts, and app hero shots.",
+            "tags": ["wide", "concept", "deck"],
+            "estimated_vram_gb": 8.0,
+            "recipe": {
+                "width": 1344,
+                "height": 768,
+                "steps": 24,
+                "cfg": 7.5,
+                "sampler_name": "euler",
+                "scheduler": "normal",
+                "filename_prefix": "asterion-wide",
+            },
+        },
+        {
+            "id": "ui-mockup",
+            "title": "UI Mockup",
+            "description": "Clean product-interface visual preset for dashboard and control-room concepts.",
+            "tags": ["ui", "product", "dashboard"],
+            "estimated_vram_gb": 8.0,
+            "recipe": {
+                "width": 1152,
+                "height": 768,
+                "steps": 22,
+                "cfg": 6.0,
+                "sampler_name": "euler",
+                "scheduler": "normal",
+                "negative_prompt": "messy text, illegible UI, distorted interface, low contrast",
+                "filename_prefix": "asterion-ui",
+            },
+        },
+    )
 
     def __init__(self) -> None:
         self.base_url = "http://127.0.0.1:8188"
@@ -52,6 +120,31 @@ class ComfyUIService(BaseHarness):
     def set_state(self, state: Mapping[str, Any]) -> None:
         if state.get("base_url"):
             self.base_url = self._normalize_base_url(str(state["base_url"]))
+
+    def list_recipe_presets(self) -> list[dict[str, Any]]:
+        presets: list[dict[str, Any]] = []
+        for preset in self.RECIPE_PRESETS:
+            recipe = dict(preset["recipe"])
+            presets.append(
+                {
+                    **preset,
+                    "recipe": recipe,
+                    "privacy_level": self.privacy_level,
+                    "validation": self.validate_recipe(recipe, prompt="{{prompt}}"),
+                }
+            )
+        return presets
+
+    def build_recipe(
+        self,
+        preset_id: str | None,
+        overrides: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        recipe: dict[str, Any] = {}
+        if preset_id:
+            recipe.update(self._get_recipe_preset(preset_id)["recipe"])
+        recipe.update(dict(overrides or {}))
+        return recipe
 
     def validate_recipe(self, recipe: Mapping[str, Any] | None, prompt: str = "") -> dict[str, Any]:
         recipe = recipe or {}
@@ -208,6 +301,13 @@ class ComfyUIService(BaseHarness):
     def _recipe_string(recipe: Mapping[str, Any], key: str, default: str) -> str:
         value = recipe.get(key)
         return value if isinstance(value, str) and value.strip() else default
+
+    @classmethod
+    def _get_recipe_preset(cls, preset_id: str) -> dict[str, Any]:
+        for preset in cls.RECIPE_PRESETS:
+            if preset["id"] == preset_id:
+                return preset
+        raise LookupError(f"unknown ComfyUI recipe preset: {preset_id}")
 
     @classmethod
     def _validation_response(

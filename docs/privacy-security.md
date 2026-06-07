@@ -79,6 +79,8 @@ Every item must include:
 
 ComfyUI remains a local-only surface. The image API exposes `POST /api/images/validate` and runs the same validator before `POST /api/images/generate`.
 
+`GET /api/images/recipes` returns curated local parameter presets only. Presets do not introduce external endpoints, remote assets, or network plugins, and every preset is returned with its validation status.
+
 The validator blocks:
 
 - non-local ComfyUI base URLs;
