@@ -28,6 +28,8 @@ import {
   confirmWorkflow,
   createWorkflowEventsSocket,
   listArtifacts,
+  listImageRecipes,
+  validateImageRecipe,
   indexFile,
   indexFileByPath,
   recordAuditLog,
@@ -57,7 +59,9 @@ import {
   type AgentPlan,
   type AgentRun,
   type FlightRecorderEvent,
-  type AuditLogRecord
+  type AuditLogRecord,
+  type ImageRecipePreset,
+  type ImageRecipeValidation
 } from './api';
 import {
   fastapiHealthCheck,
@@ -106,6 +110,9 @@ export const errorText = writable('');
 export const imagePrompt = writable('');
 export const imageResult = writable<Record<string, any> | null>(null);
 export const imageGenerating = writable(false);
+export const imageRecipes = writable<ImageRecipePreset[]>([]);
+export const selectedImageRecipeId = writable('sdxl-square');
+export const imageRecipeValidation = writable<ImageRecipeValidation | null>(null);
 
 // Deep Research
 export const researchDeepQuery = writable('Сравнить приватность локального и облачного AI');
@@ -389,6 +396,18 @@ export async function refreshRagDocuments() {
   if (result) ragDocuments.set(result);
 }
 
+export async function refreshImageRecipes() {
+  const base = get(apiBase);
+  const result = await runStep('Load ComfyUI presets', () => listImageRecipes(base));
+  if (result) {
+    imageRecipes.set(result.recipes);
+    const selected = get(selectedImageRecipeId);
+    if (!result.recipes.some((recipe) => recipe.id === selected) && result.recipes[0]) {
+      selectedImageRecipeId.set(result.recipes[0].id);
+    }
+  }
+}
+
 export async function refreshConversations() {
   const base = get(apiBase);
   const rid = get(roomId);
@@ -645,15 +664,36 @@ export async function createPlannedAgentRun(permissions?: { allowed_folders: str
   }
 }
 
+export async function validateSelectedImageRecipe() {
+  const base = get(apiBase);
+  const pr = get(imagePrompt);
+  const presetId = get(selectedImageRecipeId);
+  const result = await runStep('Validate ComfyUI recipe', () =>
+    validateImageRecipe(base, {
+      prompt: pr.trim() || '{{prompt}}',
+      preset_id: presetId || undefined
+    })
+  );
+  if (result) imageRecipeValidation.set(result);
+  return result;
+}
+
 export async function runImageGeneration() {
   const base = get(apiBase);
   const pr = get(imagePrompt);
+  const presetId = get(selectedImageRecipeId);
   if (!pr.trim()) return;
   imageGenerating.set(true);
   imageResult.set(null);
   void reportTelemetryEvent('image_generation_started');
+  const validation = await validateSelectedImageRecipe();
+  if (validation && !validation.ok) {
+    imageResult.set({ error: 'ComfyUI recipe validation failed', validation });
+    imageGenerating.set(false);
+    return;
+  }
   const result = await runStep('Генерирую изображение через ComfyUI', () =>
-    generateImage(base, { prompt: pr })
+    generateImage(base, { prompt: pr, preset_id: presetId || undefined })
   );
   if (result) imageResult.set(result);
   imageGenerating.set(false);
@@ -843,6 +883,7 @@ export async function refreshAll() {
     refreshRooms(),
     refreshMemories(),
     refreshRagDocuments(),
+    refreshImageRecipes(),
     refreshConversations(),
     analyzeCurrentPrivacy(),
     refreshPlugins(),
