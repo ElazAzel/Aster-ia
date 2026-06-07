@@ -94,6 +94,12 @@ SQLCipher keys:
 - never logged
 - never committed
 
+Repository checks:
+
+- CI runs `python scripts/scan_secrets.py .` on every push and pull request.
+- Local release verification runs the same scanner through `make security-scan` and `make verify`.
+- The scanner flags high-confidence provider keys and suspicious secret assignments while allowing explicit placeholder/test values.
+
 ## Storage
 
 Main storage:
@@ -192,6 +198,7 @@ Before release:
 ```powershell
 uv run python -m compileall backend\asterion_api harness\meta_harness.py
 uv run python harness/meta_harness.py --phase 1 --iterations 3
+uv run python scripts\scan_secrets.py .
 ```
 
 Also verify:
@@ -202,4 +209,4 @@ Also verify:
 - Sandbox rejects network imports when `network=false`.
 - Sandbox rejects shell execution when `shell=false`.
 - Unknown plugin trust levels are classified as `danger`.
-- No committed file contains real production secrets.
+- `scripts/scan_secrets.py` reports no likely production secrets.

@@ -4,6 +4,7 @@
 
 ### CI Hermeticity and Public Docs Refresh
 
+- Added a local-first CI secret scanner (`scripts/scan_secrets.py`) with pytest coverage, `make security-scan`, and a dedicated GitHub Actions `security` job to prevent committed provider keys or high-entropy secret assignments.
 - Fixed the current `main` CI backend failure by making `test_rag_crud` hermetic: the integration test now mocks `DocumentIndexer.hybrid_search()` instead of reaching real local Ollama embeddings.
 - Fixed the `tauri-check` CI blocker by creating a temporary Windows sidecar placeholder before `cargo check`; release builds still use the real PyInstaller sidecar from `.github/workflows/release.yml`.
 - Added the missing Tauri desktop icon assets (`icon.ico`, `icon.icns`, and PNG sizes) required by Windows/macOS/Linux bundle metadata.

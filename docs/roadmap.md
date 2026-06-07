@@ -70,9 +70,9 @@ Status: partially implemented; hardening continues.
 - SearXNG deployment helper. Docker dev profile includes SearXNG; native desktop helper remains open.
 - ComfyUI recipe library and validation. Bridge is implemented; recipe validation needs expansion.
 - RAG file watcher with opt-in folder scopes. Backend watcher exists; user-facing folder scope management needs hardening.
-- Secrets scanner in CI.
+- Secrets scanner in CI is implemented through `scripts/scan_secrets.py` and the `security` workflow job.
 - Full frontend E2E tests. Basic Playwright smoke exists; more production journeys are needed.
-- Tauri `cargo check` and packaging in CI after Windows C++ toolchain is available.
+- Tauri `cargo check` is green in CI; release packaging remains covered by the tag-triggered release workflow.
 
 ## Phase 5 - Power User Runtime
 

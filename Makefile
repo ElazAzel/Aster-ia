@@ -1,4 +1,4 @@
-.PHONY: dev docker-up docker-down backend frontend verify backend-verify frontend-build harness clean
+.PHONY: dev docker-up docker-down backend frontend verify backend-verify frontend-build security-scan harness clean
 
 dev:
 	@echo "Run backend and frontend in separate terminals:"
@@ -17,7 +17,7 @@ docker-up:
 docker-down:
 	docker compose down
 
-verify: backend-verify frontend-build harness
+verify: backend-verify frontend-build security-scan harness
 
 backend-verify:
 	cd backend && uv run ruff check . && uv run pytest
@@ -25,6 +25,9 @@ backend-verify:
 
 frontend-build:
 	cd frontend && npm run build
+
+security-scan:
+	uv run python scripts/scan_secrets.py .
 
 harness:
 	uv run python harness/meta_harness.py --phase 1 --iterations 3

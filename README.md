@@ -91,6 +91,7 @@ On Windows, `cargo check` requires Visual Studio Build Tools with the C++ worklo
 ```powershell
 uv run python -m compileall backend\asterion_api harness\meta_harness.py
 uv run python harness/meta_harness.py --phase 1 --iterations 3
+uv run python scripts\scan_secrets.py .
 cd backend
 uv run ruff check .
 uv run pytest
