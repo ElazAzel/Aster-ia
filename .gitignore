@@ -20,3 +20,6 @@ harness/candidates/
 # Playwright E2E test directories
 frontend/playwright-report/
 frontend/test-results/
+
+# Visual Studio
+.vs/
