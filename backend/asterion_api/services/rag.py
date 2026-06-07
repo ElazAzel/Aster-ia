@@ -152,6 +152,12 @@ class DocumentIndexer(BaseHarness):
         observer.start()
         self._observer = observer
 
+    def stop_watcher(self) -> None:
+        if hasattr(self, '_observer') and self._observer:
+            self._observer.stop()
+            self._observer.join(timeout=2)
+            self._observer = None
+
     @staticmethod
     def _chunk(text: str, size: int = 1200, overlap: int = 160) -> list[str]:
         cleaned = re.sub(r"\s+", " ", text).strip()

@@ -211,7 +211,7 @@ export function completeOnboarding() {
 }
 
 // System prompt editor
-export const systemPrompt = writable(localStorage.getItem('asterion_system_prompt') ?? '');
+export const systemPrompt = writable(typeof localStorage !== 'undefined' ? localStorage.getItem('asterion_system_prompt') ?? '' : '');
 export const systemPromptSaved = writable(false);
 
 // UI/Navigation States
@@ -232,11 +232,6 @@ export const conversationSearchQuery = writable('');
 export const telemetryOptIn = writable<boolean>(
   typeof localStorage !== 'undefined' ? localStorage.getItem('asterion_telemetry_opt_in') === 'true' : false
 );
-if (typeof localStorage !== 'undefined') {
-  telemetryOptIn.subscribe(val => {
-    localStorage.setItem('asterion_telemetry_opt_in', val ? 'true' : 'false');
-  });
-}
 
 export async function reportTelemetryEvent(eventType: string, details: Record<string, unknown> = {}) {
   const base = get(apiBase);
@@ -603,9 +598,22 @@ export function startAgentRunEvents(runId: string) {
         const eventRow = data as FlightRecorderEvent;
         flightLogs.update(logs => [...logs.filter(l => l.id !== eventRow.id), eventRow]);
       }
+      if (data.status === 'completed' || data.status === 'failed' || data.status === 'cancelled') {
+        es?.close();
+      }
     } catch { /* ignore */ }
   };
+  es.onerror = () => {
+    es?.close();
+  };
   agentRunEventSource.set(es);
+}
+
+export function stopAgentRunEvents() {
+  agentRunEventSource.update(es => {
+    es?.close();
+    return null;
+  });
 }
 
 export async function refreshAuditLogs() {

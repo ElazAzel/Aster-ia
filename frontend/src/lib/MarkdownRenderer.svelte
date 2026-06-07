@@ -1,6 +1,13 @@
 <script lang="ts">
   export let text = '';
 
+  let lastText = '';
+  let lastHtml = '';
+  $: if (text !== lastText) {
+    lastHtml = renderMarkdown(text);
+    lastText = text;
+  }
+
   function escapeHtml(unsafe: string): string {
     return unsafe
       .replace(/&/g, '&amp;')
@@ -91,7 +98,7 @@
 </script>
 
 <div class="markdown-body">
-  {@html renderMarkdown(text)}
+  {@html lastHtml}
 </div>
 
 <style>

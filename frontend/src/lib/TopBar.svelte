@@ -1,6 +1,21 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { activeTab, showLeftPanel, showRightPanel, privacyPopoverOpen, refreshAll, busy } from './stores';
   import PrivacyRadar from './PrivacyRadar.svelte';
+  import { isTauriRuntime, toggleFullscreen } from './tauri';
+
+  let fsActive = false;
+  let tauri = false;
+
+  function handleFullscreen() {
+    toggleFullscreen().then(fs => {
+      fsActive = fs;
+    });
+  }
+
+  onMount(() => {
+    tauri = isTauriRuntime();
+  });
 </script>
 
 <header class="topbar">
@@ -46,7 +61,6 @@
 
   <div class="top-controls">
     {#if $activeTab === 'chat'}
-      <!-- Panel toggle buttons -->
       <div class="panel-toggle-group">
         <button
           type="button"
@@ -56,7 +70,7 @@
           title="Показать/скрыть боковую панель"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-          <span>Контекст</span>
+          <span class="ctrl-label">Контекст</span>
         </button>
         <button
           type="button"
@@ -66,19 +80,19 @@
           title="Показать/скрыть Workbench"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
-          <span>Workbench</span>
+          <span class="ctrl-label">Workbench</span>
         </button>
       </div>
 
-      <!-- Privacy Radar Interactive Popover -->
       <div class="privacy-popover-trigger">
         <button
           type="button"
           class="privacy-badge-compact"
           on:click={() => $privacyPopoverOpen = !$privacyPopoverOpen}
+          title="Безопасность"
         >
           <span class="status-dot ok"></span>
-          <span>Безопасность</span>
+          <span class="ctrl-label">Безопасность</span>
         </button>
 
         <div class="privacy-popover" class:visible={$privacyPopoverOpen}>
@@ -87,7 +101,22 @@
       </div>
     {/if}
 
-    <button type="button" class="secondary" style="min-height: 32px; padding: 0 12px; margin-left: 8px;" on:click={refreshAll} disabled={$busy}>
+    {#if tauri}
+      <button
+        type="button"
+        class="fs-toggle"
+        on:click={handleFullscreen}
+        title={fsActive ? 'Выйти из полноэкранного режима (Ctrl+Shift+F)' : 'Полноэкранный режим (Ctrl+Shift+F)'}
+      >
+        {#if fsActive}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        {:else}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        {/if}
+      </button>
+    {/if}
+
+    <button type="button" class="secondary" style="min-height: 32px; padding: 0 12px;" on:click={refreshAll} disabled={$busy}>
       {$busy ? 'Проверка...' : 'Обновить'}
     </button>
   </div>

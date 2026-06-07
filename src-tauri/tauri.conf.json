@@ -16,6 +16,8 @@
         "title": "Asterion AI",
         "width": 1350,
         "height": 973,
+        "minWidth": 900,
+        "minHeight": 600,
         "resizable": true,
         "visible": false
       },

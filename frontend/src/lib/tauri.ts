@@ -58,3 +58,37 @@ export async function installOllama(): Promise<string> {
   const { invoke } = await import('@tauri-apps/api/core');
   return invoke<string>('install_ollama');
 }
+
+// Window controls
+export type WindowStateResult = {
+  width: number;
+  height: number;
+  fullscreen: boolean;
+};
+
+export async function toggleFullscreen(): Promise<boolean> {
+  if (!isTauriRuntime()) return false;
+  const { invoke } = await import('@tauri-apps/api/core');
+  return invoke<boolean>('toggle_fullscreen');
+}
+
+export async function getWindowState(): Promise<WindowStateResult> {
+  if (!isTauriRuntime()) return { width: 0, height: 0, fullscreen: false };
+  const { invoke } = await import('@tauri-apps/api/core');
+  return invoke<WindowStateResult>('get_window_state');
+}
+
+export async function minimizeWindow(): Promise<void> {
+  if (!isTauriRuntime()) return;
+  const { invoke } = await import('@tauri-apps/api/core');
+  return invoke<void>('minimize_window');
+}
+
+export function onFullscreenChange(cb: (isFullscreen: boolean) => void): () => void {
+  if (!isTauriRuntime() || typeof window === 'undefined') return () => {};
+  const handler = () => {
+    void getWindowState().then(s => cb(s.fullscreen));
+  };
+  window.addEventListener('resize', handler);
+  return () => window.removeEventListener('resize', handler);
+}

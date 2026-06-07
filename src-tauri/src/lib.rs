@@ -37,6 +37,13 @@ struct GpuProfile {
     vram_gb: f64,
 }
 
+#[derive(Serialize)]
+struct WindowState {
+    width: f64,
+    height: f64,
+    fullscreen: bool,
+}
+
 // Axum Handler functions to emulate the FastAPI Python backend
 async fn handle_health() -> axum::Json<serde_json::Value> {
     axum::Json(serde_json::json!({
@@ -490,6 +497,29 @@ async fn shutdown_fastapi_sidecar(
     })
 }
 
+#[tauri::command]
+async fn toggle_fullscreen(window: tauri::WebviewWindow) -> Result<bool, String> {
+    let is_fs = window.is_fullscreen().map_err(|e| e.to_string())?;
+    window.set_fullscreen(!is_fs).map_err(|e| e.to_string())?;
+    Ok(!is_fs)
+}
+
+#[tauri::command]
+async fn get_window_state(window: tauri::WebviewWindow) -> Result<WindowState, String> {
+    let size = window.outer_size().map_err(|e| e.to_string())?;
+    let fullscreen = window.is_fullscreen().unwrap_or(false);
+    Ok(WindowState {
+        width: size.width as f64,
+        height: size.height as f64,
+        fullscreen,
+    })
+}
+
+#[tauri::command]
+async fn minimize_window(window: tauri::WebviewWindow) -> Result<(), String> {
+    window.minimize().map_err(|e| e.to_string())
+}
+
 fn setup_tray(app: &tauri::App) -> Result<(), tauri::Error> {
     let show = MenuItem::with_id(app, "show", "Показать окно", true, None::<&str>)?;
     let restart = MenuItem::with_id(app, "restart", "Перезапустить sidecar", true, None::<&str>)?;
@@ -538,6 +568,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_window_state::Builder::new().build())
         .manage(BackendProcess::default())
         .invoke_handler(tauri::generate_handler![
             start_fastapi_sidecar,
@@ -548,7 +579,10 @@ pub fn run() {
             install_ollama,
             list_models,
             chat,
-            embed
+            embed,
+            toggle_fullscreen,
+            get_window_state,
+            minimize_window
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();

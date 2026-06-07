@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator
 
@@ -39,7 +39,8 @@ from asterion_api.routers import (
 # In-Memory Rate Limiting
 RATE_LIMIT_REQUESTS = 120
 RATE_LIMIT_WINDOW_SECONDS = 60
-request_history: dict[str, list[float]] = defaultdict(list)
+RATE_LIMIT_MAX_ENTRIES = 10_000
+request_history: dict[str, deque[float]] = defaultdict(lambda: deque(maxlen=RATE_LIMIT_REQUESTS * 2))
 
 
 async def memory_ttl_enforcer() -> None:
@@ -69,6 +70,8 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     in_test = "pytest" in sys.modules
     
     # Start RAG file watcher
+    indexer = None
+    ttl_task = None
     if not in_test:
         indexer = get_document_indexer()
         indexer.start_watcher(watch_dir=settings.data_dir / "vault")
@@ -78,12 +81,15 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     
     yield
     
-    if not in_test:
+    if not in_test and ttl_task is not None:
         ttl_task.cancel()
         try:
             await ttl_task
         except asyncio.CancelledError:
             pass
+        
+    if indexer is not None:
+        indexer.stop_watcher()
         
     await ollama.aclose()
 
@@ -132,14 +138,20 @@ async def security_headers_middleware(request: Request, call_next: Any) -> Respo
     return response
 
 
+# Periodic cleanup of stale IPs from rate limiter
+_RATE_LIMIT_LAST_CLEANUP = time.time()
+
+
 @app.middleware("http")
 async def rate_limiting_middleware(request: Request, call_next: Any) -> Response:
+    global _RATE_LIMIT_LAST_CLEANUP
     client_ip = request.client.host if request.client else "127.0.0.1"
     now = time.time()
     
     history = request_history[client_ip]
+    # Prune expired entries
     while history and history[0] < now - RATE_LIMIT_WINDOW_SECONDS:
-        history.pop(0)
+        history.popleft()
         
     if len(history) >= RATE_LIMIT_REQUESTS:
         return JSONResponse(
@@ -148,6 +160,15 @@ async def rate_limiting_middleware(request: Request, call_next: Any) -> Response
         )
         
     history.append(now)
+
+    # Periodically purge stale IPs to avoid memory leak
+    if now - _RATE_LIMIT_LAST_CLEANUP > 300:
+        cutoff = now - RATE_LIMIT_WINDOW_SECONDS
+        stale_ips = [ip for ip, h in request_history.items() if not h or h[-1] < cutoff]
+        for ip in stale_ips:
+            del request_history[ip]
+        _RATE_LIMIT_LAST_CLEANUP = now
+    
     return await call_next(request)
 
 

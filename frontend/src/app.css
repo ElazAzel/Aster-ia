@@ -98,17 +98,19 @@ html, body {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 24px 16px;
+  padding: 20px 12px;
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+  min-height: 0;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 8px 24px;
+  gap: 10px;
+  padding: 0 8px 16px;
   border-bottom: 1px solid var(--border-color);
-  margin-bottom: 24px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
 }
 
 .brand-mark {
@@ -143,6 +145,8 @@ nav {
   flex-direction: column;
   gap: 6px;
   flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 nav button, nav a {
@@ -395,13 +399,13 @@ input:focus, select:focus, textarea:focus {
 /* Custom layout blocks */
 .split-controls {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
 }
 
 .button-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
   gap: 8px;
 }
 
@@ -779,13 +783,84 @@ input:focus, select:focus, textarea:focus {
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+/* SideRail grouping */
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+.nav-group:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+.nav-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  padding: 4px 16px 6px;
+}
+
+/* SystemTab specific styles */
+.system-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  flex: 1;
+  overflow-y: auto;
+}
+.system-section-header {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 4px;
+}
+.system-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 20px;
+}
+
 /* Responsive grid changes for tablet & phone */
+@media (max-width: 1100px) {
+  .side-rail.compact nav button span:not(.nav-status) {
+    display: none;
+  }
+  .side-rail.compact .brand div {
+    display: none;
+  }
+  .side-rail.compact .nav-group-label {
+    display: none;
+  }
+}
+
 @media (max-width: 1024px) {
+  .app-shell {
+    grid-template-columns: 260px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
   .app-shell {
     grid-template-columns: 1fr;
   }
   .side-rail {
-    display: none; /* In tauri desktop we assume standard window size */
+    display: none;
+  }
+  .side-rail.open {
+    display: flex;
+    position: fixed;
+    z-index: 100;
+    width: 280px;
+    height: 100vh;
   }
 }
 
@@ -920,6 +995,14 @@ input:focus, select:focus, textarea:focus {
   0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
   33% { transform: translate(40px, -30px) scale(1.08); opacity: 1; }
   66% { transform: translate(-30px, 25px) scale(0.92); opacity: 0.7; }
+}
+
+@media (max-width: 768px) {
+  .bg-gradient-glow::before,
+  .bg-gradient-glow::after,
+  .bg-gradient-glow .glow-sphere-3 {
+    display: none;
+  }
 }
 
 /* === Workbench Three-Column Layout === */

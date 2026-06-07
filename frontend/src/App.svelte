@@ -20,7 +20,9 @@
     activeConsentRequest,
     showOnboarding,
     showCommandPalette,
-    reportTelemetryEvent
+    reportTelemetryEvent,
+    telemetryOptIn,
+    stopAgentRunEvents
   } from './lib/stores';
 
   // Import Svelte Components
@@ -48,7 +50,7 @@
   import AnalyticsTab from './lib/AnalyticsTab.svelte';
   import CommandCenterTab from './lib/CommandCenterTab.svelte';
 
-  import { isTauriRuntime } from './lib/tauri';
+  import { isTauriRuntime, toggleFullscreen } from './lib/tauri';
 
   const isSplash = typeof window !== 'undefined' && window.location.search.includes('splash=true');
 
@@ -88,10 +90,28 @@
       const idx = parseInt(event.key) - 1;
       if (idx < TAB_TABS.length) $activeTab = TAB_TABS[idx];
     }
+    if ((event.metaKey || event.ctrlKey) && event.shiftKey && (event.key === 'f' || event.key === 'F')) {
+      event.preventDefault();
+      void toggleFullscreen();
+    }
     if (event.key === 'Escape') {
       $privacyPopoverOpen = false;
     }
   }
+
+  // Clear error when switching tabs
+  $: if ($activeTab) clearError();
+
+  // Auto-dismiss error after 8s
+  let errorTimer: ReturnType<typeof setTimeout> | undefined;
+  $: {
+    if ($errorText) {
+      if (errorTimer) clearTimeout(errorTimer);
+      errorTimer = setTimeout(() => { clearError(); }, 8000);
+    }
+  }
+
+  let telemetryUnsub: (() => void) | undefined;
 
   onMount(() => {
     $desktopAvailable = isTauriRuntime();
@@ -102,12 +122,21 @@
       }
       document.addEventListener('keydown', handleKeydown);
       void reportTelemetryEvent('app_start');
+
+      telemetryUnsub = telemetryOptIn.subscribe(val => {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('asterion_telemetry_opt_in', val ? 'true' : 'false');
+        }
+      });
     }
   });
 
   onDestroy(() => {
     if (!isSplash) {
       document.removeEventListener('keydown', handleKeydown);
+      stopAgentRunEvents();
+      if (errorTimer) clearTimeout(errorTimer);
+      if (telemetryUnsub) telemetryUnsub();
     }
   });
 </script>

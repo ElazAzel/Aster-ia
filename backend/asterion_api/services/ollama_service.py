@@ -20,9 +20,9 @@ class OllamaService(BaseHarness):
         self.logger = StructuredLogger("ollama", self.privacy_level)
         self._client: httpx.AsyncClient | None = None
 
-    def _get_client(self, timeout: httpx.Timeout) -> httpx.AsyncClient:
+    def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
-            self._client = httpx.AsyncClient(timeout=timeout)
+            self._client = httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=5.0))
         return self._client
 
     async def aclose(self) -> None:
@@ -48,25 +48,25 @@ class OllamaService(BaseHarness):
         self._state.update(dict(state))
 
     async def list_models(self) -> list[dict[str, Any]]:
-        client = self._get_client(httpx.Timeout(5.0, connect=1.0))
-        response = await client.get(f"{self.base_url}/api/tags")
+        async with httpx.AsyncClient(timeout=httpx.Timeout(5.0, connect=1.0)) as client:
+            response = await client.get(f"{self.base_url}/api/tags")
         response.raise_for_status()
         payload = response.json()
         self.logger.emit("models.listed", count=len(payload.get("models", [])))
         return list(payload.get("models", []))
 
     async def generate(self, *, model: str, prompt: str) -> str:
-        client = self._get_client(httpx.Timeout(120.0, connect=1.0))
-        response = await client.post(
-            f"{self.base_url}/api/generate",
-            json={
-                "model": model,
-                "prompt": prompt,
-                "stream": False,
-                "keep_alive": "30m",
-                "options": {"num_predict": 256},
-            },
-        )
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=1.0)) as client:
+            response = await client.post(
+                f"{self.base_url}/api/generate",
+                json={
+                    "model": model,
+                    "prompt": prompt,
+                    "stream": False,
+                    "keep_alive": "30m",
+                    "options": {"num_predict": 256},
+                },
+            )
         response.raise_for_status()
         payload = response.json()
         text = str(payload.get("response", ""))
@@ -87,7 +87,12 @@ class OllamaService(BaseHarness):
                     "options": {"num_predict": 256},
                 },
             ) as response:
-                response.raise_for_status()
+                if response.status_code >= 400:
+                    raise httpx.HTTPStatusError(
+                        f"Ollama generate {response.status_code}",
+                        request=response.request,
+                        response=response,
+                    )
                 async for line in response.aiter_lines():
                     if not line:
                         continue
@@ -97,17 +102,17 @@ class OllamaService(BaseHarness):
                         yield {"response": line, "done": False}
 
     async def chat(self, *, model: str, messages: list[dict[str, Any]]) -> str:
-        client = self._get_client(httpx.Timeout(120.0, connect=1.0))
-        response = await client.post(
-            f"{self.base_url}/api/chat",
-            json={
-                "model": model,
-                "messages": messages,
-                "stream": False,
-                "keep_alive": "30m",
-                "options": {"num_predict": 1024},
-            },
-        )
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=1.0)) as client:
+            response = await client.post(
+                f"{self.base_url}/api/chat",
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "stream": False,
+                    "keep_alive": "30m",
+                    "options": {"num_predict": 1024},
+                },
+            )
         response.raise_for_status()
         payload = response.json()
         message = payload.get("message", {})
@@ -129,7 +134,12 @@ class OllamaService(BaseHarness):
                     "options": {"num_predict": 1024},
                 },
             ) as response:
-                response.raise_for_status()
+                if response.status_code >= 400:
+                    raise httpx.HTTPStatusError(
+                        f"Ollama chat {response.status_code}",
+                        request=response.request,
+                        response=response,
+                    )
                 async for line in response.aiter_lines():
                     if not line:
                         continue
@@ -139,11 +149,11 @@ class OllamaService(BaseHarness):
                         yield {"message": {"content": line}, "done": False}
 
     async def embed(self, *, model: str, input_texts: list[str]) -> list[list[float]]:
-        client = self._get_client(httpx.Timeout(120.0, connect=1.0))
-        response = await client.post(
-            f"{self.base_url}/api/embed",
-            json={"model": model, "input": input_texts, "keep_alive": "30m"},
-        )
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=1.0)) as client:
+            response = await client.post(
+                f"{self.base_url}/api/embed",
+                json={"model": model, "input": input_texts, "keep_alive": "30m"},
+            )
         response.raise_for_status()
         payload = response.json()
         embeddings = payload.get("embeddings")
@@ -154,8 +164,8 @@ class OllamaService(BaseHarness):
     async def is_available(self) -> bool:
         """Quick connectivity check for Ollama (2s timeout)."""
         try:
-            client = self._get_client(httpx.Timeout(2.0, connect=1.0))
-            response = await client.get(f"{self.base_url}/api/tags")
+            async with httpx.AsyncClient(timeout=httpx.Timeout(2.0, connect=1.0)) as client:
+                response = await client.get(f"{self.base_url}/api/tags")
             return response.status_code == 200
         except (httpx.HTTPError, OSError):
             return False
@@ -169,7 +179,12 @@ class OllamaService(BaseHarness):
                 f"{self.base_url}/api/pull",
                 json={"name": model, "stream": True},
             ) as response:
-                response.raise_for_status()
+                if response.status_code >= 400:
+                    raise httpx.HTTPStatusError(
+                        f"Ollama pull {response.status_code}",
+                        request=response.request,
+                        response=response,
+                    )
                 async for line in response.aiter_lines():
                     if not line:
                         continue

@@ -121,36 +121,47 @@ class ChatService(BaseHarness):
             token_iter = self.vllm.chat_stream(model=model, messages=prompt_msgs)
         else:
             token_iter = self._ollama_token_stream(model, prompt_msgs)
-        async for token in token_iter:
-            if token:
-                parts.append(token)
-                yield {
-                    "type": "token",
-                    "conversation_id": conv_id,
-                    "model": model,
-                    "response": token,
-                    "done": False,
-                    "privacy_level": self.privacy_level,
-                }
-        full_text = "".join(parts)
-        artifact = await self._persist_response_artifact(
-            room_id=request.room_id,
-            prompt=request.message,
-            response=full_text,
-            model=model,
-        )
-        await self.store.append_message(
-            conv_id=conv_id,
-            role="assistant",
-            content=full_text,
-            model=model,
-            artifact_id=str(artifact["id"]),
-        )
+        try:
+            async for token in token_iter:
+                if token:
+                    parts.append(token)
+                    yield {
+                        "type": "token",
+                        "conversation_id": conv_id,
+                        "model": model,
+                        "response": token,
+                        "done": False,
+                        "privacy_level": self.privacy_level,
+                    }
+        finally:
+            # Persist partial/full assistant response even if the client disconnects
+            full_text = "".join(parts)
+            if full_text:
+                try:
+                    artifact = await self._persist_response_artifact(
+                        room_id=request.room_id,
+                        prompt=request.message,
+                        response=full_text,
+                        model=model,
+                    )
+                    await self.store.append_message(
+                        conv_id=conv_id,
+                        role="assistant",
+                        content=full_text,
+                        model=model,
+                        artifact_id=str(artifact["id"]),
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    self.logger.emit(
+                        "stream.persist_failed",
+                        model=model,
+                        error=str(exc),
+                        ts=datetime.now(UTC).isoformat(),
+                    )
         yield {
             "type": "done",
             "conversation_id": conv_id,
             "model": model,
-            "artifact_id": artifact["id"],
             "latency_ms": (time.perf_counter() - started) * 1000,
             "privacy_level": self.privacy_level,
         }
@@ -169,14 +180,19 @@ class ChatService(BaseHarness):
             messages.append({"role": "system", "content": room["system_prompt"]})
 
         history = await self.store.list_messages(conv_id)
+        # Accumulate up to the last N messages, but never drop the latest user message
+        # (the most recent one is always appended as the live prompt).
+        recent = history[-40:]
         tail: list[dict[str, Any]] = []
         total = 0
-        for msg in reversed(history[-40:]):
+        for msg in reversed(recent):
             content = msg["content"]
-            if total + len(content) > self.MAX_HISTORY_CHARS:
+            projected = total + len(content)
+            if projected > self.MAX_HISTORY_CHARS and tail:
+                # Already have at least the most-recent message — stop.
                 break
             tail.append({"role": msg["role"], "content": content})
-            total += len(content)
+            total = projected
 
         tail.reverse()
         messages.extend(tail)

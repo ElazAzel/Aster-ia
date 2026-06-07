@@ -257,26 +257,30 @@ export type FlightRecorderEvent = {
 type RequestOptions = {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   body?: unknown;
+  signal?: AbortSignal;
 };
 
 async function request<T>(apiBase: string, path: string, options: RequestOptions = {}): Promise<T> {
   const response = await fetch(`${apiBase}${path}`, {
     method: options.method ?? 'GET',
     headers: options.body === undefined ? undefined : { 'Content-Type': 'application/json' },
-    body: options.body === undefined ? undefined : JSON.stringify(options.body)
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    signal: options.signal
   });
 
   if (!response.ok) {
-    let detail = `${response.status} ${response.statusText}`;
+    const raw = await response.text();
+    let detail = raw || `${response.status} ${response.statusText}`;
     try {
-      const payload = (await response.json()) as { detail?: string };
-      if (payload.detail) detail = payload.detail;
+      const payload = JSON.parse(raw) as { detail?: string };
+      if (payload?.detail) detail = payload.detail;
     } catch {
-      detail = await response.text();
+      // raw is plain text, use as-is
     }
     throw new Error(detail);
   }
 
+  if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
 
@@ -333,12 +337,14 @@ export async function structureVoiceText(apiBase: string, text: string, mode = '
 
 export async function* pullModel(
   apiBase: string,
-  model: string
+  model: string,
+  signal?: AbortSignal
 ): AsyncGenerator<Record<string, unknown>, void> {
   const response = await fetch(`${apiBase}/api/models/pull`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model })
+    body: JSON.stringify({ model }),
+    signal
   });
   if (!response.ok) {
     const detail = await response.text();
@@ -748,6 +754,7 @@ export type DeepResearchStreamEvent =
 export async function* streamDeepResearch(
   apiBase: string,
   payload: DeepResearchRequest,
+  signal?: AbortSignal,
 ): AsyncGenerator<DeepResearchStreamEvent, DeepResearchResponse> {
   const response = await fetch(`${apiBase}/api/research/deep/stream`, {
     method: 'POST',
@@ -757,6 +764,7 @@ export async function* streamDeepResearch(
       max_subtasks: payload.max_subtasks ?? 5,
       web_access: payload.web_access ?? true,
     }),
+    signal,
   });
   if (!response.ok) {
     const detail = await response.text();
@@ -765,25 +773,37 @@ export async function* streamDeepResearch(
   const reader = response.body!.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let eventType = '';
+  let data = '';
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
     buffer = lines.pop() ?? '';
-    let eventType = '';
-    let data = '';
     for (const line of lines) {
-      if (line.startsWith('event: ')) eventType = line.slice(7);
-      else if (line.startsWith('data: ')) data = line.slice(6);
-      else if (line === '' && eventType) {
-        const parsed = JSON.parse(data);
-        if (eventType === 'subtask_start') yield { type: 'subtask_start', subtask: parsed.subtask };
-        else if (eventType === 'result_found') yield { type: 'result_found', result: parsed as ResearchResult };
-        else if (eventType === 'done') {
-          yield { type: 'done', response: parsed as DeepResearchResponse };
-          return parsed as DeepResearchResponse;
+      if (line.startsWith('event: ')) {
+        eventType = line.slice(7);
+      } else if (line.startsWith('data: ')) {
+        data = line.slice(6);
+      } else if (line === '' && eventType) {
+        try {
+          const parsed = JSON.parse(data);
+          if (eventType === 'subtask_start') {
+            yield { type: 'subtask_start', subtask: parsed.subtask };
+          } else if (eventType === 'result_found') {
+            yield { type: 'result_found', result: parsed as ResearchResult };
+          } else if (eventType === 'done') {
+            yield { type: 'done', response: parsed as DeepResearchResponse };
+            eventType = '';
+            data = '';
+            return parsed as DeepResearchResponse;
+          }
+        } catch {
+          // ignore malformed event
         }
+        eventType = '';
+        data = '';
       }
     }
   }

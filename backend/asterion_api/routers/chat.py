@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 
 import httpx
@@ -27,7 +28,7 @@ async def chat(
 ) -> ChatResponse:
     try:
         return await service.generate(request)
-    except httpx.HTTPError as exc:
+    except (httpx.RequestError, httpx.HTTPError) as exc:
         raise HTTPException(status_code=503, detail=f"Ollama unavailable: {exc}") from exc
 
 
@@ -72,20 +73,30 @@ async def list_conversation_messages(
     return [ChatMessageRecord(**row) for row in rows]
 
 
+async def _stream_events(service: ChatService, request: ChatRequest):
+    async def events():
+        try:
+            async for event in service.stream(request):
+                yield f"data: {json.dumps(event, ensure_ascii=True)}\n\n"
+        except (httpx.RequestError, httpx.StreamError, httpx.ResponseNotRead) as exc:
+            payload = {"type": "error", "error": f"Ollama unavailable: {exc}"}
+            yield f"data: {json.dumps(payload, ensure_ascii=True)}\n\n"
+        except asyncio.CancelledError:
+            # Client disconnected — propagate so the server cancels the upstream
+            raise
+        except Exception as exc:  # noqa: BLE001
+            payload = {"type": "error", "error": f"stream error: {exc}"}
+            yield f"data: {json.dumps(payload, ensure_ascii=True)}\n\n"
+
+    return StreamingResponse(events(), media_type="text/event-stream")
+
+
 @router.post("/stream")
 async def chat_stream(
     request: ChatRequest,
     service: ChatService = Depends(get_chat_service),
 ) -> StreamingResponse:
-    async def events():
-        try:
-            async for event in service.stream(request):
-                yield f"data: {json.dumps(event, ensure_ascii=True)}\n\n"
-        except httpx.HTTPError as exc:
-            payload = {"type": "error", "error": f"Ollama unavailable: {exc}"}
-            yield f"data: {json.dumps(payload, ensure_ascii=True)}\n\n"
-
-    return StreamingResponse(events(), media_type="text/event-stream")
+    return await _stream_events(service, request)
 
 
 @router.get("/stream")
@@ -102,13 +113,4 @@ async def chat_stream_eventsource(
         conversation_id=conversation_id,
         model=model,
     )
-
-    async def events():
-        try:
-            async for event in service.stream(request):
-                yield f"data: {json.dumps(event, ensure_ascii=True)}\n\n"
-        except httpx.HTTPError as exc:
-            payload = {"type": "error", "error": f"Ollama unavailable: {exc}"}
-            yield f"data: {json.dumps(payload, ensure_ascii=True)}\n\n"
-
-    return StreamingResponse(events(), media_type="text/event-stream")
+    return await _stream_events(service, request)
