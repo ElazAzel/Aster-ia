@@ -550,6 +550,7 @@ export function listAgentRunLogs(apiBase: string, runId: string) {
 
 export type ImageGenerateRequest = {
   prompt: string;
+  preset_id?: string;
   recipe?: Record<string, unknown>;
 };
 
@@ -557,6 +558,50 @@ export type ImageGenerateResponse = {
   prompt_id: string;
   history: Record<string, unknown>;
 };
+
+export type ImageRecipeValidation = {
+  ok: boolean;
+  errors: string[];
+  warnings: string[];
+  nodes_count: number;
+  privacy_level: 'local';
+};
+
+export type ImageRecipePreset = {
+  id: string;
+  title: string;
+  description: string;
+  tags: string[];
+  estimated_vram_gb: number;
+  recipe: Record<string, unknown>;
+  validation: ImageRecipeValidation;
+  privacy_level: 'local';
+};
+
+export type ImageRecipeListResponse = {
+  recipes: ImageRecipePreset[];
+  privacy_level: 'local';
+};
+
+export type ImageRecipeValidateRequest = {
+  prompt?: string;
+  preset_id?: string;
+  recipe?: Record<string, unknown>;
+};
+
+export function listImageRecipes(apiBase: string): Promise<ImageRecipeListResponse> {
+  return request<ImageRecipeListResponse>(apiBase, '/api/images/recipes');
+}
+
+export function validateImageRecipe(
+  apiBase: string,
+  payload: ImageRecipeValidateRequest
+): Promise<ImageRecipeValidation> {
+  return request<ImageRecipeValidation>(apiBase, '/api/images/validate', {
+    method: 'POST',
+    body: payload
+  });
+}
 
 export function generateImage(apiBase: string, payload: ImageGenerateRequest): Promise<Record<string, any>> {
   return request<Record<string, any>>(apiBase, '/api/images/generate', {
