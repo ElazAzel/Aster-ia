@@ -1,0 +1,11 @@
+C:\Users\elaz2\Documents\Aster-ia\target\release\deps\tauri_runtime-f394b440ad754c7c.d: C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\lib.rs C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\dpi.rs C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\monitor.rs C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\webview.rs C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\window.rs
+
+C:\Users\elaz2\Documents\Aster-ia\target\release\deps\libtauri_runtime-f394b440ad754c7c.rlib: C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\lib.rs C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\dpi.rs C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\monitor.rs C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\webview.rs C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\window.rs
+
+C:\Users\elaz2\Documents\Aster-ia\target\release\deps\libtauri_runtime-f394b440ad754c7c.rmeta: C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\lib.rs C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\dpi.rs C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\monitor.rs C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\webview.rs C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\window.rs
+
+C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\lib.rs:
+C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\dpi.rs:
+C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\monitor.rs:
+C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\webview.rs:
+C:\Users\elaz2\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-runtime-2.11.2\src\window.rs:
