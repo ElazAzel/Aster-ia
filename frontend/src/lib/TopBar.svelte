@@ -5,7 +5,10 @@
 
 <header class="topbar">
   <div>
-    {#if $activeTab === 'chat'}
+    {#if $activeTab === 'command_center'}
+      <p class="eyebrow">Панель управления</p>
+      <h1>Command Center</h1>
+    {:else if $activeTab === 'chat'}
       <p class="eyebrow">Окружение диалога</p>
       <h1>Интерактивный чат</h1>
     {:else if $activeTab === 'voice'}

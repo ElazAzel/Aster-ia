@@ -215,7 +215,7 @@ export const systemPrompt = writable(localStorage.getItem('asterion_system_promp
 export const systemPromptSaved = writable(false);
 
 // UI/Navigation States
-export const activeTab = writable('chat');
+export const activeTab = writable('command_center');
 export const activeVaultTab = writable('memory');
 export const privacyPopoverOpen = writable(false);
 export const showLeftPanel = writable(true);

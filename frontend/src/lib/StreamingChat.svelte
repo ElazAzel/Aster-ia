@@ -329,6 +329,79 @@
     streaming = false;
   }
 
+  function parseAssistantMessage(content: string) {
+    const codeBlocks: Array<{ lang: string; filename: string; code: string }> = [];
+    const parts = content.split(/(```[\s\S]*?```)/g);
+    let summaryText = '';
+    
+    for (const part of parts) {
+      if (part.startsWith('```')) {
+        const match = part.match(/```(\w*)(?:\(([^)]+)\))?\n([\s\S]*?)```/);
+        if (match) {
+          codeBlocks.push({
+            lang: match[1] || 'txt',
+            filename: match[2] || '',
+            code: match[3] || ''
+          });
+        } else {
+          const lines = part.split('\n');
+          const lang = lines[0].replace('```', '').trim();
+          const code = lines.slice(1, -1).join('\n');
+          codeBlocks.push({
+            lang: lang || 'txt',
+            filename: '',
+            code: code
+          });
+        }
+      } else {
+        summaryText += part;
+      }
+    }
+
+    const sources: Array<{ name: string; info: string; icon: string }> = [];
+    const seenSources = new Set<string>();
+    const fileRegex = /`([\w\-]+\.(?:log|py|json|yml|yaml|csv|md|txt|html|js|ts|sh|rs|toml))`|(\b[\w\-]+\.(?:log|py|json|yml|yaml|csv|md|txt|html|js|ts|sh|rs|toml))\b/gi;
+    let fileMatch;
+    while ((fileMatch = fileRegex.exec(content)) !== null) {
+      const name = fileMatch[1] || fileMatch[2];
+      if (name && !seenSources.has(name.toLowerCase())) {
+        seenSources.add(name.toLowerCase());
+        let info = 'Локальный файл';
+        let icon = 'description';
+        if (name.endsWith('.log')) {
+          info = 'Лог-файл анализирован';
+          icon = 'receipt_long';
+        } else if (name.endsWith('.db') || name.includes('sql')) {
+          info = 'База данных';
+          icon = 'database';
+        } else if (name.includes('config') || name.endsWith('.yml') || name.endsWith('.yaml') || name.endsWith('.toml')) {
+          info = 'Настройки конфигурации';
+          icon = 'settings';
+        }
+        sources.push({ name, info, icon });
+      }
+    }
+
+    const urlRegex = /(https?:\/\/[^\s\)]+)/gi;
+    let urlMatch;
+    while ((urlMatch = urlRegex.exec(content)) !== null) {
+      const url = urlMatch[1];
+      try {
+        const hostname = new URL(url).hostname;
+        if (!seenSources.has(url.toLowerCase())) {
+          seenSources.add(url.toLowerCase());
+          sources.push({ name: hostname, info: 'Внешний веб-ресурс', icon: 'language' });
+        }
+      } catch {}
+    }
+
+    return {
+      summary: summaryText.trim(),
+      sources,
+      codeBlocks
+    };
+  }
+
   onMount(() => {
     loadHistory();
   });
@@ -349,22 +422,97 @@
           <div class="bubble-meta">
             {message.role === 'user' ? 'Пользователь' : 'Asterion'}
           </div>
-          <div class="bubble-content">
-            {#if message.role === 'assistant'}
-              {#if streaming && message === messages[messages.length - 1]}
-                <MarkdownRenderer text={message.content} />
-                <div class="streaming-indicator">
-                  <span class="streaming-dot"></span>
-                  <span class="streaming-dot"></span>
-                  <span class="streaming-dot"></span>
+          {#if message.role === 'assistant'}
+            {@const parsed = parseAssistantMessage(message.content)}
+            <div class="split-response">
+              <!-- SUMMARY Block -->
+              {#if parsed.summary || (streaming && message === messages[messages.length - 1] && !parsed.summary)}
+                <div class="summary-block">
+                  <div class="block-header">
+                    <div class="block-header-left">
+                      <span class="material-symbols-outlined" style="font-size: 16px;">short_text</span>
+                      <span>АННОТАЦИЯ (SUMMARY)</span>
+                    </div>
+                    <div class="block-header-privacy local">
+                      <span class="status-dot-mini"></span>
+                      <span>ЛОКАЛЬНО</span>
+                    </div>
+                  </div>
+                  <div class="summary-block-text">
+                    <MarkdownRenderer text={parsed.summary || 'Обработка запроса...'} />
+                    {#if streaming && message === messages[messages.length - 1] && !parsed.summary}
+                      <div class="streaming-indicator" style="margin-top: 8px;">
+                        <span class="streaming-dot"></span>
+                        <span class="streaming-dot"></span>
+                        <span class="streaming-dot"></span>
+                      </div>
+                    {/if}
+                  </div>
                 </div>
-              {:else}
-                <MarkdownRenderer text={message.content} />
               {/if}
-            {:else}
+
+              <!-- SOURCE Block -->
+              {#if parsed.sources.length > 0}
+                <div class="source-block">
+                  <div class="block-header">
+                    <div class="block-header-left">
+                      <span class="material-symbols-outlined" style="font-size: 16px;">source</span>
+                      <span>ИСТОЧНИКИ (SOURCE)</span>
+                    </div>
+                    <div class="block-header-privacy local">
+                      <span class="status-dot-mini"></span>
+                      <span>ЛОКАЛЬНО</span>
+                    </div>
+                  </div>
+                  <div class="sources-grid">
+                    {#each parsed.sources as src}
+                      <div class="source-card">
+                        <span class="material-symbols-outlined source-card-icon">{src.icon}</span>
+                        <div>
+                          <div class="source-card-name">{src.name}</div>
+                          <div class="source-card-info">{src.info}</div>
+                        </div>
+                      </div>
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+
+              <!-- CODE Block(s) -->
+              {#each parsed.codeBlocks as block}
+                <div class="code-block-wrapper">
+                  <div class="block-header">
+                    <div class="block-header-left">
+                      <span class="material-symbols-outlined" style="font-size: 16px;">code</span>
+                      <span class="code-block-filename">КОД {block.filename ? `(${block.filename})` : ''}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div class="block-header-privacy local">
+                        <span class="status-dot-mini"></span>
+                        <span>ЛОКАЛЬНО</span>
+                      </div>
+                      <button type="button" class="copy-code-btn" on:click={() => {
+                        if (navigator.clipboard) {
+                          navigator.clipboard.writeText(block.code);
+                          alert('Код скопирован в буфер обмена');
+                        }
+                      }}>
+                        <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span>
+                        <span>Копировать</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="code-block-container">
+                    <MarkdownRenderer text={"```" + block.lang + "\n" + block.code + "\n```"} />
+                  </div>
+                </div>
+              {/each}
+            </div>
+          {:else}
+            <div class="bubble-content">
               <MarkdownRenderer text={message.content} />
-            {/if}
-          </div>
+            </div>
+          {/if}
         </div>
       </div>
     {/each}

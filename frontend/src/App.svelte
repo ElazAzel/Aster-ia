@@ -44,12 +44,14 @@
   import AutomationTab from './lib/AutomationTab.svelte';
   import ArtifactsTab from './lib/ArtifactsTab.svelte';
   import PluginsTab from './lib/PluginsTab.svelte';
+  import CommandCenterTab from './lib/CommandCenterTab.svelte';
 
   import { isTauriRuntime } from './lib/tauri';
 
   const isSplash = typeof window !== 'undefined' && window.location.search.includes('splash=true');
 
   const TAB_TABS = [
+    'command_center',
     'chat',
     'voice',
     'agents',
@@ -143,7 +145,9 @@
       {/if}
 
       <!-- Tab Contents -->
-      {#if $activeTab === 'chat'}
+      {#if $activeTab === 'command_center'}
+        <CommandCenterTab />
+      {:else if $activeTab === 'chat'}
         <!-- Three-column Workbench Layout -->
         <div class="workbench-layout {workbenchLayoutClass}">
           <ContextPanel />
