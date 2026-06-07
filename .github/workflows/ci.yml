@@ -98,12 +98,7 @@ jobs:
             crates/core
             crates/inference
 
-      - name: Prepare sidecar placeholder
-        working-directory: src-tauri
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force binaries | Out-Null
-          New-Item -ItemType File -Force binaries\asterion-backend-x86_64-pc-windows-msvc.exe | Out-Null
+
 
       - name: Cargo check — all workspace
         run: cargo check --workspace

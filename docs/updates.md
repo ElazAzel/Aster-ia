@@ -9,6 +9,7 @@
 - **Sidecar Removal**: Removed the Python sidecar binary mapping from `src-tauri/tauri.conf.json` to enable compilation of a single, unified desktop `.exe` bundle.
 - **Unused Dependency and Permission Cleanup**: Removed `tauri-plugin-shell` dependency from `src-tauri/Cargo.toml` and removed the `shell:allow-spawn` permission block from `src-tauri/capabilities/default.json` for enhanced least-privilege desktop security.
 - **Documentation**: Updated `docs/PLATFORM_SNAPSHOT.md`, `docs/CHANGELOG.md`, and created `docs/ADR/0001-in-process-rust-axum-server.md` to capture the updated architecture.
+- **CI/CD and Release Workflows**: Streamlined `release.yml` and `ci.yml` workflows to remove legacy PyInstaller packaging, Python setup, and sidecar placeholders.
 - **Verification**: Verified clean Svelte production build and TypeScript type-checking local compilation (Vite compiles in 863ms). Rust compilation and tests verified via GHA CI.
 
 ### Rust Migration — Phase 1: BenchmarkService + PluginManager Ported

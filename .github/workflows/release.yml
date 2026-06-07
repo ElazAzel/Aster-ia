@@ -53,31 +53,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-      - name: Set up Python & uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: 'latest'
 
-      - name: Install Python dependencies & PyInstaller
-        working-directory: backend
-        run: |
-          uv sync --extra dev
-          uv pip install pyinstaller
-
-      - name: Build Python Sidecar Binary
-        working-directory: backend
-        run: |
-          uv run pyinstaller --onefile --name asterion-backend main.py
-
-      - name: Move Sidecar Binary to Tauri directory
-        shell: bash
-        run: |
-          mkdir -p src-tauri/binaries
-          if [ "${{ matrix.platform }}" = "windows-latest" ]; then
-            cp backend/dist/asterion-backend.exe src-tauri/binaries/asterion-backend-${{ matrix.target }}${{ matrix.extension }}
-          else
-            cp backend/dist/asterion-backend src-tauri/binaries/asterion-backend-${{ matrix.target }}${{ matrix.extension }}
-          fi
 
       - name: Install frontend dependencies
         working-directory: frontend

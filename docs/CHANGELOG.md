@@ -14,6 +14,7 @@ All notable changes to Asterion AI will be documented in this file.
 ### Changed
 - Eliminated Python FastAPI sidecar binary packaging and runtime execution from Tauri configuration.
 - Removed unused `tauri-plugin-shell` dependency and related capability permissions.
+- Streamlined GitHub Actions release (`release.yml`) and integration (`ci.yml`) workflows to eliminate obsolete PyInstaller backend packaging and placeholder copying.
 
 ## [0.5.0] - 2026-06-07
 
