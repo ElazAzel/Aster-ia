@@ -6,6 +6,7 @@ import secrets
 import sqlite3
 import threading
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any, Mapping
 from uuid import uuid4
 
@@ -202,6 +203,31 @@ class EncryptedSQLiteStore(BaseHarness):
 
     async def delete_rag_document(self, document_id: str) -> bool:
         return await asyncio.to_thread(self._delete_rag_document_sync, document_id)
+
+    async def create_rag_folder_scope(
+        self,
+        *,
+        room_id: str,
+        path: str,
+        label: str | None,
+        recursive: bool,
+    ) -> dict[str, Any]:
+        return await asyncio.to_thread(
+            self._create_rag_folder_scope_sync,
+            room_id,
+            path,
+            label,
+            recursive,
+        )
+
+    async def list_rag_folder_scopes(self, room_id: str | None = None) -> list[dict[str, Any]]:
+        return await asyncio.to_thread(self._list_rag_folder_scopes_sync, room_id)
+
+    async def delete_rag_folder_scope(self, scope_id: str) -> bool:
+        return await asyncio.to_thread(self._delete_rag_folder_scope_sync, scope_id)
+
+    async def is_rag_file_allowed(self, *, room_id: str, file_path: str) -> bool:
+        return await asyncio.to_thread(self._is_rag_file_allowed_sync, room_id, file_path)
 
     async def create_artifact(
         self,
@@ -705,6 +731,100 @@ class EncryptedSQLiteStore(BaseHarness):
             conn.commit()
         return cursor.rowcount > 0
 
+    def _create_rag_folder_scope_sync(
+        self,
+        room_id: str,
+        path: str,
+        label: str | None,
+        recursive: bool,
+    ) -> dict[str, Any]:
+        created_at = datetime.now(UTC).isoformat()
+        with self._connect() as conn:
+            existing = conn.execute(
+                """
+                SELECT id
+                FROM rag_folder_scopes
+                WHERE room_id = ? AND path = ?
+                """,
+                (room_id, path),
+            ).fetchone()
+            if existing is not None:
+                scope_id = str(existing["id"])
+                conn.execute(
+                    """
+                    UPDATE rag_folder_scopes
+                    SET label = ?, recursive = ?
+                    WHERE id = ?
+                    """,
+                    (label, int(recursive), scope_id),
+                )
+            else:
+                scope_id = str(uuid4())
+                conn.execute(
+                    """
+                    INSERT INTO rag_folder_scopes (id, room_id, path, label, recursive, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (scope_id, room_id, path, label, int(recursive), created_at),
+                )
+            conn.commit()
+        scope = self._get_rag_folder_scope_sync(scope_id)
+        if scope is None:
+            raise RuntimeError("created RAG folder scope could not be read")
+        return scope
+
+    def _get_rag_folder_scope_sync(self, scope_id: str) -> dict[str, Any] | None:
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT id, room_id, path, label, recursive, created_at
+                FROM rag_folder_scopes
+                WHERE id = ?
+                """,
+                (scope_id,),
+            ).fetchone()
+        return self._decode_rag_folder_scope(row) if row is not None else None
+
+    def _list_rag_folder_scopes_sync(self, room_id: str | None) -> list[dict[str, Any]]:
+        with self._connect() as conn:
+            if room_id:
+                rows = conn.execute(
+                    """
+                    SELECT id, room_id, path, label, recursive, created_at
+                    FROM rag_folder_scopes
+                    WHERE room_id = ?
+                    ORDER BY created_at DESC
+                    """,
+                    (room_id,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """
+                    SELECT id, room_id, path, label, recursive, created_at
+                    FROM rag_folder_scopes
+                    ORDER BY created_at DESC
+                    """
+                ).fetchall()
+        return [self._decode_rag_folder_scope(row) for row in rows]
+
+    def _delete_rag_folder_scope_sync(self, scope_id: str) -> bool:
+        with self._connect() as conn:
+            cursor = conn.execute("DELETE FROM rag_folder_scopes WHERE id = ?", (scope_id,))
+            conn.commit()
+        return cursor.rowcount > 0
+
+    def _is_rag_file_allowed_sync(self, room_id: str, file_path: str) -> bool:
+        target = Path(file_path).expanduser().resolve(strict=False)
+        scopes = self._list_rag_folder_scopes_sync(room_id)
+        for scope in scopes:
+            root = Path(str(scope["path"])).expanduser().resolve(strict=False)
+            if scope["recursive"]:
+                if target == root or root in target.parents:
+                    return True
+            elif target.parent == root:
+                return True
+        return False
+
     def _create_artifact_sync(
         self,
         room_id: str,
@@ -1056,7 +1176,16 @@ class EncryptedSQLiteStore(BaseHarness):
         try:
             conn = self._connect()
             conn.execute("PRAGMA foreign_keys = OFF")
-            for table in ["messages", "conversations", "memories", "artifacts", "audit_logs", "rooms"]:
+            for table in [
+                "messages",
+                "conversations",
+                "memories",
+                "rag_documents",
+                "rag_folder_scopes",
+                "artifacts",
+                "audit_logs",
+                "rooms",
+            ]:
                 try:
                     conn.execute(f"DELETE FROM {table}")
                 except Exception:
@@ -1158,6 +1287,12 @@ class EncryptedSQLiteStore(BaseHarness):
             conversations = conn.execute("SELECT * FROM conversations").fetchall()
             messages = conn.execute("SELECT * FROM messages").fetchall()
             memories = conn.execute("SELECT * FROM memories").fetchall()
+            rag_documents = conn.execute("SELECT * FROM rag_documents").fetchall()
+            rag_folder_scopes = (
+                conn.execute("SELECT * FROM rag_folder_scopes").fetchall()
+                if current_version(conn) >= 4
+                else []
+            )
             artifacts = conn.execute("SELECT * FROM artifacts").fetchall()
             audit_logs = conn.execute("SELECT * FROM audit_logs").fetchall() if current_version(conn) >= 3 else []
             
@@ -1166,6 +1301,8 @@ class EncryptedSQLiteStore(BaseHarness):
             "conversations": [dict(c) for c in conversations],
             "messages": [dict(m) for m in messages],
             "memories": [dict(mem) for mem in memories],
+            "rag_documents": [dict(doc) for doc in rag_documents],
+            "rag_folder_scopes": [dict(scope) for scope in rag_folder_scopes],
             "artifacts": [dict(art) for art in artifacts],
             "audit_logs": [dict(log) for log in audit_logs],
         }
@@ -1210,6 +1347,24 @@ class EncryptedSQLiteStore(BaseHarness):
                             """,
                             mem,
                         )
+                if "rag_documents" in dump:
+                    for doc in dump["rag_documents"]:
+                        conn.execute(
+                            """
+                            INSERT OR REPLACE INTO rag_documents (id, room_id, source, indexed_chunks, created_at)
+                            VALUES (:id, :room_id, :source, :indexed_chunks, :created_at)
+                            """,
+                            doc,
+                        )
+                if "rag_folder_scopes" in dump and current_version(conn) >= 4:
+                    for scope in dump["rag_folder_scopes"]:
+                        conn.execute(
+                            """
+                            INSERT OR REPLACE INTO rag_folder_scopes (id, room_id, path, label, recursive, created_at)
+                            VALUES (:id, :room_id, :path, :label, :recursive, :created_at)
+                            """,
+                            scope,
+                        )
                 if "artifacts" in dump:
                     for art in dump["artifacts"]:
                         conn.execute(
@@ -1237,6 +1392,12 @@ class EncryptedSQLiteStore(BaseHarness):
         room = dict(row)
         room["allowed_models"] = json.loads(str(room["allowed_models"]))
         return room
+
+    @staticmethod
+    def _decode_rag_folder_scope(row: dict[str, Any]) -> dict[str, Any]:
+        scope = dict(row)
+        scope["recursive"] = bool(scope["recursive"])
+        return scope
 
     def _connect(self) -> Any:
         if hasattr(self._local, "conn"):

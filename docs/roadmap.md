@@ -69,7 +69,7 @@ Status: partially implemented; hardening continues.
 - Plugin signature verification. Ed25519 manifest verification is implemented; key distribution policy still needs a documented release process.
 - SearXNG deployment helper. Docker dev profile includes SearXNG; native desktop helper remains open.
 - ComfyUI recipe library and validation are implemented with local preset catalog, preflight validation, and generation-time blocking.
-- RAG file watcher with opt-in folder scopes. Backend watcher exists; user-facing folder scope management needs hardening.
+- RAG file watcher with opt-in folder scopes. Backend watcher exists; room-scoped folder approvals and Vault scope management are implemented, while automatic watcher binding to approved scopes remains open.
 - Secrets scanner in CI is implemented through `scripts/scan_secrets.py` and the `security` workflow job.
 - Full frontend E2E tests. Basic Playwright smoke exists; more production journeys are needed.
 - Tauri `cargo check` is green in CI; release packaging remains covered by the tag-triggered release workflow.

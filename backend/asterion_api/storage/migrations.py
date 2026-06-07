@@ -254,3 +254,26 @@ def migration_003(conn: Any) -> None:
     )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_audit_logs_ts ON audit_logs(ts)")
 
+
+# RAG folder approval scopes
+
+
+@_register(4, "Create room-scoped RAG folder approval scopes")
+def migration_004(conn: Any) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS rag_folder_scopes (
+            id TEXT PRIMARY KEY,
+            room_id TEXT NOT NULL,
+            path TEXT NOT NULL,
+            label TEXT,
+            recursive INTEGER NOT NULL DEFAULT 1 CHECK(recursive IN (0, 1)),
+            created_at TEXT NOT NULL,
+            UNIQUE(room_id, path)
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_rag_folder_scopes_room ON rag_folder_scopes(room_id)"
+    )
+

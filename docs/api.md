@@ -302,6 +302,25 @@ The default room cannot be deleted.
 ```
 
 The indexer parses local files, chunks text, embeds with `nomic-embed-text` through Ollama, and upserts to LanceDB.
+Path-based indexing is blocked unless the file is inside a room-approved RAG folder scope.
+
+Approved folder scopes:
+
+- `GET /api/rag/folder-scopes`
+- `GET /api/rag/folder-scopes?room_id=default`
+- `POST /api/rag/folder-scopes`
+- `DELETE /api/rag/folder-scopes/{scope_id}`
+
+```json
+{
+  "room_id": "default",
+  "path": "C:\\Users\\user\\Documents\\project",
+  "label": "Project docs",
+  "recursive": true
+}
+```
+
+Root folders and the user's home directory are rejected as too broad.
 
 `POST /api/rag/search`
 

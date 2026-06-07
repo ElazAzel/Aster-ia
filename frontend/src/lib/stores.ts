@@ -8,6 +8,7 @@ import {
   listRooms,
   listMemories,
   listRagDocuments,
+  listRagFolderScopes,
   analyzePrivacy,
   selectModel,
   createMemory,
@@ -15,6 +16,8 @@ import {
   deleteMemory,
   searchRag,
   deleteRagDocument,
+  createRagFolderScope,
+  deleteRagFolderScope,
   exportResearchReport,
   simulateAgentTask,
   createAgentRun,
@@ -50,6 +53,7 @@ import {
   type ContextRoom,
   type MemoryRecord,
   type RagDocumentRecord,
+  type RagFolderScopeRecord,
   type RagChunk,
   type DeepResearchResponse,
   type ContradictionMatch,
@@ -90,6 +94,7 @@ export const roomDraft = writable('');
 export const memories = writable<MemoryRecord[]>([]);
 export const memoryDraft = writable('');
 export const ragDocuments = writable<RagDocumentRecord[]>([]);
+export const ragFolderScopes = writable<RagFolderScopeRecord[]>([]);
 export const ragQuery = writable('');
 export const ragResults = writable<RagChunk[]>([]);
 export const researchQuery = writable('Сравнить приватность локального и API маршрута');
@@ -396,6 +401,13 @@ export async function refreshRagDocuments() {
   if (result) ragDocuments.set(result);
 }
 
+export async function refreshRagFolderScopes() {
+  const base = get(apiBase);
+  const rid = get(roomId);
+  const result = await runStep('Читаю разрешенные RAG папки', () => listRagFolderScopes(base, rid));
+  if (result) ragFolderScopes.set(result);
+}
+
 export async function refreshImageRecipes() {
   const base = get(apiBase);
   const result = await runStep('Load ComfyUI presets', () => listImageRecipes(base));
@@ -522,6 +534,15 @@ export async function removeRagDocument(documentId: string) {
   if (result) {
     showToast('Документ удален из хранилища RAG', 'success');
     await refreshRagDocuments();
+  }
+}
+
+export async function removeRagFolderScope(scopeId: string) {
+  const base = get(apiBase);
+  const result = await runStep('Отзываю доступ к RAG папке', () => deleteRagFolderScope(base, scopeId));
+  if (result) {
+    showToast('Доступ к RAG папке отозван', 'success');
+    await refreshRagFolderScopes();
   }
 }
 
@@ -846,22 +867,52 @@ export async function uploadVaultFile() {
 
 export const localFilePath = writable('');
 
+function parentDirectory(path: string): string {
+  const slash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+  if (slash < 0) return path;
+  if (/^[A-Za-z]:[\\/]/.test(path) && slash <= 2) return path.slice(0, 3);
+  if (slash === 0) return '/';
+  return path.slice(0, slash);
+}
+
 export async function indexLocalVaultFile() {
   const base = get(apiBase);
   const rid = get(roomId);
   const path = get(localFilePath);
   if (!path) return;
-  uploadBusy.set(true);
-  uploadResult.set(null);
-  const result = await runStep('Индексирую локальный файл', () =>
-    indexFileByPath(base, path, rid)
+  const folder = parentDirectory(path);
+  const run = async () => {
+    uploadBusy.set(true);
+    uploadResult.set(null);
+    const scope = await runStep('Разрешаю RAG папку', () =>
+      createRagFolderScope(base, {
+        room_id: rid,
+        path: folder,
+        label: 'Desktop file picker',
+        recursive: true
+      })
+    );
+    if (!scope) {
+      uploadBusy.set(false);
+      return;
+    }
+    await refreshRagFolderScopes();
+    const result = await runStep('Индексирую локальный файл', () =>
+      indexFileByPath(base, path, rid)
+    );
+    if (result) {
+      localFilePath.set('');
+      uploadResult.set(result);
+      await refreshRagDocuments();
+    }
+    uploadBusy.set(false);
+  };
+  requestUserConsent(
+    'RAG folder scope',
+    `Asterion AI получит доступ к папке для локального индексирования: ${folder}`,
+    'local',
+    run
   );
-  if (result) {
-    localFilePath.set('');
-    uploadResult.set(result);
-    await refreshRagDocuments();
-  }
-  uploadBusy.set(false);
 }
 
 export async function fetchAnalyticsStats() {
@@ -883,6 +934,7 @@ export async function refreshAll() {
     refreshRooms(),
     refreshMemories(),
     refreshRagDocuments(),
+    refreshRagFolderScopes(),
     refreshImageRecipes(),
     refreshConversations(),
     analyzeCurrentPrivacy(),

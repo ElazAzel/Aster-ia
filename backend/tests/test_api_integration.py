@@ -459,9 +459,9 @@ def test_db_migration_v0_to_latest(tmp_path):
     
     assert current_version(conn) == 1
     
-    # Run remaining migrations (v3)
+    # Run remaining migrations (v4)
     new_version = run_migrations(conn)
-    assert new_version == 3
+    assert new_version == 4
     
     # Verify columns were added successfully and data was preserved
     cursor = conn.execute("SELECT * FROM rooms WHERE id='room_mig'")
@@ -469,6 +469,8 @@ def test_db_migration_v0_to_latest(tmp_path):
     # id, name, color, allowed_models, memory_policy, retention_days, created_at, updated_at, system_prompt
     assert row[1] == "Mig Room"
     assert row[8] == "" # system_prompt default
+    cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='rag_folder_scopes'")
+    assert cursor.fetchone() is not None
     
     conn.close()
 
@@ -546,18 +548,45 @@ async def test_chat_stream_endpoints(test_app, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_rag_index_endpoints(test_app, monkeypatch):
+async def test_rag_index_endpoints(test_app, tmp_path, monkeypatch):
     async def mock_index_file(self, file_path, room_id):
         return {"source": "test.txt", "indexed_chunks": 5}
     from asterion_api.services.rag import DocumentIndexer
     monkeypatch.setattr(DocumentIndexer, "index_file", mock_index_file)
+    allowed_file = tmp_path / "test.txt"
+    allowed_file.write_text("some mock content", encoding="utf-8")
 
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
-        # Test POST /api/rag/index
-        index_payload = {"file_path": "test.txt", "room_id": "default"}
+        # Path indexing is blocked until the folder is explicitly approved.
+        index_payload = {"file_path": str(allowed_file), "room_id": "default"}
+        res = await ac.post("/api/rag/index", json=index_payload)
+        assert res.status_code == 403
+
+        # Approve a room-scoped folder and then index the file.
+        res = await ac.post(
+            "/api/rag/folder-scopes",
+            json={
+                "room_id": "default",
+                "path": str(tmp_path),
+                "label": "pytest scope",
+                "recursive": True,
+            },
+        )
+        assert res.status_code == 200
+        scope = res.json()
+        assert scope["path"] == str(tmp_path.resolve())
+
+        res = await ac.get("/api/rag/folder-scopes?room_id=default")
+        assert res.status_code == 200
+        assert any(item["id"] == scope["id"] for item in res.json())
+
         res = await ac.post("/api/rag/index", json=index_payload)
         assert res.status_code == 200
         assert res.json()["document"]["indexed_chunks"] == 5
+
+        res = await ac.delete(f"/api/rag/folder-scopes/{scope['id']}")
+        assert res.status_code == 200
+        assert res.json() == {"deleted": True}
 
         # Test POST /api/rag/index/upload
         files = {"file": ("test.txt", b"some mock content", "text/plain")}

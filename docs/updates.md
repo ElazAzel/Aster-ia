@@ -15,7 +15,8 @@
 - Updated `docs/roadmap.md` to mark Phase 3 as implemented and split Phase 4 into implemented hardening foundations versus remaining release-grade work.
 - Fixed CORS block on unhandled exception responses in `global_exception_handler` (e.g. when SearXNG or ComfyUI services are offline) by injecting `Access-Control-Allow-Origin` and `Access-Control-Allow-Credentials` headers, enabling the frontend to properly read error states.
 - Created `favicon.svg` and `favicon.ico` in the `frontend/public/` directory and linked them in `App.svelte` to resolve console 404 asset loader errors.
-- Verified locally: `uv run pytest` (88 passed), `uv run ruff check .`, `npm run build`, `npx tsc --noEmit`, and compileall.
+- Added room-scoped RAG folder approvals with `GET/POST/DELETE /api/rag/folder-scopes`; `/api/rag/index` now blocks local path indexing until the file is inside an approved scope, while upload indexing remains explicit file consent.
+- Verified locally: `uv run pytest` (88 passed), `uv run ruff check .`, compileall, `uv run python harness/meta_harness.py --phase 1 --iterations 3`, `npm run build`, `npx tsc --noEmit`, `npx playwright test` (4 passed), and `uv run python scripts/scan_secrets.py`.
 
 
 ## 2026-06-06

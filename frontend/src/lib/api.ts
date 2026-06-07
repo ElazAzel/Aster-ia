@@ -164,6 +164,15 @@ export type RagDocumentRecord = {
   created_at: string;
 };
 
+export type RagFolderScopeRecord = {
+  id: string;
+  room_id: string;
+  path: string;
+  label?: string | null;
+  recursive: boolean;
+  created_at: string;
+};
+
 export type ArtifactBlock = {
   type: 'text' | 'code' | 'table' | 'source' | 'action';
   title?: string | null;
@@ -476,6 +485,39 @@ export function deleteRagDocument(apiBase: string, documentId: string) {
   return request<{ deleted: boolean }>(
     apiBase,
     `/api/rag/documents/${encodeURIComponent(documentId)}`,
+    {
+      method: 'DELETE'
+    }
+  );
+}
+
+export function listRagFolderScopes(apiBase: string, roomId?: string) {
+  const query = roomId ? `?room_id=${encodeURIComponent(roomId)}` : '';
+  return request<RagFolderScopeRecord[]>(apiBase, `/api/rag/folder-scopes${query}`);
+}
+
+export function createRagFolderScope(
+  apiBase: string,
+  payload: {
+    room_id: string;
+    path: string;
+    label?: string | null;
+    recursive?: boolean;
+  },
+) {
+  return request<RagFolderScopeRecord>(apiBase, '/api/rag/folder-scopes', {
+    method: 'POST',
+    body: {
+      ...payload,
+      recursive: payload.recursive ?? true,
+    },
+  });
+}
+
+export function deleteRagFolderScope(apiBase: string, scopeId: string) {
+  return request<{ deleted: boolean }>(
+    apiBase,
+    `/api/rag/folder-scopes/${encodeURIComponent(scopeId)}`,
     {
       method: 'DELETE'
     }

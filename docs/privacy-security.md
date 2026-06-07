@@ -75,6 +75,13 @@ Every item must include:
 | Sandbox shell | block | shell approval |
 | External image generation | block | external image approval |
 
+RAG path indexing uses room-scoped folder scopes:
+
+- uploads through `/api/rag/index/upload` are treated as explicit file attachments;
+- `/api/rag/index` accepts local file paths only when the resolved file is inside `rag_folder_scopes` for that room;
+- root folders and the user's home directory are rejected as overly broad scopes;
+- granting or revoking a scope writes an audit log entry.
+
 ## Local Image Generation Guardrails
 
 ComfyUI remains a local-only surface. The image API exposes `POST /api/images/validate` and runs the same validator before `POST /api/images/generate`.

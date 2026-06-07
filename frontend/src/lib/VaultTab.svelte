@@ -9,8 +9,11 @@
     runRagSearch,
     ragResults,
     ragDocuments,
+    ragFolderScopes,
     removeRagDocument,
+    removeRagFolderScope,
     refreshRagDocuments,
+    refreshRagFolderScopes,
     roomDraft,
     addRoom,
     rooms,
@@ -207,6 +210,24 @@
             </article>
           {:else}
             <p class="empty">В Vault еще нет проиндексированных документов.</p>
+          {/each}
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading compact">
+          <h2>Разрешенные папки RAG</h2>
+          <button type="button" class="text-button" on:click={refreshRagFolderScopes}>Обновить</button>
+        </div>
+        <div class="result-list" style="max-height: 320px;">
+          {#each $ragFolderScopes as scope}
+            <article>
+              <strong>{scope.label || scope.path}</strong>
+              <small>{scope.path} · Комната: {scope.room_id} · {scope.recursive ? 'с подпапками' : 'только папка'}</small>
+              <button type="button" class="text-button" on:click={() => removeRagFolderScope(scope.id)}>Отозвать доступ</button>
+            </article>
+          {:else}
+            <p class="empty">Для этой комнаты пока нет разрешенных папок RAG.</p>
           {/each}
         </div>
       </section>

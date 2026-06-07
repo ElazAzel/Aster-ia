@@ -176,6 +176,22 @@ class RagIndexRequest(BaseModel):
     room_id: str = "default"
 
 
+class RagFolderScopeCreateRequest(BaseModel):
+    room_id: str = Field(default="default", min_length=1, max_length=256)
+    path: str = Field(min_length=1, max_length=4096)
+    label: str | None = Field(default=None, max_length=256)
+    recursive: bool = True
+
+
+class RagFolderScopeRecord(BaseModel):
+    id: str
+    room_id: str
+    path: str
+    label: str | None = None
+    recursive: bool
+    created_at: datetime
+
+
 class RagSearchRequest(BaseModel):
     query: str = Field(min_length=1, max_length=16_000)
     room_id: str = "default"

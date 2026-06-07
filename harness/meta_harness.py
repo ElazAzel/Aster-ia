@@ -100,6 +100,7 @@ def main():
         "DocumentIndexer": ("backend/asterion_api/services/rag.py", "class DocumentIndexer"),
         "LanceDB integration": ("backend/asterion_api/services/rag.py", "import lancedb"),
         "BM25 hybrid search": ("backend/asterion_api/services/rag.py", "def _bm25_scores"),
+        "RAG folder scope schema": ("backend/asterion_api/storage/migrations.py", "CREATE TABLE IF NOT EXISTS rag_folder_scopes"),
         "Memories schema": ("backend/asterion_api/storage/migrations.py", "CREATE TABLE IF NOT EXISTS memories"),
         "Rooms schema": ("backend/asterion_api/storage/migrations.py", "CREATE TABLE IF NOT EXISTS rooms"),
         "Artifacts schema": ("backend/asterion_api/storage/migrations.py", "CREATE TABLE IF NOT EXISTS artifacts"),
