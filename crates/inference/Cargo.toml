@@ -1,0 +1,11 @@
+[package]
+name = "asterion-inference"
+version.workspace = true
+edition.workspace = true
+description = "Asterion AI inference engine: llama-cpp-2, whisper, embeddings"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+asterion-core = { path = "../core" }

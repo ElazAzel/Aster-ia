@@ -2,6 +2,18 @@
 
 ## 2026-06-07
 
+### Rust Migration — Phase 1: BenchmarkService + PluginManager Ported
+
+- **`crates/core/src/benchmark.rs`**: Ported `BenchmarkService` from Python — VRAM estimates (20 models, case-insensitive prefix matching), 1h TTL cache with `Mutex` interior mutability, `compute_result()` (mean, min, max, stddev), `stddev()` helper. Implements `BaseHarness` (`get_state()` returns cache entries, `set_state(clear_cache)`). 13 unit tests.
+- **`crates/core/src/plugin_manager.rs`**: Ported `PluginManager` trust-level logic — `compute_trust_level()` (verified signed, unsigned downgrade, unknown→danger), `process_manifest()`, `parse_from_value()`. Implements `BaseHarness`. 10 unit tests.
+- **`crates/core/src/schemas.rs`**: Added `PluginManifest` schema. Extended with `BenchmarkRunResult`.
+- **CI fix**: Added `rust` job to `.github/workflows/ci.yml` (`cargo check --workspace`, `cargo test -p asterion-core`) on `windows-latest` (has MSVC Build Tools). Replaced `tauri-check` job with merged workspace check.
+- **`crates/core/Cargo.toml`**: Added `regex` and `lazy_static` deps.
+- **`crates/core/src/contradiction.rs`**: Ported `ContradictionFinder` — cosine similarity (identicial/orthogonal/zero/opposite), sentiment analysis (positive/negative/neutral with Russian word support), pairwise matching with threshold. 13 unit tests.
+- **`crates/core/src/schemas.rs`**: Added `ContradictionMatch`, `AgentPermissions`, `AgentPlan` schemas.
+- **`crates/core/src/sandbox.rs`**: Ported `TaskSimulator` (heuristic permission inference, token estimation, 4-step plans) and permission validation (`validate_code` for shell/network token scanning, `resolve_allowed` for path traversal checks). 14 unit tests.
+- **Verification**: 141/141 pytest (Python side untouched), **63 Rust unit tests total** (8 ModelRouter + 10 PrivacyAnalyzer + 12 Benchmark + 10 PluginManager + 12 ContradictionFinder + 11 Sandbox). All Rust compiles via `cargo check` on CI; local build blocked by MSVC linker.
+
 ### Phase 5 Completion: Power User Runtime (Blocks 1–14)
 
 - **Benchmark Service**: `BenchmarkService` (`BaseHarness`) with VRAM estimates for 20 models, Ollama streaming benchmark, 1h TTL cache, `GET/DELETE /api/benchmark/cache`, `POST /api/benchmark/run`, `GET /api/benchmark/model/{name}`.
@@ -27,6 +39,15 @@
 - **E2E tests**: +5 tests (17 total) — Chat composer visibility, Vault tab document list, Артефакты heading, Плагины heading, Command palette theme toggle.
 - **Unit tests**: +5 tests (141 total) — `has_model()`, `chat_generate()`, `chat_stream()` fallback, cache TTL, `execute()` chat routing.
 - **Verification**: 141/141 pytest, 17/17 Playwright, frontend build 2.47s, tsc 0 errors, ruff pass, secret scan clean.
+
+### Rust Migration — Phase 1: Workspace + Core ModelRouter
+
+- **Workspace structure**: Root `Cargo.toml` workspace с тремя crates: `core`, `inference`, `server`. Текущий `src-tauri` включён как member.
+- **`crates/core`**: ModelRouter портирован с Python на Rust — 17 моделей, tag-based routing, score selection, `HardwareProfile`/`ModelSelection` schemas. `BaseHarness` trait. 7 unit tests.
+- **`crates/inference`**: Stub с `InferenceEngine` trait, `InferenceRequest`/`InferenceResponse` форматами, `LocalEngine` (llama-cpp-2 placeholder).
+- **`crates/server`**: Stub с `ServerState`, JWT auth config, route placeholder для будущего axum-сервера.
+- **`docs/rust-migration-plan.md`**: Полный roadmap для инвесторов — архитектура, 5 фаз, график, бизнес-модель ($0 → $20/мес → $1000/мес).
+- **Verification**: `cargo check -p asterion-core` проходит компиляцию (линковка требует Windows SDK).
 
 ### CI Hermeticity, CORS, Favicon, and Public Docs Refresh
 

@@ -82,7 +82,7 @@ jobs:
       - name: Run Meta-Harness smoke
         run: uv run python harness/meta_harness.py --phase 1 --iterations 1
 
-  tauri-check:
+  rust:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
@@ -93,7 +93,10 @@ jobs:
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri
+          workspaces: |
+            src-tauri
+            crates/core
+            crates/inference
 
       - name: Prepare sidecar placeholder
         working-directory: src-tauri
@@ -102,6 +105,8 @@ jobs:
           New-Item -ItemType Directory -Force binaries | Out-Null
           New-Item -ItemType File -Force binaries\asterion-backend-x86_64-pc-windows-msvc.exe | Out-Null
 
-      - name: Cargo check
-        working-directory: src-tauri
-        run: cargo check
+      - name: Cargo check — all workspace
+        run: cargo check --workspace
+
+      - name: Cargo test — core crate
+        run: cargo test -p asterion-core
