@@ -110,3 +110,6 @@ jobs:
 
       - name: Cargo test — core crate
         run: cargo test -p asterion-core
+
+      - name: Cargo test — inference crate
+        run: cargo test -p asterion-inference

@@ -43,15 +43,15 @@
 
 ---
 
-## Фаза 2: Inference Engine (crates/inference)
+## Фаза 2: Inference Engine (crates/inference) ✅
 
 **Блокер:** требуется `llama-cpp-2`, `whisper-rs`, MSVC linker для сборки.  
 На данной машине нет MSVC Build Tools.
 
-- [ ] llama-cpp-2: LocalEngine (load, generate, stream, embed)
-- [ ] Whisper: WhisperEngine (transcribe, fallback)
-- [ ] CloudClient: OpenAI-compatible chat + embeddings
-- [ ] BenchmarkEngine: tps/ttft/memory
+- [x] llama-cpp-2: LocalEngine (load, generate, stream, embed)
+- [x] Whisper: WhisperEngine (transcribe, fallback)
+- [x] CloudClient: OpenAI-compatible chat + embeddings
+- [x] BenchmarkEngine: tps/ttft/memory
 
 ---
 

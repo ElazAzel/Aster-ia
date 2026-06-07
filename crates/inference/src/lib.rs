@@ -1,12 +1,14 @@
 /// Asterion AI inference engine.
 ///
-/// This crate will wrap llama-cpp-2 for local LLM inference,
-/// whisper-rs for speech-to-text, and provide a unified
+/// This crate wraps llama-cpp-2 for local LLM inference,
+/// whisper-rs for speech-to-text, and provides a unified
 /// InferenceEngine trait that both desktop and cloud use.
-///
-/// Phase 2: Replace Python-side OllamaService + VllmService + VoiceService.
 
 pub mod engine;
+pub mod local;
+pub mod whisper;
+pub mod cloud;
+pub mod benchmark;
 
 use serde::{Deserialize, Serialize};
 
@@ -39,7 +41,39 @@ pub struct InferenceUsage {
     pub completion_tokens: u32,
 }
 
-/// Trait for inference backends (local, cloud, hybrid).
-pub trait InferenceEngine: Send + Sync {
-    fn generate(&self, req: InferenceRequest) -> impl std::future::Future<Output = InferenceResponse> + Send;
+/// Request for computing vector embeddings
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EmbedRequest {
+    pub model: String,
+    pub input: Vec<String>,
+}
+
+/// Response containing generated embeddings
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EmbedResponse {
+    pub model: String,
+    pub embeddings: Vec<Vec<f32>>,
+}
+
+/// Request for speech-to-text transcription
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TranscriptionRequest {
+    pub file_path: String,
+    pub language: Option<String>,
+}
+
+/// Response containing transcription segments
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TranscriptionResponse {
+    pub text: String,
+    pub segments: Vec<TranscriptionSegment>,
+    pub language: String,
+    pub duration: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TranscriptionSegment {
+    pub start: f32,
+    pub end: f32,
+    pub text: String,
 }

@@ -9,3 +9,15 @@ serde.workspace = true
 serde_json.workspace = true
 tracing.workspace = true
 asterion-core = { path = "../core" }
+tokio = { workspace = true, features = ["full"] }
+reqwest = { version = "0.11", features = ["json", "stream"] }
+futures-util = "0.3"
+
+# Native dependencies (optional/conditional)
+llama-cpp-2 = { version = "0.1.146", optional = true }
+whisper-rs = { version = "0.16.0", optional = true }
+
+[features]
+default = ["mock"]
+mock = []
+native = ["dep:llama-cpp-2", "dep:whisper-rs"]
