@@ -18,7 +18,9 @@ from asterion_api.routers import (
     analytics,
     artifacts,
     audit,
+    benchmark,
     chat,
+    export,
     health,
     images,
     memory,
@@ -164,6 +166,8 @@ app.include_router(workflows.router)
 app.include_router(plugins.router)
 app.include_router(analytics.router)
 app.include_router(audit.router)
+app.include_router(benchmark.router)
+app.include_router(export.router)
 app.include_router(system.router)
 app.include_router(telemetry.router)
 app.include_router(voice.router)

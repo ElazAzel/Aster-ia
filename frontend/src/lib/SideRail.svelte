@@ -60,6 +60,14 @@
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
       <span>Плагины</span>
     </button>
+    <button class:active={$activeTab === 'benchmark'} on:click={() => $activeTab = 'benchmark'} aria-label="Benchmark">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>Benchmark</span>
+    </button>
+    <button class:active={$activeTab === 'analytics'} on:click={() => $activeTab = 'analytics'} aria-label="Аналитика">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span>Аналитика</span>
+    </button>
   </nav>
 
   <div class="system-meter">

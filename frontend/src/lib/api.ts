@@ -897,6 +897,59 @@ export function listAuditLogs(apiBase: string) {
   return request<AuditLogRecord[]>(apiBase, '/api/audit/logs');
 }
 
+// ─── Export Operations ────────────────────────────────────────────────────────
+
+export type ExportScope = 'all' | 'artifacts' | 'research' | 'memories' | 'conversations' | 'audit_logs';
+export type ExportFormat = 'json' | 'markdown' | 'csv';
+
+export async function exportData(
+  apiBase: string,
+  scope: ExportScope = 'all',
+  format: ExportFormat = 'json',
+  roomId?: string
+): Promise<void> {
+  const res = await fetch(`${apiBase}/api/export`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scope, format, room_id: roomId ?? null }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const cd = res.headers.get('Content-Disposition') ?? '';
+  const match = cd.match(/filename="([^"]+)"/);
+  a.href = url; a.download = match?.[1] ?? `asterion_export.${format}`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+export async function runBenchmark(
+  apiBase: string,
+  models?: string[],
+  runsPerModel = 3,
+  maxTokens = 128
+) {
+  return request<{ results: BenchmarkModelResult[]; benchmark_prompt: string; runs_per_model: number }>(
+    apiBase, '/api/benchmark/run', {
+      method: 'POST',
+      body: { models: models ?? null, runs_per_model: runsPerModel, max_tokens: maxTokens }
+    }
+  );
+}
+
+export type BenchmarkModelResult = {
+  model: string; runs: number;
+  avg_tokens_per_second: number; avg_time_to_first_token_ms: number;
+  avg_total_time_ms: number; min_tps: number; max_tps: number; stddev_tps: number;
+  vram_estimate_gb: number; privacy_level: string; error: string | null;
+};
+
+export async function getVllmStatus(apiBase: string) {
+  return request<{ available: boolean; base_url: string; models: string[]; privacy_level: string }>(
+    apiBase, '/api/models/vllm/status'
+  );
+}
+
 // ─── System Operations ───────────────────────────────────────────────────────
 
 export function exportSystemData(apiBase: string, passphrase?: string) {

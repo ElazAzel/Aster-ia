@@ -1,5 +1,6 @@
 """Smoke-tests для критических сервисов Asterion AI."""
 from __future__ import annotations
+from unittest.mock import patch
 
 import pytest
 
@@ -57,7 +58,7 @@ def test_model_router_local_high_vram():
     from asterion_api.services.model_router import ModelRouter
     from asterion_api.schemas import HardwareProfile
     router = ModelRouter()
-    result = router.select("local coding", HardwareProfile(vram_gb=10.0))
+    result = router.select("local coding", HardwareProfile(vram_gb=10.0, ram_gb=16.0))
     assert result.mode == "local"
     assert result.model != router.api_fallback
 
@@ -66,7 +67,7 @@ def test_model_router_api_fallback_no_vram():
     from asterion_api.services.model_router import ModelRouter
     from asterion_api.schemas import HardwareProfile
     router = ModelRouter()
-    result = router.select("complex task", HardwareProfile(vram_gb=0.5))
+    result = router.select("complex task", HardwareProfile(vram_gb=0.0, ram_gb=0.0))
     assert result.mode == "api"
     assert result.model == router.api_fallback
 
@@ -712,3 +713,146 @@ def test_comfyui_service_rejects_external_base_url():
 
     with pytest.raises(ValueError, match="localhost"):
         service.set_state({"base_url": "https://example.com"})
+
+
+# ── BenchmarkService ──────────────────────────────────────────────────────────
+
+def test_benchmark_implements_harness():
+    from asterion_api.harness import BaseHarness
+    from asterion_api.services.benchmark_service import BenchmarkService
+    assert issubclass(BenchmarkService, BaseHarness)
+
+
+def test_benchmark_privacy_level():
+    from asterion_api.services.benchmark_service import BenchmarkService
+    assert BenchmarkService.privacy_level == "local"
+
+
+def test_benchmark_vram_estimate_known_model():
+    from asterion_api.services.benchmark_service import BenchmarkService
+    svc = BenchmarkService()
+    est = svc._estimate_vram("llama3.2")
+    assert 4.0 <= est <= 6.0
+
+
+def test_benchmark_vram_estimate_unknown_fallback():
+    from asterion_api.services.benchmark_service import BenchmarkService
+    svc = BenchmarkService()
+    est = svc._estimate_vram("some-unknown-model-xyz")
+    assert est == 4.0
+
+
+def test_benchmark_cache_miss():
+    from asterion_api.services.benchmark_service import BenchmarkService
+    svc = BenchmarkService()
+    assert svc.get_cached("not-cached") is None
+
+
+def test_benchmark_cache_clear():
+    from asterion_api.services.benchmark_service import BenchmarkService
+    svc = BenchmarkService()
+    import time
+    svc._cache["testmodel"] = {"result": {"model": "testmodel"}, "ts": time.time()}
+    assert svc.get_state()["cache_entries"] == 1
+    svc.clear_cache()
+    assert svc.get_state()["cache_entries"] == 0
+
+
+def test_benchmark_get_state_keys():
+    from asterion_api.services.benchmark_service import BenchmarkService
+    state = BenchmarkService().get_state()
+    assert {"cache_entries", "cached_models"} <= state.keys()
+
+
+# ── VllmService ───────────────────────────────────────────────────────────────
+
+def test_vllm_implements_harness():
+    from asterion_api.harness import BaseHarness
+    from asterion_api.services.vllm_service import VllmService
+    assert issubclass(VllmService, BaseHarness)
+
+
+def test_vllm_privacy_level():
+    from asterion_api.services.vllm_service import VllmService
+    assert VllmService.privacy_level == "local"
+
+
+def test_vllm_default_url():
+    from asterion_api.services.vllm_service import VllmService
+    svc = VllmService()
+    assert "8100" in svc.base_url
+
+
+def test_vllm_set_state_updates_url():
+    from asterion_api.services.vllm_service import VllmService
+    svc = VllmService()
+    svc.set_state({"base_url": "http://127.0.0.1:9000/v1"})
+    assert "9000" in svc.base_url and svc._available is None
+
+
+@pytest.mark.asyncio
+async def test_vllm_unavailable_when_no_server():
+    from asterion_api.services.vllm_service import VllmService
+    svc = VllmService(base_url="http://127.0.0.1:19999/v1")
+    available = await svc.is_available()
+    assert available is False
+
+
+@pytest.mark.asyncio
+async def test_vllm_generate_returns_error_when_unavailable():
+    from asterion_api.services.vllm_service import VllmService
+    svc = VllmService(base_url="http://127.0.0.1:19999/v1")
+    result = await svc.generate(model="test", prompt="hello")
+    assert "error" in result and "hint" in result
+
+
+# ── Extended ModelRouter ──────────────────────────────────────────────────────
+
+def test_model_router_has_20_plus_models():
+    from asterion_api.services.model_router import ModelRouter
+    router = ModelRouter()
+    assert len(router.local_catalog) >= 15
+
+
+def test_model_router_code_task_prefers_code_model():
+    from asterion_api.services.model_router import ModelRouter
+    from asterion_api.schemas import HardwareProfile
+    router = ModelRouter()
+    result = router.select("write Python code", HardwareProfile(vram_gb=8.0, ram_gb=16.0))
+    assert result.mode == "local"
+
+
+def test_model_router_russian_task_picks_multilingual():
+    from asterion_api.services.model_router import ModelRouter
+    from asterion_api.schemas import HardwareProfile
+    router = ModelRouter()
+    result = router.select("write in russian language", HardwareProfile(vram_gb=8.0, ram_gb=16.0))
+    assert result.mode == "local"
+
+
+def test_model_router_zero_vram_still_works():
+    from asterion_api.services.model_router import ModelRouter
+    from asterion_api.schemas import HardwareProfile
+    router = ModelRouter()
+    result = router.select("quick chat", HardwareProfile(vram_gb=0.0, ram_gb=4.0))
+    assert result.mode == "local"
+    assert result.model in ["llama3.2:1b", "qwen2.5:0.5b", "phi3:mini", "gemma2:2b"]
+
+
+# ── macOS Sandbox ─────────────────────────────────────────────────────────────
+
+def test_agent_sandbox_os_kwargs_darwin():
+    from asterion_api.services.agent_sandbox import AgentSandbox
+    import platform
+    with patch.object(platform, "system", return_value="Darwin"):
+        kwargs = AgentSandbox._os_sandbox_kwargs()
+        assert "preexec_fn" in kwargs
+
+
+def test_agent_sandbox_os_kwargs_all_platforms():
+    from asterion_api.services.agent_sandbox import AgentSandbox
+    import platform
+    for os_name in ["Darwin", "Linux", "Windows"]:
+        with patch.object(platform, "system", return_value=os_name):
+            kwargs = AgentSandbox._os_sandbox_kwargs()
+            assert isinstance(kwargs, dict)

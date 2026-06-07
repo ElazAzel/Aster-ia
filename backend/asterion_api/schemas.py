@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from enum import Enum
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -454,4 +455,90 @@ class TelemetryReportRequest(BaseModel):
     vram_gb: float | None = None
     ram_gb: float | None = None
     os_platform: str | None = None
+
+
+# ── Benchmark Schemas ─────────────────────────────────────────────────────────
+
+class BenchmarkRunRequest(BaseModel):
+    models: list[str] | None = None
+    prompt: str = "Explain the concept of recursion in programming in one paragraph."
+    max_tokens: int = 128
+    runs_per_model: int = 3
+
+
+class BenchmarkTokenStats(BaseModel):
+    tokens_per_second: float
+    time_to_first_token_ms: float
+    total_time_ms: float
+    prompt_tokens: int
+    completion_tokens: int
+
+
+class BenchmarkModelResult(BaseModel):
+    model: str
+    runs: int
+    avg_tokens_per_second: float
+    avg_time_to_first_token_ms: float
+    avg_total_time_ms: float
+    min_tps: float
+    max_tps: float
+    stddev_tps: float
+    vram_estimate_gb: float
+    privacy_level: str = "local"
+    error: str | None = None
+    cached_at: str | None = None
+
+
+class BenchmarkResponse(BaseModel):
+    results: list[BenchmarkModelResult]
+    benchmark_prompt: str
+    runs_per_model: int
+    privacy_level: str = "local"
+
+
+class BenchmarkCacheEntry(BaseModel):
+    model: str
+    result: BenchmarkModelResult
+    timestamp: str
+
+
+# ── Export Schemas ────────────────────────────────────────────────────────────
+
+class ExportFormat(str, Enum):
+    JSON = "json"
+    MARKDOWN = "markdown"
+    CSV = "csv"
+
+
+class ExportScope(str, Enum):
+    ALL = "all"
+    ARTIFACTS = "artifacts"
+    RESEARCH = "research"
+    MEMORIES = "memories"
+    CONVERSATIONS = "conversations"
+    AUDIT_LOGS = "audit_logs"
+
+
+class ExportRequest(BaseModel):
+    scope: ExportScope = ExportScope.ALL
+    format: ExportFormat = ExportFormat.JSON
+    room_id: str | None = None
+    passphrase: str | None = None
+
+
+# ── vLLM Schemas ──────────────────────────────────────────────────────────────
+
+class VllmStatus(BaseModel):
+    available: bool
+    base_url: str
+    models: list[str]
+    privacy_level: str = "local"
+
+
+class VllmGenerateRequest(BaseModel):
+    model: str
+    prompt: str
+    max_tokens: int = 512
+    temperature: float = 0.7
+    stream: bool = False
 

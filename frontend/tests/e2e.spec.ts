@@ -290,6 +290,7 @@ test('2. Command palette overlay and shortcuts', async ({ page }) => {
 
 test('3. Room creation and memory insertion', async ({ page }) => {
   await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Умный Чат")');
 
   // Left Context Panel should be visible
   await expect(page.locator('aside.left-panel')).toBeVisible();
@@ -334,4 +335,138 @@ test('4. Onboarding wizard walkthrough', async ({ page }) => {
 
   // Wizard should close
   await expect(wizard).not.toBeVisible();
+});
+
+// ── Block 8: Extended E2E Tests ──────────────────────────────────────────────
+
+test('5. Voice Mode - text structuring', async ({ page }) => {
+  await page.route('**/api/voice/status', async route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ available: true, model_size: 'base', model_loaded: false, privacy_level: 'local' }) }));
+  await page.route('**/api/voice/transcribe/text', async route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ original_text: 'test', word_count: 1,
+        action_items: ['Call the team'], questions: ['When?'],
+        summary: ['Test summary'], document_draft: '# Voice Note\n## Summary\nTest summary',
+        privacy_level: 'local' }) }));
+
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Voice Mode")');
+  await page.fill('textarea[placeholder*="структурирования"]', 'We need to call the team. When will this be done?');
+  await page.click('button:has-text("Собрать summary")');
+  await expect(page.locator('text=Call the team')).toBeVisible({ timeout: 5000 });
+});
+
+test('6. Deep Research - query submission', async ({ page }) => {
+  await page.route('**/api/research/deep', async route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({
+        query: 'AI privacy trends',
+        subtasks: ['Find privacy papers', 'Analyze local models'],
+        results: [{ subtask: 'Find privacy papers', title: 'Privacy in AI', url: null, snippet: 'Local models offer better privacy.' }],
+        privacy: { level: 'hybrid', items: [] }
+      }) }));
+
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Deep Research")');
+  await page.fill('input[placeholder*="Например"]', 'AI privacy trends');
+  await page.click('button:has-text("Запустить Deep Research")');
+  // Consent modal appears - approve it
+  await expect(page.locator('.consent-modal')).toBeVisible({ timeout: 3000 });
+  await page.click('button:has-text("Разрешить")');
+  await expect(page.locator('text=AI privacy trends')).toBeVisible({ timeout: 8000 });
+});
+
+test('7. Agent Lab - plan simulation', async ({ page }) => {
+  await page.route('**/api/agents/simulate', async route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({
+        steps: [{ action: 'read_files', tool: 'file_read', description: 'Read documents' }],
+        required_permissions: ['file_read'], estimated_tokens: 1200,
+        description: 'Analyse documents'
+      }) }));
+  await page.route('**/api/agents/runs', async route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ run_id: 'run-test-123', status: 'running', agent_id: 'test', room_id: 'default' }) }));
+
+  // Override catalog with full agent manifest data
+  await page.route('**/api/agents/catalog', async route => {
+    const fullMock = {
+      agents: [{
+        id: 'chat-orchestrator', name: 'Оркестратор чата', version: '0.1.0',
+        role: 'orchestrator', description: 'Базовый агент',
+        privacy_level: 'local', default_model: 'llama3.2',
+        triggers: [], skills: ['conversation-orchestration'],
+        permissions: { allowed_folders: [], network: false, shell: false },
+        lifecycle: ['init', 'running'], outputs: [], handoff_targets: [],
+        acceptance_checks: [], system_prompt: 'You are a helpful assistant.',
+        escalation_policy: 'notify_user'
+      }], skills: [], privacy_level: 'local'
+    };
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(fullMock) });
+  });
+
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Агенты")');
+  await expect(page.locator('text=Оркестратор чата').first()).toBeVisible();
+});
+
+test('8. Automation Board - workflow creation', async ({ page }) => {
+  await page.route('**/api/workflows/run', async route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ run_id: 'wf-test-1', status: 'completed',
+        results: [{ step: 'Шаг А', status: 'completed' }] }) }));
+
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Automation")');
+  await expect(page.locator('h2:has-text("Automation Board"), h2:has-text("Автоматизация")')).toBeVisible();
+});
+
+test('9. Benchmark Tab - renders correctly', async ({ page }) => {
+  await page.route('**/api/models/vllm/status', async route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ available: false, base_url: 'http://127.0.0.1:8100/v1',
+        models: [], privacy_level: 'local' }) }));
+
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Benchmark")');
+  await expect(page.locator('h2:has-text("Model Benchmark")')).toBeVisible();
+  await expect(page.locator('text=Локально').first()).toBeVisible();
+});
+
+test('10. Analytics Tab - loads stats', async ({ page }) => {
+  await page.route('**/api/analytics/research/stats', async route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ total_research_queries: 12, sources_consulted: 34, claims_verified: 89 }) }));
+  await page.route('**/api/analytics/top-sources', async route =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) }));
+  await page.route('**/api/analytics/claims-confidence', async route =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) }));
+  await page.route('**/api/analytics/rooms-distribution', async route =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) }));
+  await page.route('**/api/analytics/agent-stats', async route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ total_runs: 5, total_steps: 42, privacy_distribution: {local: 38, hybrid: 4}, error_count: 1 }) }));
+
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Аналитика")');
+  await expect(page.locator('h2:has-text("Analytics Dashboard")')).toBeVisible();
+  await expect(page.locator('text=12')).toBeVisible();
+});
+
+test('11. Image Studio - recipe selection', async ({ page }) => {
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Image Studio")');
+  await expect(page.locator('h2:has-text("Image Studio")')).toBeVisible();
+});
+
+test('12. Export - download triggers', async ({ page }) => {
+  await page.route('**/api/export', async route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ artifacts: [], memories: [] }),
+      headers: { 'Content-Disposition': 'attachment; filename="asterion_export_all_20260607.json"' } }));
+
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Система")');
+  await expect(page.locator('text=Экспорт').first()).toBeVisible({ timeout: 3000 });
 });

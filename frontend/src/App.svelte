@@ -44,6 +44,8 @@
   import AutomationTab from './lib/AutomationTab.svelte';
   import ArtifactsTab from './lib/ArtifactsTab.svelte';
   import PluginsTab from './lib/PluginsTab.svelte';
+  import BenchmarkTab from './lib/BenchmarkTab.svelte';
+  import AnalyticsTab from './lib/AnalyticsTab.svelte';
   import CommandCenterTab from './lib/CommandCenterTab.svelte';
 
   import { isTauriRuntime } from './lib/tauri';
@@ -62,7 +64,9 @@
     'images',
     'automation',
     'artifacts_browser',
-    'plugins'
+    'plugins',
+    'benchmark',
+    'analytics'
   ] as const;
 
   // Reactively calculate layout class based on panels visibility
@@ -195,6 +199,12 @@
 
       {:else if $activeTab === 'plugins'}
         <PluginsTab />
+
+      {:else if $activeTab === 'benchmark'}
+        <BenchmarkTab />
+
+      {:else if $activeTab === 'analytics'}
+        <AnalyticsTab />
       {/if}
     </main>
     

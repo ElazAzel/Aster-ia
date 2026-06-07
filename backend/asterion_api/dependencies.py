@@ -14,8 +14,10 @@ from asterion_api.services.memory_ledger import MemoryLedger
 from asterion_api.services.model_router import ModelRouter
 from asterion_api.services.ollama_service import OllamaService
 from asterion_api.services.plugin_manager import PluginManager
+from asterion_api.services.benchmark_service import BenchmarkService
 from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
 from asterion_api.services.rag import DocumentIndexer
+from asterion_api.services.vllm_service import VllmService
 from asterion_api.services.voice_service import VoiceService
 from asterion_api.services.workflow_runner import WorkflowRunner
 from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
@@ -109,3 +111,21 @@ def get_workflow_runner() -> WorkflowRunner:
 @lru_cache(maxsize=1)
 def get_plugin_manager() -> PluginManager:
     return PluginManager(get_settings())
+
+
+@lru_cache(maxsize=1)
+def _benchmark_service_singleton() -> BenchmarkService:
+    return BenchmarkService()
+
+
+def get_benchmark_service() -> BenchmarkService:
+    return _benchmark_service_singleton()
+
+
+@lru_cache(maxsize=1)
+def _vllm_service_singleton() -> VllmService:
+    return VllmService()
+
+
+def get_vllm_service() -> VllmService:
+    return _vllm_service_singleton()

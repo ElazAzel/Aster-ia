@@ -158,6 +158,39 @@ class AgentSandbox(BaseHarness):
     def set_state(self, state: Mapping[str, Any]) -> None:
         return None
 
+    @staticmethod
+    def _os_sandbox_kwargs() -> dict[str, Any]:
+        import platform
+        system = platform.system()
+        if system == "Windows":
+            return {}
+        elif system == "Linux":
+            def _preexec():
+                import resource
+                mem_limit = 512 * 1024 * 1024
+                resource.setrlimit(resource.RLIMIT_AS, (mem_limit, mem_limit))
+                resource.setrlimit(resource.RLIMIT_CPU, (30, 30))
+                resource.setrlimit(resource.RLIMIT_NPROC, (10, 10))
+            return {"preexec_fn": _preexec}
+        elif system == "Darwin":
+            def _preexec_macos():
+                import resource
+                mem_limit = 512 * 1024 * 1024
+                try:
+                    resource.setrlimit(resource.RLIMIT_AS, (mem_limit, mem_limit))
+                except (ValueError, resource.error):
+                    pass
+                try:
+                    resource.setrlimit(resource.RLIMIT_CPU, (30, 30))
+                except (ValueError, resource.error):
+                    pass
+                try:
+                    resource.setrlimit(resource.RLIMIT_NOFILE, (64, 64))
+                except (ValueError, resource.error):
+                    pass
+            return {"preexec_fn": _preexec_macos}
+        return {}
+
     async def run_code(self, *, code: str, permissions: AgentPermissions) -> dict[str, Any]:
         self._validate_code(code, permissions)
         allowed_root = self._allowed_root(permissions)
@@ -167,9 +200,7 @@ class AgentSandbox(BaseHarness):
         if not permissions.network:
             env["NO_PROXY"] = "*"
             env["ASTERION_NETWORK_DISABLED"] = "1"
-        kwargs = {}
-        if os.name != "nt":
-            kwargs["preexec_fn"] = _set_linux_limits
+        kwargs = self._os_sandbox_kwargs()
 
         proc = await asyncio.create_subprocess_exec(
             sys.executable,
