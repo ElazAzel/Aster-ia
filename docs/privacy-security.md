@@ -75,6 +75,21 @@ Every item must include:
 | Sandbox shell | block | shell approval |
 | External image generation | block | external image approval |
 
+## Local Image Generation Guardrails
+
+ComfyUI remains a local-only surface. The image API exposes `POST /api/images/validate` and runs the same validator before `POST /api/images/generate`.
+
+`GET /api/images/recipes` returns curated local parameter presets only. Presets do not introduce external endpoints, remote assets, or network plugins, and every preset is returned with its validation status.
+
+The validator blocks:
+
+- non-local ComfyUI base URLs;
+- external URI inputs such as `http://`, `https://`, `ftp://`, `s3://`, and `file://`;
+- absolute local paths and path traversal in workflow strings;
+- download/network-oriented node class names;
+- missing node references and oversized workflows;
+- `SaveImage.filename_prefix` values that attempt to write into subdirectories.
+
 ## Secrets
 
 Production secrets must not be stored in:
@@ -93,6 +108,12 @@ SQLCipher keys:
 - stored through OS keychain with `keyring`
 - never logged
 - never committed
+
+Repository checks:
+
+- CI runs `python scripts/scan_secrets.py .` on every push and pull request.
+- Local release verification runs the same scanner through `make security-scan` and `make verify`.
+- The scanner flags high-confidence provider keys and suspicious secret assignments while allowing explicit placeholder/test values.
 
 ## Storage
 
@@ -192,6 +213,7 @@ Before release:
 ```powershell
 uv run python -m compileall backend\asterion_api harness\meta_harness.py
 uv run python harness/meta_harness.py --phase 1 --iterations 3
+uv run python scripts\scan_secrets.py .
 ```
 
 Also verify:
@@ -202,4 +224,4 @@ Also verify:
 - Sandbox rejects network imports when `network=false`.
 - Sandbox rejects shell execution when `shell=false`.
 - Unknown plugin trust levels are classified as `danger`.
-- No committed file contains real production secrets.
+- `scripts/scan_secrets.py` reports no likely production secrets.
