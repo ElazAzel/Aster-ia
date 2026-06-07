@@ -632,3 +632,60 @@ def test_analytics_and_report_export(tmp_path):
         assert "# Security Report" in md_text
         assert "Is local routing secure?" in md_text
         assert "Source Alpha" in md_text
+
+
+def test_comfyui_recipe_validation_allows_default_local_workflow():
+    from asterion_api.services.comfyui_service import ComfyUIService
+
+    result = ComfyUIService().validate_recipe({}, "local product mockup")
+
+    assert result["ok"] is True
+    assert result["privacy_level"] == "local"
+    assert result["nodes_count"] == 7
+
+
+def test_comfyui_recipe_validation_rejects_external_uri_input():
+    from asterion_api.services.comfyui_service import ComfyUIService
+
+    result = ComfyUIService().validate_recipe(
+        {
+            "workflow": {
+                "1": {
+                    "class_type": "LoadImage",
+                    "inputs": {"image": "https://example.com/image.png"},
+                }
+            }
+        },
+        "local product mockup",
+    )
+
+    assert result["ok"] is False
+    assert any("external URI" in error for error in result["errors"])
+
+
+def test_comfyui_recipe_validation_rejects_missing_node_reference():
+    from asterion_api.services.comfyui_service import ComfyUIService
+
+    result = ComfyUIService().validate_recipe(
+        {
+            "workflow": {
+                "1": {
+                    "class_type": "CLIPTextEncode",
+                    "inputs": {"text": "hello", "clip": ["missing", 0]},
+                }
+            }
+        },
+        "hello",
+    )
+
+    assert result["ok"] is False
+    assert any("references missing node" in error for error in result["errors"])
+
+
+def test_comfyui_service_rejects_external_base_url():
+    from asterion_api.services.comfyui_service import ComfyUIService
+
+    service = ComfyUIService()
+
+    with pytest.raises(ValueError, match="localhost"):
+        service.set_state({"base_url": "https://example.com"})

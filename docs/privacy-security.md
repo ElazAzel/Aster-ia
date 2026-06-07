@@ -75,6 +75,19 @@ Every item must include:
 | Sandbox shell | block | shell approval |
 | External image generation | block | external image approval |
 
+## Local Image Generation Guardrails
+
+ComfyUI remains a local-only surface. The image API exposes `POST /api/images/validate` and runs the same validator before `POST /api/images/generate`.
+
+The validator blocks:
+
+- non-local ComfyUI base URLs;
+- external URI inputs such as `http://`, `https://`, `ftp://`, `s3://`, and `file://`;
+- absolute local paths and path traversal in workflow strings;
+- download/network-oriented node class names;
+- missing node references and oversized workflows;
+- `SaveImage.filename_prefix` values that attempt to write into subdirectories.
+
 ## Secrets
 
 Production secrets must not be stored in:

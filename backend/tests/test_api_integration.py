@@ -342,9 +342,31 @@ async def test_images_router(test_app, monkeypatch):
     monkeypatch.setattr(ComfyUIService, "generate", mock_generate)
 
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
+        validation = await ac.post("/api/images/validate", json={"prompt": "beautiful gradient"})
+        assert validation.status_code == 200
+        assert validation.json()["ok"] is True
+
         res = await ac.post("/api/images/generate", json={"prompt": "beautiful gradient"})
         assert res.status_code == 200
         assert res.json()["image"] == "mock_base64_data"
+
+
+@pytest.mark.asyncio
+async def test_images_validate_rejects_external_url(test_app):
+    workflow = {
+        "1": {
+            "class_type": "LoadImage",
+            "inputs": {"image": "https://example.com/image.png"},
+        }
+    }
+
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
+        res = await ac.post(
+            "/api/images/validate",
+            json={"prompt": "beautiful gradient", "recipe": {"workflow": workflow}},
+        )
+        assert res.status_code == 200
+        assert res.json()["ok"] is False
 
 
 @pytest.mark.asyncio

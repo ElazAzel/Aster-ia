@@ -383,6 +383,19 @@ class ComfyGenerateRequest(BaseModel):
     recipe: dict[str, Any] = Field(default_factory=dict)
 
 
+class ComfyRecipeValidateRequest(BaseModel):
+    prompt: str = Field(default="{{prompt}}", max_length=16_000)
+    recipe: dict[str, Any] = Field(default_factory=dict)
+
+
+class ComfyRecipeValidationResponse(BaseModel):
+    ok: bool
+    errors: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    nodes_count: int
+    privacy_level: Literal["local"] = "local"
+
+
 class WorkflowRunRequest(BaseModel):
     workflow: dict[str, Any]
 

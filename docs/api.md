@@ -467,6 +467,33 @@ Agent runs and Flight Recorder:
 
 ## Images
 
+`POST /api/images/validate`
+
+Validates a local ComfyUI recipe before generation. The validator rejects external URI inputs, absolute paths, path traversal, unsafe network/download node classes, missing node references, oversized workflows, and non-loopback ComfyUI base URLs.
+
+```json
+{
+  "prompt": "local product mockup",
+  "recipe": {
+    "width": 1024,
+    "height": 1024,
+    "steps": 20
+  }
+}
+```
+
+Response:
+
+```json
+{
+  "ok": true,
+  "errors": [],
+  "warnings": [],
+  "nodes_count": 7,
+  "privacy_level": "local"
+}
+```
+
 `POST /api/images/generate`
 
 ```json
@@ -479,7 +506,7 @@ Agent runs and Flight Recorder:
 }
 ```
 
-Uses local ComfyUI on `127.0.0.1:8188`.
+Uses local ComfyUI on `127.0.0.1:8188`. Generation runs the same recipe validator first and returns `422` when the recipe is unsafe or malformed.
 
 ## Workflows
 
