@@ -2,9 +2,9 @@
 
 ## 2026-06-07
 
-### CI Hermeticity and Public Docs Refresh
+### CI Hermeticity, CORS, Favicon, and Public Docs Refresh
 
-- Added curated local ComfyUI recipe presets with `GET /api/images/recipes`, `preset_id` support for validation/generation, frontend preset selection, and preflight recipe validation in Image Studio.
+- Curated local ComfyUI recipe presets with `GET /api/images/recipes`, `preset_id` support for validation/generation, frontend preset selection, and preflight recipe validation in Image Studio.
 - Added local ComfyUI recipe validation with `/api/images/validate`, generation-time `422` rejection for unsafe recipes, default 7-node ComfyUI workflow construction, and tests for external URI, broken node reference, and non-loopback base URL blocking.
 - Added a local-first CI secret scanner (`scripts/scan_secrets.py`) with pytest coverage, `make security-scan`, and a dedicated GitHub Actions `security` job to prevent committed provider keys or high-entropy secret assignments.
 - Fixed the current `main` CI backend failure by making `test_rag_crud` hermetic: the integration test now mocks `DocumentIndexer.hybrid_search()` instead of reaching real local Ollama embeddings.
@@ -13,7 +13,10 @@
 - Fixed Tauri v2.11 Rust compile errors by enabling the `tray-icon` feature, using `set_focus()`, cloning owned backend process state for spawned tasks, dropping process locks before async health checks, and removing the invalid tray fallback icon constructor.
 - Replaced stale README scaffold wording and mojibake-heavy quick start text with the current Power-user MVP feature set, verification commands, Docker dev loop, and Voice Mode notes.
 - Updated `docs/roadmap.md` to mark Phase 3 as implemented and split Phase 4 into implemented hardening foundations versus remaining release-grade work.
-- Verified locally: `uv run pytest` (76 passed), `uv run ruff check .`, `npm run build`, `npx tsc --noEmit`, and compileall.
+- Fixed CORS block on unhandled exception responses in `global_exception_handler` (e.g. when SearXNG or ComfyUI services are offline) by injecting `Access-Control-Allow-Origin` and `Access-Control-Allow-Credentials` headers, enabling the frontend to properly read error states.
+- Created `favicon.svg` and `favicon.ico` in the `frontend/public/` directory and linked them in `App.svelte` to resolve console 404 asset loader errors.
+- Verified locally: `uv run pytest` (88 passed), `uv run ruff check .`, `npm run build`, `npx tsc --noEmit`, and compileall.
+
 
 ## 2026-06-06
 

@@ -108,6 +108,8 @@
 
 <svelte:head>
   <title>Asterion AI Workspace</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="alternate icon" type="image/x-icon" href="/favicon.ico" />
 </svelte:head>
 
 {#if isSplash}
