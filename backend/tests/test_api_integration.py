@@ -211,7 +211,13 @@ async def test_memory_crud(test_app):
 
 
 @pytest.mark.asyncio
-async def test_rag_crud(test_app):
+async def test_rag_crud(test_app, monkeypatch):
+    async def mock_hybrid_search(self, query, room_id, limit, source_filter=None):
+        return []
+
+    from asterion_api.services.rag import DocumentIndexer
+    monkeypatch.setattr(DocumentIndexer, "hybrid_search", mock_hybrid_search)
+
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
         # Search empty RAG
         search_payload = {"query": "secure documentation"}
@@ -331,14 +337,61 @@ async def test_plugins_router(test_app):
 
 @pytest.mark.asyncio
 async def test_images_router(test_app, monkeypatch):
+    generated: dict[str, object] = {}
+
     async def mock_generate(self, prompt, recipe):
+        generated["recipe"] = recipe
         return {"image": "mock_base64_data"}
+
     monkeypatch.setattr(ComfyUIService, "generate", mock_generate)
 
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
-        res = await ac.post("/api/images/generate", json={"prompt": "beautiful gradient"})
+        recipes = await ac.get("/api/images/recipes")
+        assert recipes.status_code == 200
+        assert recipes.json()["privacy_level"] == "local"
+        assert len(recipes.json()["recipes"]) >= 4
+
+        validation = await ac.post("/api/images/validate", json={"prompt": "beautiful gradient"})
+        assert validation.status_code == 200
+        assert validation.json()["ok"] is True
+
+        preset_validation = await ac.post(
+            "/api/images/validate",
+            json={"prompt": "beautiful gradient", "preset_id": "wide-concept"},
+        )
+        assert preset_validation.status_code == 200
+        assert preset_validation.json()["ok"] is True
+
+        res = await ac.post(
+            "/api/images/generate",
+            json={
+                "prompt": "beautiful gradient",
+                "preset_id": "wide-concept",
+                "recipe": {"steps": 9},
+            },
+        )
         assert res.status_code == 200
         assert res.json()["image"] == "mock_base64_data"
+        assert generated["recipe"]["width"] == 1344
+        assert generated["recipe"]["steps"] == 9
+
+
+@pytest.mark.asyncio
+async def test_images_validate_rejects_external_url(test_app):
+    workflow = {
+        "1": {
+            "class_type": "LoadImage",
+            "inputs": {"image": "https://example.com/image.png"},
+        }
+    }
+
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
+        res = await ac.post(
+            "/api/images/validate",
+            json={"prompt": "beautiful gradient", "recipe": {"workflow": workflow}},
+        )
+        assert res.status_code == 200
+        assert res.json()["ok"] is False
 
 
 @pytest.mark.asyncio
