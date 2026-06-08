@@ -15,6 +15,8 @@ class Settings:
     default_model: str = os.getenv("ASTERION_DEFAULT_MODEL", "llama3.2")
     keyring_service: str = os.getenv("ASTERION_KEYRING_SERVICE", "asterion-ai")
     keyring_db_key_name: str = os.getenv("ASTERION_KEYRING_DB_KEY_NAME", "sqlcipher-main")
+    comfyui_url: str = os.getenv("ASTERION_COMFYUI_URL", "http://127.0.0.1:8188")
+    searxng_url: str = os.getenv("ASTERION_SEARXNG_URL", "http://127.0.0.1:8080")
     local_first: bool = True
 
     @property

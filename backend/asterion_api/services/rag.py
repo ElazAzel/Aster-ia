@@ -81,7 +81,10 @@ class DocumentIndexer(BaseHarness):
         return set()
 
     async def _watch_loop(self) -> None:
-        print("[WATCHER] Watch loop started", flush=True)
+        from asterion_api.structured_logging import StructuredLogger
+
+        logger = StructuredLogger("rag_watcher", self.privacy_level)
+        logger.emit("watcher.started")
         import json
         state_file = self.settings.data_dir / "watcher_state.json"
         
@@ -105,13 +108,13 @@ class DocumentIndexer(BaseHarness):
                                 saved = watcher_state[file_str]
                                 if saved.get("mtime") == stat.st_mtime and saved.get("size") == stat.st_size:
                                     known_files[file_path] = (stat.st_mtime, stat.st_size)
-            print(f"[WATCHER] Initial scan complete. Known files: {list(known_files.keys())}", flush=True)
+            logger.emit("watcher.scan_complete", known_count=len(known_files))
         except Exception as e:
-            print(f"[WATCHER] Initial scan error: {e}", flush=True)
+            logger.emit("watcher.scan_error", error=str(e))
 
         while self.watching:
             await asyncio.sleep(5)
-            print("[WATCHER] Polling directory...", flush=True)
+            logger.emit("watcher.poll")
             try:
                 current_files: dict[Path, tuple[float, int]] = {}
                 state_changed = False
@@ -126,31 +129,24 @@ class DocumentIndexer(BaseHarness):
                                     current_files[file_path] = (stat.st_mtime, stat.st_size)
 
                                     last_state = known_files.get(file_path)
-                                    print(f"[WATCHER] Found file: {file_path}, last_state: {last_state}", flush=True)
                                     if last_state is None or last_state[0] < stat.st_mtime or last_state[1] != stat.st_size:
                                         await asyncio.sleep(0.5)
                                         if file_path.exists():
                                             current_stat = file_path.stat()
                                             if current_stat.st_size == stat.st_size and current_stat.st_mtime == stat.st_mtime:
-                                                print(f"[WATCHER] Indexing file: {file_path}", flush=True)
                                                 await self.index_file(file_path, room_id)
-                                                print(f"[WATCHER] Indexing complete for: {file_path}", flush=True)
                                                 
                                                 watcher_state[str(file_path)] = {
                                                     "mtime": stat.st_mtime,
                                                     "size": stat.st_size
                                                 }
                                                 state_changed = True
-                                                
-                                                from asterion_api.structured_logging import StructuredLogger
-                                                logger = StructuredLogger("rag_watcher", self.privacy_level)
                                                 logger.emit("watcher.indexed", file_path=str(file_path), room_id=room_id)
                             except Exception as fe:
-                                print(f"[WATCHER] Error processing file {file_path}: {fe}", flush=True)
+                                logger.emit("watcher.file_error", file_path=str(file_path), error=str(fe))
 
                 deleted_files = set(known_files.keys()) - set(current_files.keys())
                 for file_path in deleted_files:
-                    print(f"[WATCHER] File deleted: {file_path}", flush=True)
                     try:
                         import lancedb
                         if self.db_path.exists():
@@ -160,15 +156,13 @@ class DocumentIndexer(BaseHarness):
                                 escaped_source = str(file_path).replace("'", "''")
                                 tbl.delete(f"source = '{escaped_source}'")
                     except Exception as e:
-                        print(f"[WATCHER] Failed to delete from DB: {e}", flush=True)
+                        logger.emit("watcher.delete_failed", file_path=str(file_path), error=str(e))
                     
                     file_str = str(file_path)
                     if file_str in watcher_state:
                         del watcher_state[file_str]
                         state_changed = True
                         
-                    from asterion_api.structured_logging import StructuredLogger
-                    logger = StructuredLogger("rag_watcher", self.privacy_level)
                     logger.emit("watcher.deleted", file_path=str(file_path))
 
                 if state_changed:
@@ -179,12 +173,9 @@ class DocumentIndexer(BaseHarness):
 
                 known_files = current_files
             except asyncio.CancelledError:
-                print("[WATCHER] Watch loop cancelled", flush=True)
+                logger.emit("watcher.stopped")
                 break
             except Exception as exc:
-                print(f"[WATCHER] Exception in loop: {exc}", flush=True)
-                from asterion_api.structured_logging import StructuredLogger
-                logger = StructuredLogger("rag_watcher", self.privacy_level)
                 logger.emit("watcher.failed", error=str(exc))
 
     def parse(self, file_path: Path) -> list[str]:

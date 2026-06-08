@@ -9,3 +9,6 @@ __pycache__/
 *.db-wal
 dist/
 build/
+backend/temp_db/
+node_modules/
+frontend/dist/

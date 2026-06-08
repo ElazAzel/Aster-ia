@@ -61,7 +61,7 @@ def get_document_indexer() -> DocumentIndexer:
 
 @lru_cache(maxsize=1)
 def get_supervisor_agent() -> SupervisorAgent:
-    return SupervisorAgent(get_privacy_analyzer())
+    return SupervisorAgent(get_privacy_analyzer(), get_settings())
 
 
 @lru_cache(maxsize=1)
@@ -86,7 +86,7 @@ def get_agent_registry() -> AgentRegistry:
 
 @lru_cache(maxsize=1)
 def get_comfyui_service() -> ComfyUIService:
-    return ComfyUIService()
+    return ComfyUIService(get_settings())
 
 
 @lru_cache(maxsize=1)

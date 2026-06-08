@@ -6,14 +6,15 @@ from uuid import uuid4
 
 import httpx
 
+from asterion_api.config import Settings
 from asterion_api.harness import BaseHarness
 
 
 class ComfyUIService(BaseHarness):
     privacy_level = "local"
 
-    def __init__(self) -> None:
-        self.base_url = "http://127.0.0.1:8188"
+    def __init__(self, settings: Settings) -> None:
+        self.base_url = settings.comfyui_url.rstrip("/")
 
     async def execute(self, payload: Mapping[str, Any] | None = None) -> dict[str, Any]:
         payload = payload or {}

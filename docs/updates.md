@@ -1,5 +1,20 @@
 # Updates
 
+## 2026-06-08 (afternoon)
+
+- Fixed CORS middleware to allow `PUT`, `PATCH`, and `DELETE` methods (memory endpoints were blocked in cross-origin contexts).
+- Replaced all `print()` calls in RAG file watcher with `StructuredLogger` for consistent structured JSON logging.
+- Moved hardcoded ComfyUI URL (`127.0.0.1:8188`) and SearXNG URL (`127.0.0.1:8080`) to `Settings` config (`ASTERION_COMFYUI_URL`, `ASTERION_SEARXNG_URL`).
+- Updated `ComfyUIService` and `SupervisorAgent` to accept `Settings` and use configurable URLs.
+- Added `.env.example` with all environment variables documented.
+- Rewrote `backend/README.md` with complete API reference (20+ endpoints across 11 routers) and configuration table.
+- Added 34 pytest tests across 6 test files: `test_privacy_analyzer`, `test_model_router`, `test_rag`, `test_agent_sandbox`, `test_config`, `test_schemas`.
+- Initialized Svelte frontend project structure: `package.json`, `vite.config.ts`, `svelte.config.js`, `tsconfig.json`, `index.html`, `src/main.ts`.
+- Created Svelte app shell (`App.svelte`) with sidebar navigation and 7 view components: `ChatView`, `ModelSettings`, `PrivacyPanel`, `KnowledgeVault`, `AgentLab`, `WorkflowViewer`, `SystemStatus`.
+- Updated `tauri.conf.json` to point `frontendDist` to `frontend/dist`.
+- Added `backend/temp_db/`, `node_modules/`, `frontend/dist/` to `.gitignore`.
+- Removed unused imports (`PrivacyReport` in `deep_research.py`, `Path` in `encrypted_sqlite.py`). Fixed ruff lint errors.
+
 ## 2026-06-08
 
 - Implemented durable workflow state in `EncryptedSQLiteStore` schema and methods.
