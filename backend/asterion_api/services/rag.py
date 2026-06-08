@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import math
 import re
 from pathlib import Path
@@ -21,6 +22,8 @@ class DocumentIndexer(BaseHarness):
         self.db_path = settings.data_dir / "lancedb"
         self.table_name = "documents"
         self.embedding_model = "nomic-embed-text"
+        self.watching = False
+        self.watcher_task: asyncio.Task | None = None
 
     async def execute(self, payload: Mapping[str, Any] | None = None) -> Any:
         payload = payload or {}
@@ -45,6 +48,144 @@ class DocumentIndexer(BaseHarness):
     def set_state(self, state: Mapping[str, Any]) -> None:
         if state.get("embedding_model"):
             self.embedding_model = str(state["embedding_model"])
+
+    async def start_watching(self) -> None:
+        if self.watching:
+            return
+        self.watching = True
+        self.watch_dir = self.settings.data_dir / "watch"
+        self.watch_dir.mkdir(parents=True, exist_ok=True)
+        (self.watch_dir / "default").mkdir(exist_ok=True)
+        self.watcher_task = asyncio.create_task(self._watch_loop())
+
+    def stop_watching(self) -> None:
+        self.watching = False
+        if self.watcher_task:
+            self.watcher_task.cancel()
+            self.watcher_task = None
+
+    def _get_indexed_sources(self) -> set[str]:
+        try:
+            import lancedb
+            if not self.db_path.exists():
+                return set()
+            db = lancedb.connect(str(self.db_path))
+            if self.table_name not in db.table_names():
+                return set()
+            tbl = db.open_table(self.table_name)
+            df = tbl.search().select(["source"]).to_pandas()
+            if "source" in df.columns:
+                return set(df["source"].dropna().unique())
+        except Exception:
+            pass
+        return set()
+
+    async def _watch_loop(self) -> None:
+        print("[WATCHER] Watch loop started", flush=True)
+        import json
+        state_file = self.settings.data_dir / "watcher_state.json"
+        
+        watcher_state = {}
+        if state_file.exists():
+            try:
+                watcher_state = json.loads(state_file.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+
+        indexed_sources = self._get_indexed_sources()
+        known_files: dict[Path, tuple[float, int]] = {}
+        try:
+            for room_dir in self.watch_dir.iterdir():
+                if room_dir.is_dir():
+                    for file_path in room_dir.glob("**/*"):
+                        if file_path.is_file():
+                            stat = file_path.stat()
+                            file_str = str(file_path)
+                            if file_str in indexed_sources and file_str in watcher_state:
+                                saved = watcher_state[file_str]
+                                if saved.get("mtime") == stat.st_mtime and saved.get("size") == stat.st_size:
+                                    known_files[file_path] = (stat.st_mtime, stat.st_size)
+            print(f"[WATCHER] Initial scan complete. Known files: {list(known_files.keys())}", flush=True)
+        except Exception as e:
+            print(f"[WATCHER] Initial scan error: {e}", flush=True)
+
+        while self.watching:
+            await asyncio.sleep(5)
+            print("[WATCHER] Polling directory...", flush=True)
+            try:
+                current_files: dict[Path, tuple[float, int]] = {}
+                state_changed = False
+                
+                for room_dir in self.watch_dir.iterdir():
+                    if room_dir.is_dir():
+                        room_id = room_dir.name
+                        for file_path in room_dir.glob("**/*"):
+                            try:
+                                if file_path.is_file():
+                                    stat = file_path.stat()
+                                    current_files[file_path] = (stat.st_mtime, stat.st_size)
+
+                                    last_state = known_files.get(file_path)
+                                    print(f"[WATCHER] Found file: {file_path}, last_state: {last_state}", flush=True)
+                                    if last_state is None or last_state[0] < stat.st_mtime or last_state[1] != stat.st_size:
+                                        await asyncio.sleep(0.5)
+                                        if file_path.exists():
+                                            current_stat = file_path.stat()
+                                            if current_stat.st_size == stat.st_size and current_stat.st_mtime == stat.st_mtime:
+                                                print(f"[WATCHER] Indexing file: {file_path}", flush=True)
+                                                await self.index_file(file_path, room_id)
+                                                print(f"[WATCHER] Indexing complete for: {file_path}", flush=True)
+                                                
+                                                watcher_state[str(file_path)] = {
+                                                    "mtime": stat.st_mtime,
+                                                    "size": stat.st_size
+                                                }
+                                                state_changed = True
+                                                
+                                                from asterion_api.structured_logging import StructuredLogger
+                                                logger = StructuredLogger("rag_watcher", self.privacy_level)
+                                                logger.emit("watcher.indexed", file_path=str(file_path), room_id=room_id)
+                            except Exception as fe:
+                                print(f"[WATCHER] Error processing file {file_path}: {fe}", flush=True)
+
+                deleted_files = set(known_files.keys()) - set(current_files.keys())
+                for file_path in deleted_files:
+                    print(f"[WATCHER] File deleted: {file_path}", flush=True)
+                    try:
+                        import lancedb
+                        if self.db_path.exists():
+                            db = lancedb.connect(str(self.db_path))
+                            if self.table_name in db.table_names():
+                                tbl = db.open_table(self.table_name)
+                                escaped_source = str(file_path).replace("'", "''")
+                                tbl.delete(f"source = '{escaped_source}'")
+                    except Exception as e:
+                        print(f"[WATCHER] Failed to delete from DB: {e}", flush=True)
+                    
+                    file_str = str(file_path)
+                    if file_str in watcher_state:
+                        del watcher_state[file_str]
+                        state_changed = True
+                        
+                    from asterion_api.structured_logging import StructuredLogger
+                    logger = StructuredLogger("rag_watcher", self.privacy_level)
+                    logger.emit("watcher.deleted", file_path=str(file_path))
+
+                if state_changed:
+                    try:
+                        state_file.write_text(json.dumps(watcher_state, indent=2), encoding="utf-8")
+                    except Exception:
+                        pass
+
+                known_files = current_files
+            except asyncio.CancelledError:
+                print("[WATCHER] Watch loop cancelled", flush=True)
+                break
+            except Exception as exc:
+                print(f"[WATCHER] Exception in loop: {exc}", flush=True)
+                from asterion_api.structured_logging import StructuredLogger
+                logger = StructuredLogger("rag_watcher", self.privacy_level)
+                logger.emit("watcher.failed", error=str(exc))
 
     def parse(self, file_path: Path) -> list[str]:
         suffix = file_path.suffix.lower()
@@ -71,6 +212,26 @@ class DocumentIndexer(BaseHarness):
             for chunk, vector in zip(chunks, embeddings, strict=False)
         ]
         self._upsert(rows)
+
+        if file_path.exists():
+            try:
+                import json
+                state_file = self.settings.data_dir / "watcher_state.json"
+                watcher_state = {}
+                if state_file.exists():
+                    try:
+                        watcher_state = json.loads(state_file.read_text(encoding="utf-8"))
+                    except Exception:
+                        pass
+                stat = file_path.stat()
+                watcher_state[str(file_path)] = {
+                    "mtime": stat.st_mtime,
+                    "size": stat.st_size
+                }
+                state_file.write_text(json.dumps(watcher_state, indent=2), encoding="utf-8")
+            except Exception:
+                pass
+
         return {"indexed_chunks": len(rows), "source": str(file_path), "room_id": room_id}
 
     async def hybrid_search(self, *, query: str, room_id: str, limit: int) -> list[RagChunk]:
@@ -100,7 +261,13 @@ class DocumentIndexer(BaseHarness):
         self.db_path.mkdir(parents=True, exist_ok=True)
         db = lancedb.connect(str(self.db_path))
         if self.table_name in db.table_names():
-            db.open_table(self.table_name).add(rows)
+            tbl = db.open_table(self.table_name)
+            sources = {row["source"] for row in rows if "source" in row}
+            for source in sources:
+                escaped_source = source.replace("'", "''")
+                tbl.delete(f"source = '{escaped_source}'")
+            if rows:
+                tbl.add(rows)
         elif rows:
             db.create_table(self.table_name, data=rows)
 

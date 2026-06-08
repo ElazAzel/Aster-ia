@@ -1,5 +1,18 @@
 # Updates
 
+## 2026-06-08
+
+- Implemented durable workflow state in `EncryptedSQLiteStore` schema and methods.
+- Modified `WorkflowRunner` to persist workflow run status and step progress across application restarts.
+- Added `WorkflowRunStatus` Pydantic model to API schemas.
+- Exposed new API endpoints `GET /api/workflows/runs` (list active runs) and `GET /api/workflows/runs/{run_id}` (get details of a run).
+- Implemented cryptographic plugin signature verification in `PluginManager` using a built-in trusted RSA-2048 public key.
+- Added support for loading and validating companion `manifest.json.sig` signature files.
+- Automatically downgrade unsigned or tampered plugins to `"local-only"` to prevent permission escalation.
+- Implemented **RAG File Watcher** background service in `DocumentIndexer` using lightweight polling to automatically parse, chunk, embed, and index new/modified files from room directories.
+- Added state-tracking using `watcher_state.json` to handle application restarts, self-heal directory-to-database state, and prevent redundant re-indexing of already-indexed files.
+- Added automatic cleanup of LanceDB database records when monitored files are deleted from the watched folders.
+
 ## 2026-06-05
 
 - Added Phase 1 Asterion AI FastAPI sidecar scaffold with `/api/health`, `/api/models`, `/api/chat`, and `/api/chat/stream`.

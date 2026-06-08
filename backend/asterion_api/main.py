@@ -26,7 +26,10 @@ from asterion_api.routers import (
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     await get_store().ensure_schema()
+    from asterion_api.dependencies import get_document_indexer
+    await get_document_indexer().start_watching()
     yield
+    get_document_indexer().stop_watching()
 
 
 settings = get_settings()

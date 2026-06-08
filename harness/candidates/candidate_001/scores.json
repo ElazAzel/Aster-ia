@@ -1,6 +1,6 @@
 {
   "task_success_rate": 1.0,
-  "avg_latency_ms": 40.33740361531576,
+  "avg_latency_ms": 40.267388025919594,
   "privacy_score": 1.0,
   "harness_efficiency": 0.98,
   "ui_contracts_passed": 8,

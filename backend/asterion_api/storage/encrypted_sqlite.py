@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import secrets
 import sqlite3
 from datetime import UTC, datetime
@@ -113,6 +114,21 @@ class EncryptedSQLiteStore(BaseHarness):
     async def delete_memory(self, memory_id: str) -> bool:
         return await asyncio.to_thread(self._delete_memory_sync, memory_id)
 
+    async def save_workflow_run(
+        self,
+        run_id: str,
+        status: str,
+        workflow: dict[str, Any],
+        results: list[dict[str, Any]],
+    ) -> None:
+        await asyncio.to_thread(self._save_workflow_run_sync, run_id, status, workflow, results)
+
+    async def get_workflow_run(self, run_id: str) -> dict[str, Any] | None:
+        return await asyncio.to_thread(self._get_workflow_run_sync, run_id)
+
+    async def list_active_workflow_runs(self) -> list[dict[str, Any]]:
+        return await asyncio.to_thread(self._list_active_workflow_runs_sync)
+
     def _ensure_schema_sync(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self._connect() as conn:
@@ -155,6 +171,19 @@ class EncryptedSQLiteStore(BaseHarness):
                 """
             )
             conn.execute("CREATE INDEX IF NOT EXISTS idx_memories_room_id ON memories(room_id)")
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS workflow_runs (
+                    id TEXT PRIMARY KEY,
+                    status TEXT NOT NULL,
+                    workflow TEXT NOT NULL,
+                    results TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_workflow_runs_status ON workflow_runs(status)")
             conn.commit()
         self.logger.emit("schema.ready", db_path=str(self.path))
 
@@ -308,6 +337,73 @@ class EncryptedSQLiteStore(BaseHarness):
                 (memory_id,),
             ).fetchone()
         return dict(row) if row is not None else None
+
+    def _save_workflow_run_sync(
+        self,
+        run_id: str,
+        status: str,
+        workflow: dict[str, Any],
+        results: list[dict[str, Any]],
+    ) -> None:
+        now = datetime.now(UTC).isoformat()
+        wf_str = json.dumps(workflow)
+        res_str = json.dumps(results)
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO workflow_runs (id, status, workflow, results, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    status = excluded.status,
+                    results = excluded.results,
+                    updated_at = excluded.updated_at
+                """,
+                (run_id, status, wf_str, res_str, now, now),
+            )
+            conn.commit()
+
+    def _get_workflow_run_sync(self, run_id: str) -> dict[str, Any] | None:
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT id, status, workflow, results, created_at, updated_at
+                FROM workflow_runs
+                WHERE id = ?
+                """,
+                (run_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return {
+            "id": row["id"],
+            "status": row["status"],
+            "workflow": json.loads(row["workflow"]),
+            "results": json.loads(row["results"]),
+            "created_at": row["created_at"],
+            "updated_at": row["updated_at"],
+        }
+
+    def _list_active_workflow_runs_sync(self) -> list[dict[str, Any]]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT id, status, workflow, results, created_at, updated_at
+                FROM workflow_runs
+                WHERE status = 'paused'
+                ORDER BY updated_at DESC
+                """
+            ).fetchall()
+        return [
+            {
+                "id": row["id"],
+                "status": row["status"],
+                "workflow": json.loads(row["workflow"]),
+                "results": json.loads(row["results"]),
+                "created_at": row["created_at"],
+                "updated_at": row["updated_at"],
+            }
+            for row in rows
+        ]
 
     def _connect(self) -> Any:
         driver = self._driver()

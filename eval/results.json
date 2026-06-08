@@ -1,7 +1,7 @@
 {
   "metrics": {
     "task_success_rate": 1.0,
-    "avg_latency_ms": 40.33740361531576,
+    "avg_latency_ms": 40.267388025919594,
     "privacy_score": 1.0,
     "harness_efficiency": 0.98,
     "ui_contracts_passed": 8,
@@ -76,19 +76,19 @@
     {
       "run": 1,
       "startup_success": true,
-      "chat_latency_seconds": 0.04055619239807129,
+      "chat_latency_seconds": 0.0401153564453125,
       "status": "PASS"
     },
     {
       "run": 2,
       "startup_success": true,
-      "chat_latency_seconds": 0.04024934768676758,
+      "chat_latency_seconds": 0.04037809371948242,
       "status": "PASS"
     },
     {
       "run": 3,
       "startup_success": true,
-      "chat_latency_seconds": 0.0402066707611084,
+      "chat_latency_seconds": 0.04030871391296387,
       "status": "PASS"
     }
   ]

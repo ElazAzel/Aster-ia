@@ -91,7 +91,7 @@ def get_comfyui_service() -> ComfyUIService:
 
 @lru_cache(maxsize=1)
 def get_workflow_runner() -> WorkflowRunner:
-    return WorkflowRunner()
+    return WorkflowRunner(get_store())
 
 
 @lru_cache(maxsize=1)

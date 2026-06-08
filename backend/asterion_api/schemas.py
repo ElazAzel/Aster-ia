@@ -224,3 +224,12 @@ class PluginManifest(BaseModel):
     trust_level: Literal["verified", "local-only", "network", "file", "shell", "danger"]
     path: str
     description: str | None = None
+
+
+class WorkflowRunStatus(BaseModel):
+    id: str
+    status: str
+    workflow: dict[str, Any]
+    results: list[dict[str, Any]]
+    created_at: str
+    updated_at: str
