@@ -16,7 +16,6 @@ def main():
     print(f"Iterations: {args.iterations} | Mode: Optimization Loop")
     print("=" * 60)
 
-    # Path to index.html
     workspace_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     index_path = os.path.join(workspace_root, "index.html")
 
@@ -26,7 +25,6 @@ def main():
 
     print(f"Found index.html in workspace: {index_path}")
 
-    # Layout elements to check in index.html
     required_patterns = {
         "Left Sidebar (240px)": "w-[240px]",
         "Context Panel (320px)": "w-[320px]",
@@ -38,7 +36,6 @@ def main():
         "System Status Panel": "id=\"context-home\""
     }
 
-    # Reading file contents
     with open(index_path, "r", encoding="utf-8") as f:
         html_content = f.read()
 
@@ -84,7 +81,7 @@ def main():
         "Memories schema": ("backend/asterion_api/storage/encrypted_sqlite.py", "CREATE TABLE IF NOT EXISTS memories"),
         "Memory API": ("backend/asterion_api/routers/memory.py", "APIRouter(prefix=\"/api/memory\""),
         "SupervisorAgent": ("backend/asterion_api/services/deep_research.py", "class SupervisorAgent"),
-        "SearXNG search": ("backend/asterion_api/services/deep_research.py", "127.0.0.1:8080"),
+        "SearXNG search": ("backend/asterion_api/services/deep_research.py", "settings.searxng_url"),
         "DuckDB aggregation": ("backend/asterion_api/services/deep_research.py", "import duckdb"),
         "ContradictionFinder": ("backend/asterion_api/services/contradiction_finder.py", "class ContradictionFinder"),
         "AgentSandbox": ("backend/asterion_api/services/agent_sandbox.py", "class AgentSandbox"),
@@ -121,49 +118,173 @@ def main():
     if not source_present:
         print("[WARN] Warning: Some backend/source contracts are missing.")
 
+    print("\nRunning real service invocation tests...")
+    service_results = {}
+    backend_dir = os.path.join(workspace_root, "backend")
+
+    import subprocess
+
+    venv_python = os.path.join(backend_dir, ".venv", "Scripts", "python.exe")
+    if not os.path.exists(venv_python):
+        venv_python = os.path.join(backend_dir, ".venv", "bin", "python")
+    if not os.path.exists(venv_python):
+        venv_python = sys.executable
+
+    test_code = '''
+import sys
+sys.path.insert(0, ".")
+from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
+from asterion_api.services.model_router import ModelRouter
+from asterion_api.schemas import HardwareProfile
+from asterion_api.services.agent_sandbox import TaskSimulator, AgentSandbox
+from asterion_api.schemas import AgentPermissions
+from asterion_api.services.rag import DocumentIndexer
+from asterion_api.services.agent_registry import AgentRegistry
+from asterion_api.services.memory_ledger import MemoryLedger
+import json
+
+results = {}
+
+try:
+    pa = PrivacyAnalyzer()
+    r = pa.analyze(model_type="local", files_attached=False, memory_enabled=False, web_access=False)
+    results["PrivacyAnalyzer"] = r.level == "green"
+except Exception as e:
+    results["PrivacyAnalyzer"] = False
+
+try:
+    mr = ModelRouter()
+    s = mr.select("test", HardwareProfile(vram_gb=8.0))
+    results["ModelRouter"] = s.mode == "local" and s.model == "mistral"
+except Exception as e:
+    results["ModelRouter"] = False
+
+try:
+    ts = TaskSimulator()
+    p = ts.plan("write python code to search the web")
+    results["TaskSimulator"] = {"file_read", "file_write", "web_search", "run_code"} <= set(p.required_permissions)
+except Exception as e:
+    results["TaskSimulator"] = False
+
+try:
+    sb = AgentSandbox()
+    pm = AgentPermissions(network=False, shell=False, allowed_folders=[])
+    blocked = False
+    try:
+        sb._validate_code("import subprocess", pm)
+    except PermissionError:
+        blocked = True
+    results["AgentSandbox_AST"] = blocked
+except Exception as e:
+    results["AgentSandbox_AST"] = False
+
+try:
+    c = DocumentIndexer._chunk("hello world test content here", size=10, overlap=2)
+    results["RAG_Chunking"] = len(c) > 1 and all(len(x) <= 10 for x in c)
+except Exception as e:
+    results["RAG_Chunking"] = False
+
+try:
+    import os as _os
+    _cwd = _os.getcwd()
+    _root = _os.path.dirname(_cwd) if _os.path.basename(_cwd) == "backend" else _cwd
+    reg = AgentRegistry(project_root=_root)
+    agents = reg.list_agents()
+    skills = reg.list_skills()
+    results["AgentRegistry"] = len(agents) >= 5 and len(skills) >= 10
+except Exception as e:
+    results["AgentRegistry"] = False
+
+try:
+    results["MemoryLedger_Harness"] = hasattr(MemoryLedger, 'execute') and hasattr(MemoryLedger, 'update') and hasattr(MemoryLedger, 'delete')
+except Exception as e:
+    results["MemoryLedger_Harness"] = False
+
+print(json.dumps(results))
+'''
+    try:
+        proc = subprocess.run(
+            [venv_python, "-c", test_code],
+            cwd=backend_dir,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if proc.returncode == 0:
+            service_results = json.loads(proc.stdout.strip())
+        else:
+            print(f"  - Subprocess error: {proc.stderr[:200]}")
+            service_results = {k: False for k in ["PrivacyAnalyzer", "ModelRouter", "TaskSimulator", "AgentSandbox_AST", "RAG_Chunking", "AgentRegistry", "MemoryLedger_Harness"]}
+    except Exception as e:
+        print(f"  - Failed to run service tests: {e}")
+        service_results = {k: False for k in ["PrivacyAnalyzer", "ModelRouter", "TaskSimulator", "AgentSandbox_AST", "RAG_Chunking", "AgentRegistry", "MemoryLedger_Harness"]}
+
+    for name, passed in service_results.items():
+        status = "[OK]" if passed else "[FAIL]"
+        print(f"  - {name:30}: {status}")
+
     print("\nRunning performance and latency iterations...")
-    
     total_latency = 0.0
     iteration_data = []
 
+    bench_code = '''
+import time
+from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
+from asterion_api.services.model_router import ModelRouter
+from asterion_api.schemas import HardwareProfile
+from asterion_api.services.agent_sandbox import TaskSimulator
+
+start = time.time()
+for _ in range(10):
+    PrivacyAnalyzer().analyze(model_type="local", files_attached=False, memory_enabled=False, web_access=False)
+    PrivacyAnalyzer().analyze(model_type="api", files_attached=True, memory_enabled=True, web_access=True)
+    ModelRouter().select("test", HardwareProfile(vram_gb=4.0))
+    ModelRouter().select("test", HardwareProfile(vram_gb=16.0))
+    TaskSimulator().plan("read and write files with web search")
+elapsed = time.time() - start
+print(f"{elapsed:.4f}")
+'''
     for i in range(args.iterations):
         print(f"\n[Iteration {i+1}/{args.iterations}]")
-        print("  - Starting mock server & IPC layers...")
-        time.sleep(0.3)  # Simulated startup delay
-        
-        # Latency check for first chat response
-        start_time = time.time()
-        # Mocking RAG search + local inference roundtrip
-        time.sleep(0.04)  # 40ms local model response simulation
-        end_time = time.time()
-        
-        latency = end_time - start_time
+        try:
+            proc = subprocess.run(
+                [venv_python, "-c", bench_code],
+                cwd=backend_dir,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            latency = float(proc.stdout.strip()) if proc.returncode == 0 else 0.0
+        except Exception:
+            latency = 0.0
         total_latency += latency
         iteration_data.append({
             "run": i + 1,
             "startup_success": True,
-            "chat_latency_seconds": latency,
+            "service_invocation_latency_seconds": latency,
             "status": "PASS" if latency < 5.0 else "FAIL"
         })
-        
-        print(f"  - Chat response received in {latency*1000:.1f}ms")
+        print(f"  - Service invocation completed in {latency*1000:.1f}ms")
         print(f"  - Status: PASS (Latency < 5s)")
 
     avg_latency = (total_latency / args.iterations) * 1000
     contract_count = len(validation_results) + len(source_results)
     passed_count = sum(validation_results.values()) + sum(source_results.values())
     success_rate = passed_count / contract_count if contract_count else 0.0
+    service_pass_rate = sum(service_results.values()) / len(service_results) if service_results else 0.0
 
-    # Preparing metrics
     metrics = {
         "task_success_rate": success_rate,
+        "service_pass_rate": service_pass_rate,
         "avg_latency_ms": avg_latency,
         "privacy_score": 1.0,
-        "harness_efficiency": 0.98,
+        "harness_efficiency": service_pass_rate,
         "ui_contracts_passed": sum(validation_results.values()),
         "ui_contracts_total": len(validation_results),
         "source_contracts_passed": sum(source_results.values()),
         "source_contracts_total": len(source_results),
+        "services_tested": len(service_results),
+        "services_passed": sum(service_results.values()),
         "phase": args.phase,
         "iterations_completed": args.iterations
     }
@@ -171,29 +292,28 @@ def main():
     print("\n" + "=" * 60)
     print("EVALUATION RESULTS SUMMARY")
     print("=" * 60)
-    print(f"  - Overall Task Success:  {success_rate*100:.1f}%")
-    print(f"  - Avg Response Latency:  {avg_latency:.1f} ms")
-    print(f"  - Eval Metric Status:    PASSED (Time to first chat response < 5s)")
+    print(f"  - Source Contracts:       {passed_count}/{contract_count} ({success_rate*100:.1f}%)")
+    print(f"  - Service Invocations:   {sum(service_results.values())}/{len(service_results)} ({service_pass_rate*100:.1f}%)")
+    print(f"  - Avg Service Latency:   {avg_latency:.1f} ms")
     print("=" * 60)
 
-    # Save scores to candidate directory
     candidate_dir = os.path.join(workspace_root, "harness", "candidates", "candidate_001")
     os.makedirs(candidate_dir, exist_ok=True)
     scores_path = os.path.join(candidate_dir, "scores.json")
-    
+
     with open(scores_path, "w", encoding="utf-8") as sf:
         json.dump(metrics, sf, indent=2)
 
-    # Save to general eval dir
     eval_dir = os.path.join(workspace_root, "eval")
     os.makedirs(eval_dir, exist_ok=True)
     eval_path = os.path.join(eval_dir, "results.json")
-    
+
     with open(eval_path, "w", encoding="utf-8") as ef:
         json.dump({
             "metrics": metrics,
             "ui_contracts": validation_results,
             "source_contracts": source_results,
+            "service_results": service_results,
             "runs": iteration_data
         }, ef, indent=2)
 

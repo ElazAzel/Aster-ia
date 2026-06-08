@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from asterion_api.dependencies import get_privacy_analyzer
 from asterion_api.schemas import PrivacyAnalyzeRequest, PrivacyReport
@@ -14,4 +14,7 @@ async def analyze_privacy(
     request: PrivacyAnalyzeRequest,
     analyzer: PrivacyAnalyzer = Depends(get_privacy_analyzer),
 ) -> PrivacyReport:
-    return analyzer.analyze(**request.model_dump())
+    try:
+        return analyzer.analyze(**request.model_dump())
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Privacy analysis failed: {exc}")

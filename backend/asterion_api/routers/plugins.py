@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from asterion_api.dependencies import get_plugin_manager
 from asterion_api.schemas import PluginManifest
@@ -13,4 +13,7 @@ router = APIRouter(prefix="/api/plugins", tags=["plugins"])
 async def list_plugins(
     manager: PluginManager = Depends(get_plugin_manager),
 ) -> list[PluginManifest]:
-    return manager.load()
+    try:
+        return manager.load()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to load plugins: {exc}")

@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from asterion_api.dependencies import get_memory_ledger, get_store
+from asterion_api.dependencies import get_memory_ledger
 from asterion_api.schemas import MemoryCreateRequest, MemoryRecord, MemoryUpdateRequest
 from asterion_api.services.memory_ledger import MemoryLedger
-from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
 
 router = APIRouter(prefix="/api/memory", tags=["memory"])
 
@@ -30,22 +29,20 @@ async def list_memories(
 async def update_memory(
     memory_id: str,
     request: MemoryUpdateRequest,
-    store: EncryptedSQLiteStore = Depends(get_store),
+    ledger: MemoryLedger = Depends(get_memory_ledger),
 ) -> MemoryRecord:
-    row = await store.update_memory(
-        memory_id,
-        content=request.content,
-        source=request.source,
-        expires_at=request.expires_at.isoformat() if request.expires_at else None,
-    )
-    if row is None:
+    result = await ledger.update(memory_id, request)
+    if result is None:
         raise HTTPException(status_code=404, detail="Memory not found")
-    return MemoryRecord(**row)
+    return result
 
 
 @router.delete("/{memory_id}")
 async def delete_memory(
     memory_id: str,
-    store: EncryptedSQLiteStore = Depends(get_store),
+    ledger: MemoryLedger = Depends(get_memory_ledger),
 ) -> dict[str, bool]:
-    return {"deleted": await store.delete_memory(memory_id)}
+    deleted = await ledger.delete(memory_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    return {"deleted": True}

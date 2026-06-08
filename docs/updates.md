@@ -1,5 +1,27 @@
 # Updates
 
+## 2026-06-08 (night)
+
+- **CRITICAL FIX**: Memory update/delete endpoints now go through `MemoryLedger` service with privacy analysis. Previously `PATCH /api/memory/{id}` and `DELETE /api/memory/{id}` bypassed all privacy checks by accessing `EncryptedSQLiteStore` directly.
+- Added `update()` and `delete()` methods to `MemoryLedger` with structured logging.
+- Added `get_memory()` async wrapper to `EncryptedSQLiteStore`.
+- **ContradictionFinder**: rewrote sentiment analysis with negation handling ("not bad" → positive), expanded vocabulary to 30+ words per language, added stem prefix matching for Russian/English.
+- **AgentRegistry**: added 30-second TTL cache to avoid re-reading 18 JSON manifest files from disk on every API call.
+- **Meta-harness**: replaced fabricated `time.sleep()` metrics with real service invocation via subprocess. Now tests PrivacyAnalyzer, ModelRouter, TaskSimulator, AgentSandbox AST validation, RAG chunking, AgentRegistry, and MemoryLedger harness interface. 57/57 source contracts, 6/7 services pass.
+
+## 2026-06-08 (evening)
+
+- **Chat service**: added multi-turn conversation history. Messages are retrieved from SQLite and sent to Ollama via `/api/chat` endpoint (previously only the current message was sent via `/api/generate`).
+- Added `chat()` and `stream_chat()` methods to `OllamaService` using Ollama's `/api/chat` endpoint for proper multi-turn support.
+- Made `num_predict` configurable via `ASTERION_MAX_TOKENS` env var (default 2048, was hardcoded to 256).
+- Added `ASTERION_CHAT_HISTORY_LIMIT` env var (default 20) to control how many past messages are included as context.
+- **Agent sandbox**: replaced naive string-matching security with AST-based validation. Now parses Python AST to detect `import`, `from...import`, `exec()`, `eval()`, `__import__()` calls for shell and network modules. Added cleanup of temp scripts after execution.
+- **Workflow runner**: implemented real step execution for `tool_call`, `code_exec`, and `condition` types (previously all non-approval steps were silently skipped). Added 1-hour timeout on approval gates. Added structured logging for workflow lifecycle events.
+- **Error handling**: added try/except to all 7 routers that were missing it: `agents.py` (PermissionError → 403), `images.py` (TimeoutError → 504), `rag.py` (FileNotFoundError → 404), `research.py`, `plugins.py`, `privacy.py`, `workflows.py`.
+- **WebSocket**: added `WebSocketDisconnect` handling and proper `close()` on errors in workflow events endpoint.
+- **Memory cleanup**: expired memories are now deleted during schema initialization and via `cleanup_expired_memories()` method.
+- Added 13 new tests (47 total): sandbox AST validation (9 tests) and extended config (4 tests).
+
 ## 2026-06-08 (afternoon)
 
 - Fixed CORS middleware to allow `PUT`, `PATCH`, and `DELETE` methods (memory endpoints were blocked in cross-origin contexts).

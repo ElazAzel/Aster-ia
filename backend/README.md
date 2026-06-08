@@ -87,6 +87,8 @@ All settings are read from environment variables. See `.env.example` for the ful
 | `ASTERION_API_PORT` | `8000` | Bind port |
 | `OLLAMA_BASE_URL` | `http://127.0.0.1:11434` | Ollama runtime URL |
 | `ASTERION_DEFAULT_MODEL` | `llama3.2` | Default chat model |
+| `ASTERION_MAX_TOKENS` | `2048` | Max tokens per generation |
+| `ASTERION_CHAT_HISTORY_LIMIT` | `20` | Past messages included as context |
 | `ASTERION_COMFYUI_URL` | `http://127.0.0.1:8188` | ComfyUI server URL |
 | `ASTERION_SEARXNG_URL` | `http://127.0.0.1:8080` | SearXNG search URL |
 | `ASTERION_DATA_DIR` | `~/.asterion` | Data storage directory |

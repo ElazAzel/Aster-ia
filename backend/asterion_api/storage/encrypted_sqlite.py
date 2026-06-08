@@ -94,6 +94,9 @@ class EncryptedSQLiteStore(BaseHarness):
     async def list_memories(self, room_id: str) -> list[dict[str, Any]]:
         return await asyncio.to_thread(self._list_memories_sync, room_id)
 
+    async def get_memory(self, memory_id: str) -> dict[str, Any] | None:
+        return await asyncio.to_thread(self._get_memory_sync, memory_id)
+
     async def update_memory(
         self,
         memory_id: str,
@@ -127,6 +130,18 @@ class EncryptedSQLiteStore(BaseHarness):
 
     async def list_active_workflow_runs(self) -> list[dict[str, Any]]:
         return await asyncio.to_thread(self._list_active_workflow_runs_sync)
+
+    async def cleanup_expired_memories(self) -> int:
+        return await asyncio.to_thread(self._cleanup_expired_memories_sync)
+
+    def _cleanup_expired_memories_sync(self) -> int:
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "DELETE FROM memories WHERE expires_at IS NOT NULL AND expires_at <= ?",
+                (datetime.now(UTC).isoformat(),),
+            )
+            conn.commit()
+        return cursor.rowcount
 
     def _ensure_schema_sync(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -183,6 +198,11 @@ class EncryptedSQLiteStore(BaseHarness):
                 """
             )
             conn.execute("CREATE INDEX IF NOT EXISTS idx_workflow_runs_status ON workflow_runs(status)")
+            conn.commit()
+            conn.execute(
+                "DELETE FROM memories WHERE expires_at IS NOT NULL AND expires_at <= ?",
+                (datetime.now(UTC).isoformat(),),
+            )
             conn.commit()
         self.logger.emit("schema.ready", db_path=str(self.path))
 

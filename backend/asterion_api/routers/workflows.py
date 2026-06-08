@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, WebSocket, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 
 from asterion_api.dependencies import get_workflow_runner
 from asterion_api.schemas import WorkflowConfirmRequest, WorkflowRunRequest, WorkflowRunStatus
@@ -14,7 +14,10 @@ async def run_workflow(
     request: WorkflowRunRequest,
     runner: WorkflowRunner = Depends(get_workflow_runner),
 ) -> dict[str, object]:
-    return await runner.run(request.workflow)
+    try:
+        return await runner.run(request.workflow)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Workflow failed: {exc}")
 
 
 @router.post("/confirm")
@@ -22,7 +25,10 @@ async def confirm_workflow(
     request: WorkflowConfirmRequest,
     runner: WorkflowRunner = Depends(get_workflow_runner),
 ) -> dict[str, bool]:
-    return {"confirmed": runner.confirm(request.run_id, request.approved, request.payload)}
+    confirmed = runner.confirm(request.run_id, request.approved, request.payload)
+    if not confirmed:
+        raise HTTPException(status_code=404, detail="No paused workflow found for this run_id")
+    return {"confirmed": True}
 
 
 @router.get("/runs", response_model=list[WorkflowRunStatus])
@@ -50,6 +56,14 @@ async def workflow_events(
     runner: WorkflowRunner = Depends(get_workflow_runner),
 ) -> None:
     await websocket.accept()
-    while True:
-        event = await runner.events.get()
-        await websocket.send_json(event)
+    try:
+        while True:
+            event = await runner.events.get()
+            await websocket.send_json(event)
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        try:
+            await websocket.close()
+        except Exception:
+            pass

@@ -44,6 +44,11 @@ class ChatService(BaseHarness):
     def set_state(self, state: Mapping[str, Any]) -> None:
         self._state.update(dict(state))
 
+    async def _build_history(self, conv_id: str) -> list[dict[str, str]]:
+        messages = await self.store.list_messages(conv_id)
+        history = messages[-self.settings.chat_history_limit:]
+        return [{"role": m["role"], "content": m["content"]} for m in history]
+
     async def generate(self, request: ChatRequest) -> ChatResponse:
         model = request.model or self.settings.default_model
         started = time.perf_counter()
@@ -54,7 +59,8 @@ class ChatService(BaseHarness):
             content=request.message,
             model=model,
         )
-        text = await self.ollama.generate(model=model, prompt=request.message)
+        history = await self._build_history(conv_id)
+        text = await self.ollama.chat(model=model, messages=history)
         await self.store.append_message(
             conv_id=conv_id,
             role="assistant",
@@ -81,10 +87,11 @@ class ChatService(BaseHarness):
             content=request.message,
             model=model,
         )
+        history = await self._build_history(conv_id)
         parts: list[str] = []
         started = time.perf_counter()
-        async for chunk in self.ollama.stream_generate(model=model, prompt=request.message):
-            token = str(chunk.get("response", ""))
+        async for chunk in self.ollama.stream_chat(model=model, messages=history):
+            token = str(chunk.get("message", {}).get("content", ""))
             if token:
                 parts.append(token)
             yield {

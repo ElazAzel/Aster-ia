@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from asterion_api.dependencies import get_contradiction_finder, get_supervisor_agent
 from asterion_api.schemas import (
@@ -20,11 +20,14 @@ async def deep_research(
     request: DeepResearchRequest,
     supervisor: SupervisorAgent = Depends(get_supervisor_agent),
 ) -> DeepResearchResponse:
-    return await supervisor.research(
-        query=request.query,
-        max_subtasks=request.max_subtasks,
-        web_access=request.web_access,
-    )
+    try:
+        return await supervisor.research(
+            query=request.query,
+            max_subtasks=request.max_subtasks,
+            web_access=request.web_access,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Research failed: {exc}")
 
 
 @router.post("/contradictions", response_model=list[ContradictionMatch])
@@ -32,4 +35,7 @@ async def find_contradictions(
     request: ContradictionRequest,
     finder: ContradictionFinder = Depends(get_contradiction_finder),
 ) -> list[ContradictionMatch]:
-    return await finder.find(claims=request.claims, threshold=request.threshold)
+    try:
+        return await finder.find(claims=request.claims, threshold=request.threshold)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Contradiction analysis failed: {exc}")

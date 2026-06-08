@@ -46,8 +46,9 @@ class OllamaService(BaseHarness):
         self.logger.emit("models.listed", count=len(payload.get("models", [])))
         return list(payload.get("models", []))
 
-    async def generate(self, *, model: str, prompt: str) -> str:
+    async def generate(self, *, model: str, prompt: str, num_predict: int | None = None) -> str:
         timeout = httpx.Timeout(120.0, connect=1.0)
+        tokens = num_predict or self.settings.max_tokens
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(
                 f"{self.base_url}/api/generate",
@@ -56,7 +57,7 @@ class OllamaService(BaseHarness):
                     "prompt": prompt,
                     "stream": False,
                     "keep_alive": "30m",
-                    "options": {"num_predict": 256},
+                    "options": {"num_predict": tokens},
                 },
             )
             response.raise_for_status()
@@ -65,8 +66,9 @@ class OllamaService(BaseHarness):
         self.logger.emit("generate.completed", model=model, chars=len(text))
         return text
 
-    async def stream_generate(self, *, model: str, prompt: str) -> AsyncIterator[dict[str, Any]]:
+    async def stream_generate(self, *, model: str, prompt: str, num_predict: int | None = None) -> AsyncIterator[dict[str, Any]]:
         timeout = httpx.Timeout(120.0, connect=1.0, read=None)
+        tokens = num_predict or self.settings.max_tokens
         async with httpx.AsyncClient(timeout=timeout) as client:
             async with client.stream(
                 "POST",
@@ -76,7 +78,7 @@ class OllamaService(BaseHarness):
                     "prompt": prompt,
                     "stream": True,
                     "keep_alive": "30m",
-                    "options": {"num_predict": 256},
+                    "options": {"num_predict": tokens},
                 },
             ) as response:
                 response.raise_for_status()
@@ -101,3 +103,59 @@ class OllamaService(BaseHarness):
         if not isinstance(embeddings, list):
             raise ValueError("Ollama embed response did not include embeddings")
         return embeddings
+
+    async def chat(
+        self,
+        *,
+        model: str,
+        messages: list[dict[str, str]],
+        num_predict: int | None = None,
+    ) -> str:
+        timeout = httpx.Timeout(120.0, connect=1.0)
+        tokens = num_predict or self.settings.max_tokens
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.post(
+                f"{self.base_url}/api/chat",
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "stream": False,
+                    "keep_alive": "30m",
+                    "options": {"num_predict": tokens},
+                },
+            )
+            response.raise_for_status()
+            payload = response.json()
+        text = str(payload.get("message", {}).get("content", ""))
+        self.logger.emit("chat.completed", model=model, chars=len(text))
+        return text
+
+    async def stream_chat(
+        self,
+        *,
+        model: str,
+        messages: list[dict[str, str]],
+        num_predict: int | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        timeout = httpx.Timeout(120.0, connect=1.0, read=None)
+        tokens = num_predict or self.settings.max_tokens
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            async with client.stream(
+                "POST",
+                f"{self.base_url}/api/chat",
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "stream": True,
+                    "keep_alive": "30m",
+                    "options": {"num_predict": tokens},
+                },
+            ) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if not line:
+                        continue
+                    try:
+                        yield json.loads(line)
+                    except json.JSONDecodeError:
+                        yield {"message": {"content": line}, "done": False}

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
-from fastapi import HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from asterion_api.dependencies import get_agent_registry, get_agent_sandbox, get_task_simulator
 from asterion_api.schemas import AgentCatalog, AgentManifest, AgentPlan, AgentRunCodeRequest, RuntimeSkillManifest
@@ -56,4 +55,9 @@ async def run_code(
     request: AgentRunCodeRequest,
     sandbox: AgentSandbox = Depends(get_agent_sandbox),
 ) -> dict[str, object]:
-    return await sandbox.run_code(code=request.code, permissions=request.permissions)
+    try:
+        return await sandbox.run_code(code=request.code, permissions=request.permissions)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Code execution failed: {exc}")

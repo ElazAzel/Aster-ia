@@ -17,6 +17,8 @@ class Settings:
     keyring_db_key_name: str = os.getenv("ASTERION_KEYRING_DB_KEY_NAME", "sqlcipher-main")
     comfyui_url: str = os.getenv("ASTERION_COMFYUI_URL", "http://127.0.0.1:8188")
     searxng_url: str = os.getenv("ASTERION_SEARXNG_URL", "http://127.0.0.1:8080")
+    max_tokens: int = int(os.getenv("ASTERION_MAX_TOKENS", "2048"))
+    chat_history_limit: int = int(os.getenv("ASTERION_CHAT_HISTORY_LIMIT", "20"))
     local_first: bool = True
 
     @property
