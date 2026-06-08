@@ -12,11 +12,13 @@ def test_default_settings():
     assert s.local_first is True
 
 
-def test_data_dir_property():
+def test_data_dir_property(monkeypatch):
+    monkeypatch.delenv("ASTERION_DATA_DIR", raising=False)
     s = Settings()
     assert s.data_dir.name == ".asterion"
 
 
-def test_database_path_property():
+def test_database_path_property(monkeypatch):
+    monkeypatch.delenv("ASTERION_DATA_DIR", raising=False)
     s = Settings()
     assert s.database_path.name == "asterion.db"

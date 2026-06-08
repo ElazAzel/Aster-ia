@@ -1,6 +1,7 @@
 {
   "id": "privacy-guardian",
   "name": "Privacy Guardian",
+  "version": "0.1.0",
   "role": "Evaluates privacy risk before model routing, memory writes, file use, web access, and plugin execution.",
   "description": "Produces the Privacy Radar JSON report and blocks high-risk actions until user approval.",
   "privacy_level": "local",

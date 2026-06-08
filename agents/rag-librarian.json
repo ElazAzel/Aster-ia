@@ -1,6 +1,7 @@
 {
   "id": "rag-librarian",
   "name": "RAG Librarian",
+  "version": "0.1.0",
   "role": "Indexes local documents, builds chunks and embeddings, and retrieves relevant context.",
   "description": "Uses LanceDB and Ollama nomic-embed-text for local document indexing and hybrid dense plus BM25 search.",
   "privacy_level": "local",

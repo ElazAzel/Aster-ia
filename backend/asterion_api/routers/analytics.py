@@ -114,9 +114,9 @@ async def rooms_distribution(
     conn.register("receipts", df_receipts)
 
     query = """
-    SELECT room_name, COUNT(DISTINCT report_id) as count
+    SELECT report_id as room_name, COUNT(DISTINCT report_id) as count
     FROM receipts
-    GROUP BY room_name
+    GROUP BY report_id
     ORDER BY count DESC
     """
     res = conn.execute(query).fetchall()

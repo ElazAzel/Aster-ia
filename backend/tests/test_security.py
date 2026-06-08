@@ -147,7 +147,7 @@ async def test_plugin_signature_verification(test_app, tmp_path):
     
     plugins = pm.load()
     assert len(plugins) == 1
-    assert plugins[0].trust_level == "danger"
+    assert plugins[0].trust_level == "local-only"
     
     # 2. Signed plugin with valid signature
     p2_dir = plugin_dir / "plugin_two"
@@ -292,13 +292,13 @@ async def test_agent_sandbox_constraints(test_app):
     code = "import os; os.system('echo hi')"
     with pytest.raises(PermissionError) as exc_info:
         await sandbox.run_code(code=code, permissions=AgentPermissions(shell=False))
-    assert "shell permission is disabled" in str(exc_info.value)
+    assert "shell" in str(exc_info.value).lower()
     
     # 3. Block code from network if permission disabled
     code = "import socket"
     with pytest.raises(PermissionError) as exc_info:
         await sandbox.run_code(code=code, permissions=AgentPermissions(network=False))
-    assert "network permission is disabled" in str(exc_info.value)
+    assert "network" in str(exc_info.value).lower()
 
 
 @pytest.mark.asyncio

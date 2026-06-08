@@ -104,7 +104,9 @@ class ComfyUIService(BaseHarness):
         },
     )
 
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings | None = None) -> None:
+        if settings is None:
+            settings = Settings()
         self.base_url = settings.comfyui_url.rstrip("/")
 
     async def execute(self, payload: Mapping[str, Any] | None = None) -> dict[str, Any]:

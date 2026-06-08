@@ -1,6 +1,7 @@
 {
   "id": "image-studio",
   "name": "Image Studio",
+  "version": "0.1.0",
   "role": "Generates images through the local ComfyUI bridge.",
   "description": "Converts prompts and recipes into ComfyUI workflow JSON, posts to local port 8188, polls history, and returns image metadata.",
   "privacy_level": "local",

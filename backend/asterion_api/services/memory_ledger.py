@@ -62,11 +62,13 @@ class MemoryLedger(BaseHarness):
         existing = await self.store.get_memory(memory_id)
         if existing is None:
             return None
+        content = request.content or existing.get("content", "")
         privacy = self.analyzer.analyze(
             model_type="local",
             files_attached=False,
             memory_enabled=True,
             web_access=False,
+            prompt=content,
         )
         self.logger.emit("memory.updated", memory_id=memory_id, risk=privacy.level)
         row = await self.store.update_memory(

@@ -89,7 +89,7 @@ class ModelRouter(BaseHarness):
         if not viable:
             return ModelSelection(
                 model=self.api_fallback, mode="api",
-                reason=f"No local model fits VRAM={hw_profile.vram_gb:.1f}GB RAM={hw_profile.ram_gb:.1f}GB; API fallback.",
+                reason=f"No local model fits VRAM={hw_profile.vram_gb:.1f}GB RAM={hw_profile.ram_gb or 0:.1f}GB; API fallback.",
             )
 
         def score(item: dict) -> float:

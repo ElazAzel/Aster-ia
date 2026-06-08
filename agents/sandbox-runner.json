@@ -1,6 +1,7 @@
 {
   "id": "sandbox-runner",
   "name": "Sandbox Runner",
+  "version": "0.1.0",
   "role": "Plans and runs isolated code tasks with explicit permissions.",
   "description": "Creates AgentPlan objects before execution and runs Python subprocesses with allowed folders, network on/off, and shell on/off constraints.",
   "privacy_level": "local",

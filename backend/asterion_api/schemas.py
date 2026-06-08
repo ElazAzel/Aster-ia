@@ -117,6 +117,20 @@ class ModelSelection(BaseModel):
     reason: str
 
 
+class VllmStatus(BaseModel):
+    available: bool
+    base_url: str
+    models: list[str] = Field(default_factory=list)
+
+
+class VllmGenerateRequest(BaseModel):
+    model: str = Field(min_length=1)
+    prompt: str = Field(min_length=1)
+    max_tokens: int = Field(default=512, ge=1, le=32_768)
+    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    stream: bool = False
+
+
 class MemoryCreateRequest(BaseModel):
     room_id: str = Field(min_length=1, max_length=256)
     content: str = Field(min_length=1, max_length=64_000)
@@ -455,3 +469,46 @@ class WorkflowRunStatus(BaseModel):
     results: list[dict[str, Any]]
     created_at: str
     updated_at: str
+
+
+class BenchmarkRunRequest(BaseModel):
+    models: list[str] | None = None
+    prompt: str = Field(min_length=1, max_length=4096)
+    max_tokens: int = Field(default=128, ge=8, le=512)
+    runs_per_model: int = Field(default=3, ge=1, le=10)
+
+
+class BenchmarkResponse(BaseModel):
+    results: list[dict[str, Any]]
+    benchmark_prompt: str
+    runs_per_model: int
+
+
+class TelemetryReportRequest(BaseModel):
+    event_type: str = Field(min_length=1, max_length=128)
+    details: dict[str, Any] = Field(default_factory=dict)
+    vram_gb: float | None = None
+    ram_gb: float | None = None
+    os_platform: str | None = None
+    opt_in: bool = False
+
+
+class ExportFormat(str, Enum):
+    JSON = "json"
+    MARKDOWN = "markdown"
+    CSV = "csv"
+
+
+class ExportScope(str, Enum):
+    ALL = "all"
+    ARTIFACTS = "artifacts"
+    MEMORIES = "memories"
+    CONVERSATIONS = "conversations"
+    RESEARCH = "research"
+    AUDIT_LOGS = "audit_logs"
+
+
+class ExportRequest(BaseModel):
+    format: ExportFormat = ExportFormat.JSON
+    scope: ExportScope = ExportScope.ALL
+    room_id: str | None = None

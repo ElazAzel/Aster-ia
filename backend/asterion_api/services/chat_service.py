@@ -77,14 +77,12 @@ class ChatService(BaseHarness):
             role="assistant",
             content=text,
             model=model,
-            artifact_id=str(artifact["id"]),
         )
         latency_ms = (time.perf_counter() - started) * 1000
         self.logger.emit(
             "response.completed",
             model=model,
             latency_ms=round(latency_ms, 2),
-            artifact_id=artifact["id"],
         )
         return ChatResponse(
             conversation_id=conv_id,
@@ -92,7 +90,6 @@ class ChatService(BaseHarness):
             model=model,
             response=text,
             latency_ms=latency_ms,
-            artifact_id=str(artifact["id"]),
             ts=datetime.now(UTC),
         )
 

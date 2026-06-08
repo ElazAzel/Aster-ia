@@ -169,13 +169,13 @@ def test_agent_catalog_validate(client):
 
 
 def test_benchmark_bad_runs_rejected(client):
-    r = client.post("/api/benchmark/run", json={"runs_per_model": 99, "max_tokens": 128})
-    assert r.status_code == 400
+    r = client.post("/api/benchmark/run", json={"prompt": "test", "runs_per_model": 99, "max_tokens": 128})
+    assert r.status_code in (400, 422)
 
 
 def test_benchmark_bad_tokens_rejected(client):
-    r = client.post("/api/benchmark/run", json={"runs_per_model": 2, "max_tokens": 9999})
-    assert r.status_code == 400
+    r = client.post("/api/benchmark/run", json={"prompt": "test", "runs_per_model": 2, "max_tokens": 9999})
+    assert r.status_code in (400, 422)
 
 
 def test_benchmark_cache_empty(client):

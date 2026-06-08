@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import ast
 import asyncio
+import operator
 import sys
 from typing import Any, Mapping
 from uuid import uuid4
@@ -8,6 +10,23 @@ from uuid import uuid4
 from asterion_api.harness import BaseHarness
 from asterion_api.structured_logging import StructuredLogger
 from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
+
+_SHELL_MODULES = frozenset({"subprocess", "os", "ctypes"})
+_NETWORK_MODULES = frozenset({"socket", "httpx", "requests", "urllib", "aiohttp", "http.client"})
+_BLOCKED_BUILTINS = frozenset({"exec", "eval", "compile", "__import__", "globals", "locals", "open"})
+
+_SAFE_OPERATORS = {
+    ast.Eq: operator.eq,
+    ast.NotEq: operator.ne,
+    ast.Lt: operator.lt,
+    ast.LtE: operator.le,
+    ast.Gt: operator.gt,
+    ast.GtE: operator.ge,
+    ast.In: lambda a, b: a in b,
+    ast.NotIn: lambda a, b: a not in b,
+    ast.Is: operator.is_,
+    ast.IsNot: operator.is_not,
+}
 
 
 class WorkflowRunner(BaseHarness):
@@ -96,6 +115,7 @@ class WorkflowRunner(BaseHarness):
     async def _execute_code(self, step: dict[str, Any]) -> dict[str, Any]:
         code = step.get("code", "pass")
         timeout = step.get("timeout", 30)
+        self._validate_code(code)
         try:
             proc = await asyncio.create_subprocess_exec(
                 sys.executable,
@@ -115,16 +135,76 @@ class WorkflowRunner(BaseHarness):
         except Exception as exc:
             return {"exit_code": -1, "error": str(exc)}
 
+    def _validate_code(self, code: str) -> None:
+        violations: list[str] = []
+        try:
+            tree = ast.parse(code)
+        except SyntaxError as exc:
+            raise PermissionError(f"Syntax error in code: {exc}") from exc
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    mod = alias.name.split(".")[0]
+                    if mod in _SHELL_MODULES:
+                        violations.append(f"import {alias.name} (shell blocked)")
+                    if mod in _NETWORK_MODULES:
+                        violations.append(f"import {alias.name} (network blocked)")
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:
+                    mod = node.module.split(".")[0]
+                    if mod in _SHELL_MODULES:
+                        violations.append(f"from {node.module} import ... (shell blocked)")
+                    if mod in _NETWORK_MODULES:
+                        violations.append(f"from {node.module} import ... (network blocked)")
+            elif isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Name) and node.func.id in _BLOCKED_BUILTINS:
+                    violations.append(f"{node.func.id}() call (blocked)")
+        if violations:
+            raise PermissionError("Blocked: " + "; ".join(violations))
+
     def _evaluate_condition(self, step: dict[str, Any], results: list[dict[str, Any]]) -> bool:
         condition = step.get("condition", "")
         if not condition:
             return True
         last_result = results[-1] if results else {}
         try:
-            eval_env = {"results": results, "last": last_result}
-            return bool(eval(condition, {"__builtins__": {}}, eval_env))
+            tree = ast.parse(condition, mode="eval")
+            return self._safe_eval_ast(tree.body, {"results": results, "last": last_result})
         except Exception:
             return False
+
+    def _safe_eval_ast(self, node: ast.expr, env: dict[str, Any]) -> bool:
+        if isinstance(node, ast.Constant):
+            return bool(node.value)
+        if isinstance(node, ast.Name):
+            val = env.get(node.id)
+            return bool(val) if val is not None else False
+        if isinstance(node, ast.BoolOp):
+            if isinstance(node.op, ast.And):
+                return all(self._safe_eval_ast(v, env) for v in node.values)
+            else:
+                return any(self._safe_eval_ast(v, env) for v in node.values)
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+            return not self._safe_eval_ast(node.operand, env)
+        if isinstance(node, ast.Compare):
+            left = self._safe_eval_ast(node.left, env)
+            for op, comparator in zip(node.ops, node.comparators, strict=True):
+                right = self._safe_eval_ast(comparator, env)
+                op_func = _SAFE_OPERATORS.get(type(op))
+                if op_func is None:
+                    raise PermissionError(f"Unsupported operator: {type(op).__name__}")
+                if not op_func(left, right):
+                    return False
+                left = right
+            return True
+        if isinstance(node, ast.Subscript):
+            base = self._safe_eval_ast(node.value, env)
+            idx = self._safe_eval_ast(node.slice, env)
+            return bool(base[idx]) if base is not None and idx is not None else False
+        if isinstance(node, ast.Attribute):
+            base = self._safe_eval_ast(node.value, env)
+            return bool(getattr(base, node.attr, None)) if base is not None else False
+        raise PermissionError(f"Unsupported expression: {type(node).__name__}")
 
     def confirm(self, run_id: str, approved: bool, payload: dict[str, Any]) -> bool:
         future = self.paused.pop(run_id, None)

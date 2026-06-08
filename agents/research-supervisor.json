@@ -1,6 +1,7 @@
 {
   "id": "research-supervisor",
   "name": "Research Supervisor",
+  "version": "0.1.0",
   "role": "Decomposes research questions, coordinates search subagents, and returns structured findings.",
   "description": "Runs local-first deep research through SearXNG on port 8080, aggregates evidence in DuckDB, and marks privacy implications before execution.",
   "privacy_level": "hybrid",

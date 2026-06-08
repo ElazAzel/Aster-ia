@@ -232,8 +232,14 @@ def migration_001(conn: Any) -> None:
 
 @_register(2, "Add system_prompt to rooms and title to conversations")
 def migration_002(conn: Any) -> None:
-    conn.execute("ALTER TABLE rooms ADD COLUMN system_prompt TEXT NOT NULL DEFAULT ''")
-    conn.execute("ALTER TABLE conversations ADD COLUMN title TEXT")
+    try:
+        conn.execute("ALTER TABLE rooms ADD COLUMN system_prompt TEXT NOT NULL DEFAULT ''")
+    except Exception:
+        pass
+    try:
+        conn.execute("ALTER TABLE conversations ADD COLUMN title TEXT")
+    except Exception:
+        pass
 
 
 # ── Migration 003: Phase 4 Security and Privacy Hardening ─────────────────────

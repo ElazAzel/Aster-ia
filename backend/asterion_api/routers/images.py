@@ -20,8 +20,33 @@ async def generate_image(
     service: ComfyUIService = Depends(get_comfyui_service),
 ) -> dict[str, object]:
     try:
-        return await service.generate(request.prompt, request.recipe)
+        recipe = service.build_recipe(
+            preset_id=request.preset_id,
+            overrides=request.recipe,
+        )
+        return await service.generate(request.prompt, recipe)
     except TimeoutError:
         raise HTTPException(status_code=504, detail="ComfyUI generation timed out")
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"ComfyUI error: {exc}")
+
+
+@router.get("/recipes", response_model=ComfyRecipeListResponse)
+async def list_recipes(
+    service: ComfyUIService = Depends(get_comfyui_service),
+) -> ComfyRecipeListResponse:
+    presets = service.list_recipe_presets()
+    return ComfyRecipeListResponse(recipes=presets)
+
+
+@router.post("/validate", response_model=ComfyRecipeValidationResponse)
+async def validate_recipe(
+    request: ComfyRecipeValidateRequest,
+    service: ComfyUIService = Depends(get_comfyui_service),
+) -> ComfyRecipeValidationResponse:
+    recipe = service.build_recipe(
+        preset_id=request.preset_id,
+        overrides=request.recipe,
+    )
+    result = service.validate_recipe(recipe, prompt=request.prompt)
+    return ComfyRecipeValidationResponse(**result)

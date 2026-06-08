@@ -186,9 +186,16 @@ async def test_voice_execute_structure():
 
 
 @pytest.mark.asyncio
-async def test_workflow_runner_completes():
+async def test_workflow_runner_completes(tmp_path):
+    from asterion_api.config import Settings
     from asterion_api.services.workflow_runner import WorkflowRunner
-    runner = WorkflowRunner()
+    from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
+    import os
+    os.environ["ASTERION_DATA_DIR"] = str(tmp_path)
+    os.environ["ASTERION_ALLOW_PLAINTEXT_SQLITE_FOR_DEV"] = "1"
+    store = EncryptedSQLiteStore(Settings())
+    await store.ensure_schema()
+    runner = WorkflowRunner(store)
     result = await runner.run({
         "steps": [
             {"name": "Шаг А", "type": "action"},
@@ -200,10 +207,17 @@ async def test_workflow_runner_completes():
 
 
 @pytest.mark.asyncio
-async def test_workflow_runner_pauses_on_approval():
+async def test_workflow_runner_pauses_on_approval(tmp_path):
     import asyncio
+    from asterion_api.config import Settings
     from asterion_api.services.workflow_runner import WorkflowRunner
-    runner = WorkflowRunner()
+    from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
+    import os
+    os.environ["ASTERION_DATA_DIR"] = str(tmp_path)
+    os.environ["ASTERION_ALLOW_PLAINTEXT_SQLITE_FOR_DEV"] = "1"
+    store = EncryptedSQLiteStore(Settings())
+    await store.ensure_schema()
+    runner = WorkflowRunner(store)
     task = asyncio.create_task(runner.run({
         "steps": [{"name": "Gate", "type": "human_approval"}]
     }))
@@ -395,10 +409,11 @@ async def test_artifact_create_and_list(tmp_path):
 
 
 def test_supervisor_agent_implements_harness():
+    from asterion_api.config import Settings
     from asterion_api.harness import BaseHarness
     from asterion_api.services.deep_research import SupervisorAgent
     from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
-    agent = SupervisorAgent(PrivacyAnalyzer())
+    agent = SupervisorAgent(PrivacyAnalyzer(), Settings())
     assert isinstance(agent, BaseHarness)
     state = agent.get_state()
     assert "searxng_url" in state
@@ -407,9 +422,10 @@ def test_supervisor_agent_implements_harness():
 
 
 def test_supervisor_agent_decompose():
+    from asterion_api.config import Settings
     from asterion_api.services.deep_research import SupervisorAgent
     from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
-    agent = SupervisorAgent(PrivacyAnalyzer())
+    agent = SupervisorAgent(PrivacyAnalyzer(), Settings())
     subtasks = agent.decompose("test query", 3)
     assert len(subtasks) == 3
     assert all("test query" in s for s in subtasks)
@@ -439,19 +455,26 @@ def test_contradiction_finder_single_claim():
 
 @pytest.mark.asyncio
 async def test_deep_research_local_only_no_web():
+    from asterion_api.config import Settings
     from asterion_api.services.deep_research import SupervisorAgent
     from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
-    agent = SupervisorAgent(PrivacyAnalyzer())
+    agent = SupervisorAgent(PrivacyAnalyzer(), Settings())
     result = await agent.research(query="test", max_subtasks=2, web_access=False)
     assert result.query == "test"
     assert len(result.subtasks) == 2
     assert result.results == []
 
 
-def test_workflow_runner_accepts_empty():
+def test_workflow_runner_accepts_empty(tmp_path):
+    from asterion_api.config import Settings
     from asterion_api.services.workflow_runner import WorkflowRunner
-    import asyncio
-    runner = WorkflowRunner()
+    from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
+    import asyncio, os
+    os.environ["ASTERION_DATA_DIR"] = str(tmp_path)
+    os.environ["ASTERION_ALLOW_PLAINTEXT_SQLITE_FOR_DEV"] = "1"
+    store = EncryptedSQLiteStore(Settings())
+    asyncio.run(store.ensure_schema())
+    runner = WorkflowRunner(store)
     result = asyncio.run(runner.run({"steps": []}))
     assert result["status"] == "completed"
 
@@ -489,10 +512,16 @@ def test_plugin_manager_skips_invalid_manifest(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_workflow_runner_approval_rejection():
-    import asyncio
+async def test_workflow_runner_approval_rejection(tmp_path):
+    import asyncio, os
+    from asterion_api.config import Settings
     from asterion_api.services.workflow_runner import WorkflowRunner
-    runner = WorkflowRunner()
+    from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
+    os.environ["ASTERION_DATA_DIR"] = str(tmp_path)
+    os.environ["ASTERION_ALLOW_PLAINTEXT_SQLITE_FOR_DEV"] = "1"
+    store = EncryptedSQLiteStore(Settings())
+    await store.ensure_schema()
+    runner = WorkflowRunner(store)
     task = asyncio.create_task(runner.run({
         "steps": [{"name": "Approve", "type": "human_approval"}]
     }))
@@ -519,9 +548,10 @@ def test_sandbox_allows_safe_code():
 
 
 def test_supervisor_agent_execute():
+    from asterion_api.config import Settings
     from asterion_api.services.deep_research import SupervisorAgent
     from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
-    agent = SupervisorAgent(PrivacyAnalyzer())
+    agent = SupervisorAgent(PrivacyAnalyzer(), Settings())
     import asyncio
     result = asyncio.run(agent.execute({"query": "test", "max_subtasks": 1, "web_access": False}))
     assert result.query == "test"

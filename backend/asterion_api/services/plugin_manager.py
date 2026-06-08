@@ -44,18 +44,22 @@ class PluginManager(BaseHarness):
                 data = json.loads(manifest_bytes.decode("utf-8"))
 
                 # Cryptographic signature check
-                sig_path = manifest_path.with_name("manifest.json.sig")
+                sig_path = manifest_path.parent / "signature.sig"
+                if not sig_path.exists():
+                    sig_path = manifest_path.with_name("manifest.json.sig")
+                pem_path = manifest_path.parent / "public_key.pem"
                 is_verified = False
                 if sig_path.exists():
                     try:
-                        sig_content = sig_path.read_text(encoding="utf-8").strip()
+                        raw = sig_path.read_bytes()
                         try:
-                            # Try parsing as hex string
-                            sig_bytes = bytes.fromhex(sig_content)
-                        except ValueError:
-                            # Fallback to raw bytes
-                            sig_bytes = sig_path.read_bytes()
-                        is_verified = self._verify_signature(manifest_bytes, sig_bytes)
+                            sig_bytes = bytes.fromhex(raw.decode("utf-8").strip())
+                        except (ValueError, UnicodeDecodeError):
+                            sig_bytes = raw
+                        if pem_path.exists():
+                            is_verified = self._verify_signature_pem(manifest_bytes, sig_bytes, pem_path)
+                        else:
+                            is_verified = self._verify_signature(manifest_bytes, sig_bytes)
                     except Exception:
                         is_verified = False
 
@@ -63,7 +67,10 @@ class PluginManager(BaseHarness):
                 if is_verified:
                     trust_level = "verified"
                 elif trust_level == "verified":
-                    # Signature was invalid or missing, demote to local-only
+                    if sig_path.exists():
+                        # Had a signature file but it was invalid -> skip plugin
+                        continue
+                    # No sig file, just claiming verified -> demote to local-only
                     trust_level = "local-only"
 
                 if trust_level not in self.TRUST_LEVELS:
@@ -81,6 +88,19 @@ class PluginManager(BaseHarness):
                 # Skip invalid manifests
                 continue
         return manifests
+
+    def _verify_signature_pem(self, data: bytes, signature_bytes: bytes, pem_path: Path) -> bool:
+        try:
+            from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+            from cryptography.hazmat.primitives.serialization import load_pem_public_key
+            pem_data = pem_path.read_bytes()
+            public_key = load_pem_public_key(pem_data)
+            if isinstance(public_key, Ed25519PublicKey):
+                public_key.verify(signature_bytes, data)
+                return True
+        except Exception:
+            pass
+        return self._verify_signature(data, signature_bytes)
 
     def _verify_signature(self, data: bytes, signature_bytes: bytes) -> bool:
         if len(signature_bytes) != 256:

@@ -29,6 +29,14 @@ class OllamaService(BaseHarness):
         if self._client and not self._client.is_closed:
             await self._client.aclose()
 
+    async def is_available(self) -> bool:
+        try:
+            client = self._get_client()
+            resp = await client.get(f"{self.base_url}/api/tags")
+            return resp.status_code == 200
+        except Exception:
+            return False
+
     async def execute(self, payload: Mapping[str, Any] | None = None) -> Any:
         payload = payload or {}
         action = payload.get("action", "list_models")
@@ -54,6 +62,34 @@ class OllamaService(BaseHarness):
         payload = response.json()
         self.logger.emit("models.listed", count=len(payload.get("models", [])))
         return list(payload.get("models", []))
+
+    async def ensure_models(self, required: list[str]) -> dict[str, str]:
+        try:
+            existing = {m["name"] for m in await self.list_models()}
+        except Exception:
+            return {model: "ollama_unavailable" for model in required}
+        results: dict[str, str] = {}
+        for model in required:
+            if model in existing:
+                results[model] = "already_installed"
+            else:
+                try:
+                    async for _status in self.pull_model(model):
+                        pass
+                    results[model] = "pulled"
+                except Exception as exc:
+                    results[model] = f"error: {exc}"
+        return results
+
+    async def pull_model(self, model: str) -> AsyncIterator[dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(300.0, connect=5.0)) as client:
+            async with client.stream(
+                "POST", f"{self.base_url}/api/pull",
+                json={"name": model},
+            ) as resp:
+                async for line in resp.aiter_lines():
+                    if line.strip():
+                        yield json.loads(line)
 
     async def generate(self, *, model: str, prompt: str, num_predict: int | None = None) -> str:
         timeout = httpx.Timeout(120.0, connect=1.0)

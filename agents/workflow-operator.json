@@ -1,6 +1,7 @@
 {
   "id": "workflow-operator",
   "name": "Workflow Operator",
+  "version": "0.1.0",
   "role": "Executes automation workflows and pauses on human approval gates.",
   "description": "Runs workflow JSON steps sequentially, emits WebSocket events for approval gates, and resumes after confirmation.",
   "privacy_level": "local",
