@@ -7,5 +7,8 @@
   "inputs": ["claims", "threshold"],
   "outputs": ["ContradictionMatch[]"],
   "tools": ["ContradictionFinder", "OllamaService"],
-  "guardrails": ["Use local embeddings.", "Do not claim contradiction without both similarity and sentiment opposition."]
+  "guardrails": ["Use local embeddings.", "Do not claim contradiction without both similarity and sentiment opposition."],
+  "requires_consent": [],
+  "failure_modes": ["Embedding vector missing.", "Claims are too short for sentiment.", "Threshold is outside 0..1."],
+  "acceptance_checks": ["Similarity threshold is configurable.", "Opposing sentiment is required.", "Local embeddings are used for all claims."]
 }

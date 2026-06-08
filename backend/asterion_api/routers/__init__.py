@@ -1,5 +1,7 @@
 from asterion_api.routers import (
     agents,
+    analytics,
+    artifacts,
     chat,
     health,
     images,
@@ -9,11 +11,15 @@ from asterion_api.routers import (
     privacy,
     rag,
     research,
+    rooms,
+    voice,
     workflows,
 )
 
 __all__ = [
     "agents",
+    "analytics",
+    "artifacts",
     "chat",
     "health",
     "images",
@@ -23,5 +29,7 @@ __all__ = [
     "privacy",
     "rag",
     "research",
+    "rooms",
+    "voice",
     "workflows",
 ]

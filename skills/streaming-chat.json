@@ -7,5 +7,8 @@
   "inputs": ["message", "room_id", "model"],
   "outputs": ["SSE token events", "conversation_id"],
   "tools": ["ChatService", "OllamaService"],
-  "guardrails": ["Use local Ollama by default.", "Persist user and assistant messages to encrypted SQLite."]
+  "guardrails": ["Use local Ollama by default.", "Persist user and assistant messages to encrypted SQLite."],
+  "requires_consent": ["external_model", "memory_write", "web_access"],
+  "failure_modes": ["Ollama stream disconnects.", "Client closes EventSource.", "Database write fails after generation."],
+  "acceptance_checks": ["SSE emits token events.", "SSE emits a final done event.", "Conversation id is stable across streamed chunks."]
 }

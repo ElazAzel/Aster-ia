@@ -1,0 +1,44 @@
+{
+  "id": "sqlcipher-storage",
+  "name": "SQLCipher Storage",
+  "version": "0.2.0",
+  "owner": "asterion",
+  "category": "storage",
+  "description": "Stores conversations, messages, and memories in encrypted SQLite with key material from the OS keychain.",
+  "privacy_level": "local",
+  "triggers": [
+    "conversation_created",
+    "message_saved",
+    "memory_saved"
+  ],
+  "inputs": [
+    "conversation_record",
+    "message_record",
+    "memory_record"
+  ],
+  "outputs": [
+    "encrypted_row_id",
+    "database_health"
+  ],
+  "tools": [
+    "EncryptedSQLiteStore",
+    "keyring",
+    "sqlcipher3"
+  ],
+  "guardrails": [
+    "Never store production keys in .env.",
+    "Retrieve key material through keyring.",
+    "Do not log raw prompts, memories, or SQLCipher keys."
+  ],
+  "requires_consent": [],
+  "failure_modes": [
+    "OS keychain is unavailable.",
+    "SQLCipher module is missing.",
+    "Database file cannot be opened."
+  ],
+  "acceptance_checks": [
+    "Health check reports encrypted SQLite status.",
+    "conversations, messages, and memories tables exist.",
+    "SQLCipher key is created through keyring when missing."
+  ]
+}

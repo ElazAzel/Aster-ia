@@ -2,10 +2,32 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from asterion_api.dependencies import get_agent_registry, get_agent_sandbox, get_task_simulator
-from asterion_api.schemas import AgentCatalog, AgentManifest, AgentPlan, AgentRunCodeRequest, RuntimeSkillManifest
+from fastapi import APIRouter, BackgroundTasks, Depends
+from fastapi import HTTPException
+from fastapi.responses import StreamingResponse
+
+from asterion_api.dependencies import (
+    get_agent_executor,
+    get_agent_registry,
+    get_agent_sandbox,
+    get_store,
+    get_task_simulator,
+)
+from asterion_api.schemas import (
+    AgentCatalog,
+    AgentManifest,
+    AgentPlan,
+    AgentRun,
+    AgentRunCodeRequest,
+    AgentRunCreateRequest,
+    AgentRunUpdateRequest,
+    FlightRecorderEvent,
+    RuntimeSkillManifest,
+)
+from asterion_api.services.agent_executor import AgentExecutor
 from asterion_api.services.agent_registry import AgentRegistry
 from asterion_api.services.agent_sandbox import AgentSandbox, TaskSimulator
+from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
 
 router = APIRouter(prefix="/api/agents", tags=["agents"])
 
@@ -29,6 +51,13 @@ async def list_skill_manifests(
     registry: AgentRegistry = Depends(get_agent_registry),
 ) -> list[RuntimeSkillManifest]:
     return registry.list_skills()
+
+
+@router.get("/catalog/validate")
+async def validate_catalog(
+    registry: AgentRegistry = Depends(get_agent_registry),
+) -> dict[str, object]:
+    return registry.validate_catalog()
 
 
 @router.get("/catalog/agents/{agent_id}", response_model=AgentManifest)

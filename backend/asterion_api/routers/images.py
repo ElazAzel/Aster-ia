@@ -3,7 +3,12 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 
 from asterion_api.dependencies import get_comfyui_service
-from asterion_api.schemas import ComfyGenerateRequest
+from asterion_api.schemas import (
+    ComfyGenerateRequest,
+    ComfyRecipeListResponse,
+    ComfyRecipeValidateRequest,
+    ComfyRecipeValidationResponse,
+)
 from asterion_api.services.comfyui_service import ComfyUIService
 
 router = APIRouter(prefix="/api/images", tags=["images"])

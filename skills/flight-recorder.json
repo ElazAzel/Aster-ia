@@ -1,0 +1,17 @@
+{
+  "id": "flight-recorder",
+  "name": "Flight Recorder",
+  "version": "0.3.0",
+  "owner": "asterion",
+  "category": "agents",
+  "description": "Persists agent run plans, permissions, and action logs for transparent execution review.",
+  "privacy_level": "local",
+  "triggers": ["agent_run_created", "agent_action_logged", "agent_run_reviewed"],
+  "inputs": ["AgentRunCreateRequest", "FlightRecorderEvent"],
+  "outputs": ["AgentRun", "FlightRecorderEvent[]"],
+  "tools": ["TaskSimulator", "EncryptedSQLiteStore"],
+  "guardrails": ["Log action, tool, privacy_level, and error fields.", "Never hide shell or network permission requests."],
+  "requires_consent": ["network", "shell", "file_write"],
+  "failure_modes": ["Agent run not found.", "Log write failed.", "Permission mismatch."],
+  "acceptance_checks": ["POST /api/agents/runs creates a planned run.", "GET /api/agents/runs/{run_id}/logs returns recorder events.", "Event stream ends with a done event."]
+}

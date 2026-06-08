@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 
 from asterion_api.config import Settings, get_settings
+from asterion_api.services.agent_executor import AgentExecutor
 from asterion_api.services.agent_registry import AgentRegistry
 from asterion_api.services.agent_sandbox import AgentSandbox, TaskSimulator
 from asterion_api.services.chat_service import ChatService
@@ -13,8 +14,11 @@ from asterion_api.services.memory_ledger import MemoryLedger
 from asterion_api.services.model_router import ModelRouter
 from asterion_api.services.ollama_service import OllamaService
 from asterion_api.services.plugin_manager import PluginManager
+from asterion_api.services.benchmark_service import BenchmarkService
 from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
 from asterion_api.services.rag import DocumentIndexer
+from asterion_api.services.vllm_service import VllmService
+from asterion_api.services.voice_service import VoiceService
 from asterion_api.services.workflow_runner import WorkflowRunner
 from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
 
@@ -36,6 +40,7 @@ def get_chat_service() -> ChatService:
         settings=settings,
         ollama=get_ollama_service(),
         store=get_store(),
+        vllm=get_vllm_service(),
     )
 
 
@@ -85,8 +90,18 @@ def get_agent_registry() -> AgentRegistry:
 
 
 @lru_cache(maxsize=1)
+def get_agent_executor() -> AgentExecutor:
+    return AgentExecutor(get_store(), get_agent_registry())
+
+
+@lru_cache(maxsize=1)
 def get_comfyui_service() -> ComfyUIService:
     return ComfyUIService(get_settings())
+
+
+@lru_cache(maxsize=1)
+def get_voice_service() -> VoiceService:
+    return VoiceService()
 
 
 @lru_cache(maxsize=1)
@@ -97,3 +112,21 @@ def get_workflow_runner() -> WorkflowRunner:
 @lru_cache(maxsize=1)
 def get_plugin_manager() -> PluginManager:
     return PluginManager(get_settings())
+
+
+@lru_cache(maxsize=1)
+def _benchmark_service_singleton() -> BenchmarkService:
+    return BenchmarkService()
+
+
+def get_benchmark_service() -> BenchmarkService:
+    return _benchmark_service_singleton()
+
+
+@lru_cache(maxsize=1)
+def _vllm_service_singleton() -> VllmService:
+    return VllmService()
+
+
+def get_vllm_service() -> VllmService:
+    return _vllm_service_singleton()

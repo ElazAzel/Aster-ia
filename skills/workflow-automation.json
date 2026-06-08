@@ -7,5 +7,8 @@
   "inputs": ["workflow", "run_id", "approval_payload"],
   "outputs": ["workflow_status", "approval_events"],
   "tools": ["WorkflowRunner", "WebSocket"],
-  "guardrails": ["Never bypass human approval gates.", "Emit UI event before pausing."]
+  "guardrails": ["Never bypass human approval gates.", "Emit UI event before pausing."],
+  "requires_consent": ["human_approval_gate", "network_step", "shell_step", "danger_plugin"],
+  "failure_modes": ["Invalid workflow JSON.", "Approval timeout.", "Step execution error."],
+  "acceptance_checks": ["Approval gate pauses the run.", "WebSocket event is emitted before pause.", "Confirm endpoint resumes the run."]
 }

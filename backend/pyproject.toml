@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Local-first FastAPI sidecar for Asterion AI"
 requires-python = ">=3.11,<3.14"
 dependencies = [
+  "cryptography>=42.0.0",
   "duckdb>=1.1.0",
   "fastapi>=0.115.0",
   "httpx>=0.28.0",
@@ -14,6 +15,9 @@ dependencies = [
   "pydantic>=2.9.0",
   "pylance>=0.23.0",
   "pypdf>=5.0.0",
+  "python-docx>=1.1.2",
+  "python-multipart>=0.0.18",
+  "watchdog>=4.0.2",
   "sqlcipher3-binary>=0.6.0; sys_platform != 'win32'",
   "sqlcipher3-wheels>=0.5.7; sys_platform == 'win32'",
   "uvicorn[standard]>=0.32.0",
@@ -25,6 +29,9 @@ dev = [
   "pytest-asyncio>=0.24.0",
   "ruff>=0.8.0",
 ]
+voice = [
+  "faster-whisper>=1.0.0",
+]
 
 [tool.uv]
 package = false
@@ -35,3 +42,4 @@ target-version = "py311"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+testpaths = ["tests"]

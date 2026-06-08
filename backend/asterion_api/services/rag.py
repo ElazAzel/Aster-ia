@@ -185,6 +185,11 @@ class DocumentIndexer(BaseHarness):
 
             reader = PdfReader(str(file_path))
             text = "\n".join(page.extract_text() or "" for page in reader.pages)
+        elif suffix == ".docx":
+            import docx
+
+            doc = docx.Document(str(file_path))
+            text = "\n".join(paragraph.text for paragraph in doc.paragraphs)
         else:
             text = file_path.read_text(encoding="utf-8", errors="ignore")
         return self._chunk(text)
@@ -225,16 +230,23 @@ class DocumentIndexer(BaseHarness):
 
         return {"indexed_chunks": len(rows), "source": str(file_path), "room_id": room_id}
 
-    async def hybrid_search(self, *, query: str, room_id: str, limit: int) -> list[RagChunk]:
+    async def hybrid_search(
+        self, *, query: str, room_id: str, limit: int, source_filter: str | None = None
+    ) -> list[RagChunk]:
         query_vector = (await self.ollama.embed(model=self.embedding_model, input_texts=[query]))[0]
-        rows = self._all_rows(room_id)
+        rows = self._all_rows_paginated(room_id, max_rows=2000)
+        if source_filter:
+            rows = [r for r in rows if source_filter.lower() in str(r.get("source", "")).lower()]
         dense = self._dense_scores(query_vector, rows)
         bm25 = self._bm25_scores(query, rows)
-        merged = []
-        for row in rows:
-            score = 0.7 * dense.get(row["id"], 0.0) + 0.3 * bm25.get(row["id"], 0.0)
-            merged.append((row, score))
-        merged.sort(key=lambda item: item[1], reverse=True)
+        merged = sorted(
+            [
+                (row, 0.7 * dense.get(row["id"], 0.0) + 0.3 * bm25.get(row["id"], 0.0))
+                for row in rows
+            ],
+            key=lambda x: x[1],
+            reverse=True,
+        )
         return [
             RagChunk(
                 id=row["id"],
@@ -262,15 +274,47 @@ class DocumentIndexer(BaseHarness):
         elif rows:
             db.create_table(self.table_name, data=rows)
 
-    def _all_rows(self, room_id: str) -> list[dict[str, Any]]:
+    def _all_rows_paginated(self, room_id: str, max_rows: int = 2000) -> list[dict[str, Any]]:
         import lancedb
 
         self.db_path.mkdir(parents=True, exist_ok=True)
         db = lancedb.connect(str(self.db_path))
         if self.table_name not in db.table_names():
             return []
-        records = db.open_table(self.table_name).to_pandas().to_dict("records")
-        return [row for row in records if row.get("room_id") == room_id]
+        tbl = db.open_table(self.table_name)
+        df = tbl.search().where(f'room_id = "{room_id}"').limit(max_rows).to_pandas()
+        return df.to_dict("records")
+
+    def start_watcher(self, watch_dir: Path, room_id: str = "default") -> None:
+        import asyncio
+        from watchdog.observers import Observer
+        from watchdog.events import FileSystemEventHandler
+
+        loop = asyncio.get_running_loop()
+
+        class Handler(FileSystemEventHandler):
+            def __init__(self, indexer: DocumentIndexer):
+                self.indexer = indexer
+
+            def on_created(self, event):
+                if event.is_directory:
+                    return
+                path = Path(event.src_path)
+                if path.suffix.lower() in (".pdf", ".docx", ".txt", ".md"):
+                    asyncio.run_coroutine_threadsafe(self.indexer.index_file(path, room_id), loop)
+
+        watch_dir.mkdir(parents=True, exist_ok=True)
+        handler = Handler(self)
+        observer = Observer()
+        observer.schedule(handler, str(watch_dir), recursive=True)
+        observer.start()
+        self._observer = observer
+
+    def stop_watcher(self) -> None:
+        if hasattr(self, '_observer') and self._observer:
+            self._observer.stop()
+            self._observer.join(timeout=2)
+            self._observer = None
 
     @staticmethod
     def _chunk(text: str, size: int = 1200, overlap: int = 160) -> list[str]:

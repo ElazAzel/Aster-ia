@@ -15,6 +15,18 @@ tauri-build = { version = "2", features = [] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tauri = { version = "2", features = [] }
-tauri-plugin-shell = "2"
-tokio = { version = "1", features = ["time"] }
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-notification = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-window-state = "2"
+tokio = { version = "1", features = ["full"] }
+sysinfo = "0.39"
+rfd = "0.17"
+
+# Workspace core and inference libraries
+asterion-core = { path = "../crates/core" }
+asterion-inference = { path = "../crates/inference" }
+
+# In-process HTTP server for removing Python sidecar
+axum = { version = "0.7", features = ["tokio", "macros"] }
+tower-http = { version = "0.5", features = ["cors"] }

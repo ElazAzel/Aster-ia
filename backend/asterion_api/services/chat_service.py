@@ -1,19 +1,23 @@
 from __future__ import annotations
 
+import re
 import time
 from datetime import UTC, datetime
 from typing import Any, AsyncIterator, Mapping
 
 from asterion_api.config import Settings
 from asterion_api.harness import BaseHarness
-from asterion_api.schemas import ChatRequest, ChatResponse
+from asterion_api.schemas import ArtifactBlock, ChatRequest, ChatResponse
 from asterion_api.services.ollama_service import OllamaService
+from asterion_api.services.vllm_service import VllmService
 from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
 from asterion_api.structured_logging import StructuredLogger
 
 
 class ChatService(BaseHarness):
     privacy_level = "local"
+    _CODE_FENCE_RE = re.compile(r"```(?P<language>[A-Za-z0-9_.+-]*)\s*\n(?P<code>.*?)```", re.DOTALL)
+    MAX_HISTORY_CHARS = 8_000
 
     def __init__(
         self,
@@ -21,12 +25,19 @@ class ChatService(BaseHarness):
         settings: Settings,
         ollama: OllamaService,
         store: EncryptedSQLiteStore,
+        vllm: VllmService | None = None,
     ) -> None:
         self.settings = settings
         self.ollama = ollama
         self.store = store
+        self.vllm = vllm
         self._state: dict[str, Any] = {"default_model": settings.default_model}
         self.logger = StructuredLogger("chat", self.privacy_level)
+
+    async def _provider_for(self, model: str) -> str | None:
+        if self.vllm and await self.vllm.has_model(model):
+            return "vllm"
+        return "ollama"
 
     async def execute(self, payload: Mapping[str, Any] | None = None) -> Any:
         payload = payload or {}
@@ -66,15 +77,22 @@ class ChatService(BaseHarness):
             role="assistant",
             content=text,
             model=model,
+            artifact_id=str(artifact["id"]),
         )
         latency_ms = (time.perf_counter() - started) * 1000
-        self.logger.emit("response.completed", model=model, latency_ms=round(latency_ms, 2))
+        self.logger.emit(
+            "response.completed",
+            model=model,
+            latency_ms=round(latency_ms, 2),
+            artifact_id=artifact["id"],
+        )
         return ChatResponse(
             conversation_id=conv_id,
             room_id=request.room_id,
             model=model,
             response=text,
             latency_ms=latency_ms,
+            artifact_id=str(artifact["id"]),
             ts=datetime.now(UTC),
         )
 
@@ -116,3 +134,116 @@ class ChatService(BaseHarness):
             "latency_ms": (time.perf_counter() - started) * 1000,
             "privacy_level": self.privacy_level,
         }
+
+    async def _ollama_token_stream(self, model: str, messages: list[dict[str, Any]]) -> AsyncIterator[str]:
+        async for chunk in self.ollama.stream_chat(model=model, messages=messages):
+            message = chunk.get("message", {})
+            token = str(message.get("content", ""))
+            if token:
+                yield token
+
+    async def _build_messages(self, conv_id: str, room_id: str) -> list[dict[str, Any]]:
+        room = await self.store.get_room(room_id)
+        messages: list[dict[str, Any]] = []
+        if room and room.get("system_prompt"):
+            messages.append({"role": "system", "content": room["system_prompt"]})
+
+        history = await self.store.list_messages(conv_id)
+        # Accumulate up to the last N messages, but never drop the latest user message
+        # (the most recent one is always appended as the live prompt).
+        recent = history[-40:]
+        tail: list[dict[str, Any]] = []
+        total = 0
+        for msg in reversed(recent):
+            content = msg["content"]
+            projected = total + len(content)
+            if projected > self.MAX_HISTORY_CHARS and tail:
+                # Already have at least the most-recent message — stop.
+                break
+            tail.append({"role": msg["role"], "content": content})
+            total = projected
+
+        tail.reverse()
+        messages.extend(tail)
+        return messages
+
+    async def _persist_response_artifact(
+        self,
+        *,
+        room_id: str,
+        prompt: str,
+        response: str,
+        model: str,
+    ) -> dict[str, Any]:
+        blocks = [block.model_dump(mode="json") for block in self._response_blocks(response, model)]
+        return await self.store.create_artifact(
+            room_id=room_id,
+            kind="chat",
+            title=self._artifact_title(prompt),
+            blocks=blocks,
+            source="chat",
+        )
+
+    def _response_blocks(self, response: str, model: str) -> list[ArtifactBlock]:
+        if not response.strip():
+            return [
+                ArtifactBlock(
+                    type="text",
+                    title="Empty response",
+                    content="",
+                    metadata={"model": model},
+                )
+            ]
+
+        blocks: list[ArtifactBlock] = []
+        cursor = 0
+        for match in self._CODE_FENCE_RE.finditer(response):
+            preface = response[cursor : match.start()].strip()
+            if preface:
+                blocks.append(
+                    ArtifactBlock(
+                        type="text",
+                        title="Assistant response",
+                        content=preface,
+                        metadata={"model": model},
+                    )
+                )
+            language = match.group("language").strip() or None
+            blocks.append(
+                ArtifactBlock(
+                    type="code",
+                    title="Code block",
+                    content=match.group("code").strip(),
+                    language=language,
+                    metadata={"model": model},
+                )
+            )
+            cursor = match.end()
+
+        tail = response[cursor:].strip()
+        if tail:
+            blocks.append(
+                ArtifactBlock(
+                    type="text",
+                    title="Assistant response",
+                    content=tail,
+                    metadata={"model": model},
+                )
+            )
+        if not blocks:
+            blocks.append(
+                ArtifactBlock(
+                    type="text",
+                    title="Assistant response",
+                    content=response,
+                    metadata={"model": model},
+                )
+            )
+        return blocks
+
+    @staticmethod
+    def _artifact_title(prompt: str) -> str:
+        normalized = " ".join(prompt.split())
+        if not normalized:
+            return "Chat response"
+        return normalized[:80] + ("..." if len(normalized) > 80 else "")

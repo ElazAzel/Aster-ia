@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
+import time
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -20,6 +22,8 @@ class PluginManager(BaseHarness):
 
     def __init__(self, settings: Settings) -> None:
         self.plugins_dir = settings.data_dir / "plugins"
+        self._watcher_active: bool = False
+        self._watcher_thread: threading.Thread | None = None
 
     async def execute(self, payload: Mapping[str, Any] | None = None) -> list[PluginManifest]:
         return self.load()

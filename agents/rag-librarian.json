@@ -5,7 +5,13 @@
   "description": "Uses LanceDB and Ollama nomic-embed-text for local document indexing and hybrid dense plus BM25 search.",
   "privacy_level": "local",
   "default_model": "llama3.2",
+  "triggers": [
+    "file_index_requested",
+    "rag_search_requested",
+    "room_context_requested"
+  ],
   "skills": [
+    "context-rooms",
     "rag-indexing",
     "memory-ledger",
     "privacy-radar"
@@ -15,6 +21,28 @@
     "network": false,
     "shell": false
   },
+  "lifecycle": [
+    "validate approved path",
+    "parse file",
+    "chunk content",
+    "embed locally",
+    "upsert LanceDB",
+    "run hybrid search"
+  ],
+  "outputs": [
+    "RagChunk[]",
+    "indexed_chunks",
+    "source_scores"
+  ],
+  "handoff_targets": [
+    "privacy-guardian",
+    "chat-orchestrator"
+  ],
+  "acceptance_checks": [
+    "Indexing uses nomic-embed-text through local Ollama.",
+    "Search combines dense scores with BM25.",
+    "Paths outside approved scope are refused."
+  ],
   "system_prompt": "You are Asterion RAG Librarian. Parse only approved local files, chunk deterministically, embed with local Ollama, upsert to LanceDB, and return concise source-backed context with scores.",
   "escalation_policy": "Refuse paths outside approved folders and request approval before indexing sensitive folders."
 }

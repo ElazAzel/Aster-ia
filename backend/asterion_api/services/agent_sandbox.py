@@ -12,6 +12,102 @@ from uuid import uuid4
 from asterion_api.harness import BaseHarness
 from asterion_api.schemas import AgentPermissions, AgentPlan
 
+# Windows Job Objects definitions using ctypes
+if os.name == "nt":
+    import ctypes
+
+    # Constants
+    JobObjectExtendedLimitInformationType = 9
+    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
+    JOB_OBJECT_LIMIT_ACTIVE_PROCESS = 0x00000008
+    JOB_OBJECT_LIMIT_PROCESS_MEMORY = 0x00000100
+    JOB_OBJECT_LIMIT_JOB_MEMORY = 0x00000200
+
+    class IO_COUNTERS(ctypes.Structure):
+        _fields_ = [
+            ("ReadOperationCount", ctypes.c_uint64),
+            ("WriteOperationCount", ctypes.c_uint64),
+            ("OtherOperationCount", ctypes.c_uint64),
+            ("ReadTransferCount", ctypes.c_uint64),
+            ("WriteTransferCount", ctypes.c_uint64),
+            ("OtherTransferCount", ctypes.c_uint64),
+        ]
+
+    class JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
+        _fields_ = [
+            ("PerProcessUserTimeLimit", ctypes.c_int64),
+            ("PerJobUserTimeLimit", ctypes.c_int64),
+            ("LimitFlags", ctypes.c_uint32),
+            ("MinimumWorkingSetSize", ctypes.c_size_t),
+            ("MaximumWorkingSetSize", ctypes.c_size_t),
+            ("ActiveProcessLimit", ctypes.c_uint32),
+            ("Affinity", ctypes.c_size_t),
+            ("PriorityClass", ctypes.c_uint32),
+            ("SchedulingClass", ctypes.c_uint32),
+        ]
+
+    class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
+        _fields_ = [
+            ("BasicLimitInformation", JOBOBJECT_BASIC_LIMIT_INFORMATION),
+            ("IoInfo", IO_COUNTERS),
+            ("ProcessMemoryLimit", ctypes.c_size_t),
+            ("JobMemoryLimit", ctypes.c_size_t),
+            ("PeakProcessMemoryUsed", ctypes.c_size_t),
+            ("PeakJobMemoryUsed", ctypes.c_size_t),
+        ]
+
+    def _apply_windows_job_limits(pid: int, memory_limit_bytes: int = 512 * 1024 * 1024) -> Any:
+        kernel32 = ctypes.windll.kernel32
+        job = kernel32.CreateJobObjectW(None, None)
+        if not job:
+            return None
+
+        info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
+        info.BasicLimitInformation.LimitFlags = (
+            JOB_OBJECT_LIMIT_PROCESS_MEMORY |
+            JOB_OBJECT_LIMIT_JOB_MEMORY |
+            JOB_OBJECT_LIMIT_ACTIVE_PROCESS |
+            JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+        )
+        info.ProcessMemoryLimit = memory_limit_bytes
+        info.JobMemoryLimit = memory_limit_bytes
+        info.BasicLimitInformation.ActiveProcessLimit = 2  # main python process + 1 subprocess max
+
+        res = kernel32.SetInformationJobObject(
+            job,
+            JobObjectExtendedLimitInformationType,
+            ctypes.byref(info),
+            ctypes.sizeof(info)
+        )
+        if not res:
+            kernel32.CloseHandle(job)
+            return None
+
+        # PROCESS_SET_QUOTA (0x0100) | PROCESS_TERMINATE (0x0001)
+        process_handle = kernel32.OpenProcess(0x0100 | 0x0001, False, pid)
+        if not process_handle:
+            kernel32.CloseHandle(job)
+            return None
+
+        success = kernel32.AssignProcessToJobObject(job, process_handle)
+        kernel32.CloseHandle(process_handle)
+        if not success:
+            kernel32.CloseHandle(job)
+            return None
+
+        return job
+
+
+def _set_linux_limits() -> None:
+    import resource
+    # 512 MB memory limit
+    mem_limit = 512 * 1024 * 1024
+    resource.setrlimit(resource.RLIMIT_AS, (mem_limit, mem_limit))
+    # 30 seconds CPU time limit
+    resource.setrlimit(resource.RLIMIT_CPU, (30, 30))
+    # 10 processes limit
+    resource.setrlimit(resource.RLIMIT_NPROC, (10, 10))
+
 
 class TaskSimulator(BaseHarness):
     privacy_level = "local"
@@ -68,6 +164,39 @@ class AgentSandbox(BaseHarness):
     def set_state(self, state: Mapping[str, Any]) -> None:
         return None
 
+    @staticmethod
+    def _os_sandbox_kwargs() -> dict[str, Any]:
+        import platform
+        system = platform.system()
+        if system == "Windows":
+            return {}
+        elif system == "Linux":
+            def _preexec():
+                import resource
+                mem_limit = 512 * 1024 * 1024
+                resource.setrlimit(resource.RLIMIT_AS, (mem_limit, mem_limit))
+                resource.setrlimit(resource.RLIMIT_CPU, (30, 30))
+                resource.setrlimit(resource.RLIMIT_NPROC, (10, 10))
+            return {"preexec_fn": _preexec}
+        elif system == "Darwin":
+            def _preexec_macos():
+                import resource
+                mem_limit = 512 * 1024 * 1024
+                try:
+                    resource.setrlimit(resource.RLIMIT_AS, (mem_limit, mem_limit))
+                except (ValueError, resource.error):
+                    pass
+                try:
+                    resource.setrlimit(resource.RLIMIT_CPU, (30, 30))
+                except (ValueError, resource.error):
+                    pass
+                try:
+                    resource.setrlimit(resource.RLIMIT_NOFILE, (64, 64))
+                except (ValueError, resource.error):
+                    pass
+            return {"preexec_fn": _preexec_macos}
+        return {}
+
     async def run_code(self, *, code: str, permissions: AgentPermissions) -> dict[str, Any]:
         self._validate_code(code, permissions)
         allowed_root = self._allowed_root(permissions)
@@ -79,6 +208,8 @@ class AgentSandbox(BaseHarness):
         if not permissions.network:
             env["NO_PROXY"] = "*"
             env["ASTERION_NETWORK_DISABLED"] = "1"
+        kwargs = self._os_sandbox_kwargs()
+
         proc = await asyncio.create_subprocess_exec(
             sys.executable,
             str(script_path),
@@ -86,6 +217,7 @@ class AgentSandbox(BaseHarness):
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             env=env,
+            **kwargs
         )
         stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30)
         try:

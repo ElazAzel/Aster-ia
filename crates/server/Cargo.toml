@@ -1,0 +1,13 @@
+[package]
+name = "asterion-server"
+version.workspace = true
+edition.workspace = true
+description = "Asterion AI cloud server: axum, multi-tenant, billing"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+asterion-core = { path = "../core" }
+asterion-inference = { path = "../inference" }

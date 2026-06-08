@@ -20,6 +20,10 @@ class Settings:
     max_tokens: int = int(os.getenv("ASTERION_MAX_TOKENS", "2048"))
     chat_history_limit: int = int(os.getenv("ASTERION_CHAT_HISTORY_LIMIT", "20"))
     local_first: bool = True
+    required_models: tuple[str, ...] = ("llama3.2", "nomic-embed-text")
+    searxng_base_url: str = os.getenv("SEARXNG_BASE_URL", "http://127.0.0.1:8080")
+    duckdb_memory_limit: str = os.getenv("ASTERION_DUCKDB_MEMORY_LIMIT", "512MB")
+    duckdb_threads: int = int(os.getenv("ASTERION_DUCKDB_THREADS", "2"))
 
     @property
     def data_dir(self) -> Path:

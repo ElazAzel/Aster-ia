@@ -1,0 +1,12 @@
+[package]
+name = "asterion-core"
+version.workspace = true
+edition.workspace = true
+description = "Asterion AI shared core: models, routing, privacy, schemas"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+regex = "1"
+lazy_static = "1"

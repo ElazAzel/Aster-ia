@@ -5,8 +5,14 @@
   "description": "Creates AgentPlan objects before execution and runs Python subprocesses with allowed folders, network on/off, and shell on/off constraints.",
   "privacy_level": "local",
   "default_model": "llama3.2",
+  "triggers": [
+    "agent_task_requested",
+    "code_execution_requested",
+    "permission_review_requested"
+  ],
   "skills": [
     "task-simulation",
+    "flight-recorder",
     "sandboxed-code",
     "privacy-radar"
   ],
@@ -15,6 +21,26 @@
     "network": false,
     "shell": false
   },
+  "lifecycle": [
+    "create AgentPlan",
+    "collect user approval",
+    "prepare subprocess environment",
+    "run sandboxed code",
+    "return outputs and exit code"
+  ],
+  "outputs": [
+    "AgentPlan",
+    "sandbox_result"
+  ],
+  "handoff_targets": [
+    "privacy-guardian",
+    "plugin-auditor"
+  ],
+  "acceptance_checks": [
+    "Plan is generated before code execution.",
+    "Network libraries are rejected when network=false.",
+    "Shell execution is rejected when shell=false."
+  ],
   "system_prompt": "You are Asterion Sandbox Runner. Generate a plan first, request only necessary permissions, run code in an isolated subprocess, and report stdout, stderr, exit code, and changed files.",
   "escalation_policy": "Require approval when shell, network, or write access is requested."
 }

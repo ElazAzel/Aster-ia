@@ -4,14 +4,17 @@ import asyncio
 import json
 import secrets
 import sqlite3
+import threading
 from datetime import UTC, datetime
 from typing import Any, Mapping
 from uuid import uuid4
 
 import keyring
+import keyring.errors
 
 from asterion_api.config import Settings
 from asterion_api.harness import BaseHarness
+from asterion_api.storage.migrations import current_version, run_migrations
 from asterion_api.structured_logging import StructuredLogger
 
 try:
@@ -31,6 +34,9 @@ class EncryptedSQLiteStore(BaseHarness):
         self.path = settings.database_path
         self._state: dict[str, Any] = {"path": str(self.path)}
         self.logger = StructuredLogger("sqlite", self.privacy_level)
+        self._local = threading.local()
+        self._open_conns: list[Any] = []
+        self._conns_lock = threading.Lock()
 
     async def execute(self, payload: Mapping[str, Any] | None = None) -> Any:
         action = (payload or {}).get("action", "health")
@@ -50,6 +56,10 @@ class EncryptedSQLiteStore(BaseHarness):
     async def ensure_schema(self) -> None:
         await asyncio.to_thread(self._ensure_schema_sync)
 
+    async def schema_version(self) -> int:
+        """Return the current schema migration version."""
+        return await asyncio.to_thread(self._schema_version_sync)
+
     async def health_check(self) -> dict[str, Any]:
         return await asyncio.to_thread(self._health_check_sync)
 
@@ -63,6 +73,7 @@ class EncryptedSQLiteStore(BaseHarness):
         role: str,
         content: str,
         model: str | None,
+        artifact_id: str | None = None,
     ) -> str:
         return await asyncio.to_thread(
             self._append_message_sync,
@@ -70,7 +81,17 @@ class EncryptedSQLiteStore(BaseHarness):
             role,
             content,
             model,
+            artifact_id,
         )
+
+    async def update_conversation(self, conv_id: str, *, title: str) -> dict[str, Any] | None:
+        return await asyncio.to_thread(self._update_conversation_sync, conv_id, title)
+
+    async def delete_conversation(self, conv_id: str) -> bool:
+        return await asyncio.to_thread(self._delete_conversation_sync, conv_id)
+
+    async def list_conversations(self, room_id: str | None = None) -> list[dict[str, Any]]:
+        return await asyncio.to_thread(self._list_conversations_sync, room_id)
 
     async def list_messages(self, conv_id: str) -> list[dict[str, Any]]:
         return await asyncio.to_thread(self._list_messages_sync, conv_id)
@@ -244,25 +265,88 @@ class EncryptedSQLiteStore(BaseHarness):
         role: str,
         content: str,
         model: str | None,
+        artifact_id: str | None,
     ) -> str:
         message_id = str(uuid4())
         ts = datetime.now(UTC).isoformat()
         with self._connect() as conn:
             conn.execute(
                 """
-                INSERT INTO messages (id, conv_id, role, content, model, ts)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO messages (id, conv_id, role, content, model, artifact_id, ts)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                (message_id, conv_id, role, content, model, ts),
+                (message_id, conv_id, role, content, model, artifact_id, ts),
             )
             conn.commit()
         return message_id
+
+    def _list_conversations_sync(self, room_id: str | None) -> list[dict[str, Any]]:
+        with self._connect() as conn:
+            if room_id:
+                rows = conn.execute(
+                    """
+                    SELECT
+                        c.id,
+                        c.room_id,
+                        c.title,
+                        c.created_at,
+                        COUNT(m.id) AS message_count,
+                        MAX(m.ts) AS latest_ts
+                    FROM conversations c
+                    LEFT JOIN messages m ON m.conv_id = c.id
+                    WHERE c.room_id = ?
+                    GROUP BY c.id, c.room_id, c.created_at
+                    ORDER BY COALESCE(latest_ts, c.created_at) DESC
+                    """,
+                    (room_id,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """
+                    SELECT
+                        c.id,
+                        c.room_id,
+                        c.title,
+                        c.created_at,
+                        COUNT(m.id) AS message_count,
+                        MAX(m.ts) AS latest_ts
+                    FROM conversations c
+                    LEFT JOIN messages m ON m.conv_id = c.id
+                    GROUP BY c.id, c.room_id, c.created_at
+                    ORDER BY COALESCE(latest_ts, c.created_at) DESC
+                    """
+                ).fetchall()
+        return [dict(row) for row in rows]
+
+    def _update_conversation_sync(self, conv_id: str, title: str) -> dict[str, Any] | None:
+        with self._connect() as conn:
+            conn.execute("UPDATE conversations SET title = ? WHERE id = ?", (title, conv_id))
+            conn.commit()
+            row = conn.execute(
+                """
+                SELECT
+                    c.id, c.room_id, c.title, c.created_at,
+                    COUNT(m.id) AS message_count, MAX(m.ts) AS latest_ts
+                FROM conversations c
+                LEFT JOIN messages m ON m.conv_id = c.id
+                WHERE c.id = ?
+                GROUP BY c.id, c.room_id, c.title, c.created_at
+                """,
+                (conv_id,),
+            ).fetchone()
+        return dict(row) if row is not None else None
+
+    def _delete_conversation_sync(self, conv_id: str) -> bool:
+        with self._connect() as conn:
+            cursor = conn.execute("DELETE FROM conversations WHERE id = ?", (conv_id,))
+            conn.commit()
+        return cursor.rowcount > 0
 
     def _list_messages_sync(self, conv_id: str) -> list[dict[str, Any]]:
         with self._connect() as conn:
             rows = conn.execute(
                 """
-                SELECT id, conv_id, role, content, model, ts
+                SELECT id, conv_id, role, content, model, artifact_id, ts
                 FROM messages
                 WHERE conv_id = ?
                 ORDER BY ts ASC
@@ -425,15 +509,58 @@ class EncryptedSQLiteStore(BaseHarness):
         ]
 
     def _connect(self) -> Any:
+        if hasattr(self._local, "conn"):
+            try:
+                self._local.conn.execute("SELECT 1")
+                return self._local.conn
+            except Exception:
+                with self._conns_lock:
+                    if self._local.conn in self._open_conns:
+                        self._open_conns.remove(self._local.conn)
+                delattr(self._local, "conn")
+
         driver = self._driver()
         conn = driver.connect(str(self.path))
         conn.row_factory = self._row_factory
-        if SQLCIPHER_AVAILABLE:
-            conn.execute(f"PRAGMA key = {self._sql_literal(self._get_or_create_key())}")
-            conn.execute("PRAGMA cipher_page_size = 4096")
-            conn.execute("PRAGMA kdf_iter = 256000")
-            conn.execute("PRAGMA cipher_hmac_algorithm = HMAC_SHA512")
-            conn.execute("PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512")
+        try:
+            if SQLCIPHER_AVAILABLE:
+                conn.execute(f"PRAGMA key = {self._sql_literal(self._get_or_create_key())}")
+                conn.execute("PRAGMA cipher_page_size = 4096")
+                conn.execute("PRAGMA kdf_iter = 256000")
+                conn.execute("PRAGMA cipher_hmac_algorithm = HMAC_SHA512")
+                conn.execute("PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512")
+            conn.execute("PRAGMA journal_mode = WAL;")
+        except Exception:
+            try:
+                conn.close()
+            except Exception:
+                pass
+            # Database might have incorrect/deleted key from keyring (e.g. after a partial wipe on Windows).
+            # Attempt to clean up and reconnect to a fresh database.
+            try:
+                self.path.unlink()
+            except Exception:
+                pass
+            for suffix in ["-wal", "-shm"]:
+                try:
+                    self.path.with_name(self.path.name + suffix).unlink()
+                except Exception:
+                    pass
+            conn = driver.connect(str(self.path))
+            conn.row_factory = self._row_factory
+            if SQLCIPHER_AVAILABLE:
+                conn.execute(f"PRAGMA key = {self._sql_literal(self._get_or_create_key())}")
+                conn.execute("PRAGMA cipher_page_size = 4096")
+                conn.execute("PRAGMA kdf_iter = 256000")
+                conn.execute("PRAGMA cipher_hmac_algorithm = HMAC_SHA512")
+                conn.execute("PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512")
+            conn.execute("PRAGMA journal_mode = WAL;")
+
+        conn.execute("PRAGMA synchronous = NORMAL;")
+        
+        self._local.conn = conn
+        with self._conns_lock:
+            self._open_conns.append(conn)
         return conn
 
     def _driver(self) -> Any:
@@ -449,13 +576,20 @@ class EncryptedSQLiteStore(BaseHarness):
         )
 
     def _get_or_create_key(self) -> str:
-        key = keyring.get_password(self.settings.keyring_service, self.settings.keyring_db_key_name)
-        if key:
+        try:
+            key = keyring.get_password(self.settings.keyring_service, self.settings.keyring_db_key_name)
+            if key:
+                return key
+            key = secrets.token_urlsafe(48)
+            keyring.set_password(self.settings.keyring_service, self.settings.keyring_db_key_name, key)
+            self.logger.emit("keyring.created", key_name=self.settings.keyring_db_key_name)
             return key
-        key = secrets.token_urlsafe(48)
-        keyring.set_password(self.settings.keyring_service, self.settings.keyring_db_key_name, key)
-        self.logger.emit("keyring.created", key_name=self.settings.keyring_db_key_name)
-        return key
+        except keyring.errors.KeyringError:
+            if self.settings.allow_plaintext_dev_db:
+                fallback = f"dev-key-{self.settings.keyring_service}-{self.settings.keyring_db_key_name}"
+                self.logger.emit("keyring.fallback_dev", reason="keyring unavailable")
+                return fallback
+            raise
 
     @staticmethod
     def _sql_literal(value: str) -> str:

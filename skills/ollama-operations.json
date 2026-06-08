@@ -1,0 +1,46 @@
+{
+  "id": "ollama-operations",
+  "name": "Ollama Operations",
+  "version": "0.2.0",
+  "owner": "asterion",
+  "category": "models",
+  "description": "Lists local Ollama models and calls local generation or embedding endpoints through async httpx.",
+  "privacy_level": "local",
+  "triggers": [
+    "model_list_requested",
+    "generate_requested",
+    "embedding_requested"
+  ],
+  "inputs": [
+    "model",
+    "prompt",
+    "embedding_text"
+  ],
+  "outputs": [
+    "ModelsResponse",
+    "ChatResponse",
+    "embedding_vector"
+  ],
+  "tools": [
+    "OllamaService",
+    "httpx.AsyncClient"
+  ],
+  "guardrails": [
+    "Use localhost Ollama endpoint only.",
+    "Keep requests async.",
+    "Surface local service errors clearly."
+  ],
+  "requires_consent": [
+    "model_download"
+  ],
+  "failure_modes": [
+    "Ollama process is not running.",
+    "Requested local model is missing.",
+    "Embedding endpoint returns an invalid vector."
+  ],
+  "acceptance_checks": [
+    "GET /api/models returns local model metadata.",
+    "Generation uses httpx.AsyncClient.",
+    "Embedding model defaults to nomic-embed-text."
+  ]
+}

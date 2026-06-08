@@ -1,0 +1,17 @@
+{
+  "id": "adaptive-artifacts",
+  "name": "Adaptive Artifacts",
+  "version": "0.3.0",
+  "owner": "asterion",
+  "category": "artifacts",
+  "description": "Persists structured AI outputs as text, code, table, source, and action blocks.",
+  "privacy_level": "local",
+  "triggers": ["assistant_response_completed", "research_export_requested", "manual_artifact_created"],
+  "inputs": ["ArtifactCreateRequest", "ArtifactBlock"],
+  "outputs": ["ArtifactRecord"],
+  "tools": ["EncryptedSQLiteStore"],
+  "guardrails": ["Persist artifacts in SQLCipher storage.", "Keep source metadata with source-backed blocks."],
+  "requires_consent": ["external_source_export"],
+  "failure_modes": ["Unsupported block type.", "Artifact not found.", "Missing source metadata."],
+  "acceptance_checks": ["POST /api/artifacts creates an artifact.", "GET /api/artifacts/{artifact_id} returns blocks.", "Blocks preserve type and metadata."]
+}
