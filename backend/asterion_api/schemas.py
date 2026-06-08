@@ -259,6 +259,11 @@ class ArtifactRecord(BaseModel):
     created_at: datetime
 
 
+class ArtifactUpdateRequest(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=256)
+    blocks: list[ArtifactBlock] | None = None
+
+
 class DeepResearchRequest(BaseModel):
     query: str = Field(min_length=1, max_length=16_000)
     max_subtasks: int = Field(default=5, ge=3, le=5)

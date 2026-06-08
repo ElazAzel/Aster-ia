@@ -116,7 +116,7 @@ def get_plugin_manager() -> PluginManager:
 
 @lru_cache(maxsize=1)
 def _benchmark_service_singleton() -> BenchmarkService:
-    return BenchmarkService()
+    return BenchmarkService(ollama_base_url=get_settings().ollama_base_url)
 
 
 def get_benchmark_service() -> BenchmarkService:

@@ -28,6 +28,7 @@ async def create_room(
         allowed_models=request.allowed_models,
         memory_policy=request.memory_policy,
         retention_days=request.retention_days,
+        system_prompt=getattr(request, "system_prompt", None),
     )
     return ContextRoom(**row)
 
@@ -56,6 +57,7 @@ async def update_room(
         allowed_models=request.allowed_models,
         memory_policy=request.memory_policy,
         retention_days=request.retention_days,
+        system_prompt=getattr(request, "system_prompt", None),
     )
     if row is None:
         raise HTTPException(status_code=404, detail="Room not found")

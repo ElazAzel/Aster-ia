@@ -58,6 +58,12 @@ class MemoryLedger(BaseHarness):
         rows = await self.store.list_memories(room_id)
         return [self._record(row, None) for row in rows]
 
+    async def get(self, memory_id: str) -> MemoryRecord | None:
+        row = await self.store.get_memory(memory_id)
+        if row is None:
+            return None
+        return self._record(row, None)
+
     async def update(self, memory_id: str, request: MemoryUpdateRequest) -> MemoryRecord | None:
         existing = await self.store.get_memory(memory_id)
         if existing is None:

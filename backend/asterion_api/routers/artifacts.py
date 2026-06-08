@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 
 from asterion_api.dependencies import get_store
-from asterion_api.schemas import ArtifactCreateRequest, ArtifactRecord
+from asterion_api.schemas import ArtifactCreateRequest, ArtifactRecord, ArtifactUpdateRequest
 from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
 
 router = APIRouter(prefix="/api/artifacts", tags=["artifacts"])
@@ -42,3 +42,30 @@ async def get_artifact(
     if row is None:
         raise HTTPException(status_code=404, detail="Artifact not found")
     return ArtifactRecord(**row)
+
+
+@router.patch("/{artifact_id}", response_model=ArtifactRecord)
+async def update_artifact(
+    artifact_id: str,
+    request: ArtifactUpdateRequest,
+    store: EncryptedSQLiteStore = Depends(get_store),
+) -> ArtifactRecord:
+    row = await store.update_artifact(
+        artifact_id,
+        title=request.title,
+        blocks=[b.model_dump() for b in request.blocks] if request.blocks is not None else None,
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+    return ArtifactRecord(**row)
+
+
+@router.delete("/{artifact_id}")
+async def delete_artifact(
+    artifact_id: str,
+    store: EncryptedSQLiteStore = Depends(get_store),
+) -> dict[str, bool]:
+    deleted = await store.delete_artifact(artifact_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+    return {"deleted": True}

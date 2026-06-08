@@ -689,6 +689,36 @@ class EncryptedSQLiteStore(BaseHarness):
         d["blocks"] = json.loads(d["blocks"])
         return d
 
+    async def update_artifact(
+        self, artifact_id: str, title: str | None = None,
+        blocks: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any] | None:
+        return await asyncio.to_thread(self._update_artifact_sync, artifact_id, title, blocks)
+
+    def _update_artifact_sync(
+        self, artifact_id: str, title: str | None, blocks: list[dict[str, Any]] | None,
+    ) -> dict[str, Any] | None:
+        with self._connect() as conn:
+            if title is not None:
+                conn.execute("UPDATE artifacts SET title = ? WHERE id = ?", (title, artifact_id))
+            if blocks is not None:
+                conn.execute("UPDATE artifacts SET blocks = ? WHERE id = ?", (json.dumps(blocks), artifact_id))
+            conn.commit()
+            row = conn.execute(
+                "SELECT id, room_id, kind, title, blocks, source, created_at "
+                "FROM artifacts WHERE id = ?", (artifact_id,),
+            ).fetchone()
+        return self._deserialize_artifact(row) if row is not None else None
+
+    async def delete_artifact(self, artifact_id: str) -> bool:
+        return await asyncio.to_thread(self._delete_artifact_sync, artifact_id)
+
+    def _delete_artifact_sync(self, artifact_id: str) -> bool:
+        with self._connect() as conn:
+            cur = conn.execute("DELETE FROM artifacts WHERE id = ?", (artifact_id,))
+            conn.commit()
+            return cur.rowcount > 0
+
     # ── Audit Logs ──────────────────────────────────────────────────────────
 
     async def record_audit_log(

@@ -140,53 +140,6 @@ class OllamaService(BaseHarness):
                     except json.JSONDecodeError:
                         yield {"response": line, "done": False}
 
-    async def chat(self, *, model: str, messages: list[dict[str, Any]]) -> str:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=1.0)) as client:
-            response = await client.post(
-                f"{self.base_url}/api/chat",
-                json={
-                    "model": model,
-                    "messages": messages,
-                    "stream": False,
-                    "keep_alive": "30m",
-                    "options": {"num_predict": 1024},
-                },
-            )
-        response.raise_for_status()
-        payload = response.json()
-        message = payload.get("message", {})
-        text = str(message.get("content", ""))
-        self.logger.emit("chat.completed", model=model, chars=len(text))
-        return text
-
-    async def stream_chat(self, *, model: str, messages: list[dict[str, Any]]) -> AsyncIterator[dict[str, Any]]:
-        timeout = httpx.Timeout(120.0, connect=1.0, read=None)
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            async with client.stream(
-                "POST",
-                f"{self.base_url}/api/chat",
-                json={
-                    "model": model,
-                    "messages": messages,
-                    "stream": True,
-                    "keep_alive": "30m",
-                    "options": {"num_predict": 1024},
-                },
-            ) as response:
-                if response.status_code >= 400:
-                    raise httpx.HTTPStatusError(
-                        f"Ollama chat {response.status_code}",
-                        request=response.request,
-                        response=response,
-                    )
-                async for line in response.aiter_lines():
-                    if not line:
-                        continue
-                    try:
-                        yield json.loads(line)
-                    except json.JSONDecodeError:
-                        yield {"message": {"content": line}, "done": False}
-
     async def embed(self, *, model: str, input_texts: list[str]) -> list[list[float]]:
         async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=1.0)) as client:
             response = await client.post(

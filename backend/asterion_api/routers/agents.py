@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+import time
+from collections import defaultdict, deque
 
-from fastapi import APIRouter, BackgroundTasks, Depends
-from fastapi import HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse
 
 from asterion_api.dependencies import (
     get_agent_executor,
@@ -30,6 +30,10 @@ from asterion_api.services.agent_sandbox import AgentSandbox, TaskSimulator
 from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
 
 router = APIRouter(prefix="/api/agents", tags=["agents"])
+
+_CODE_RATE_LIMIT = 5
+_CODE_RATE_WINDOW = 60
+_code_history: dict[str, deque[float]] = defaultdict(lambda: deque(maxlen=_CODE_RATE_LIMIT * 2))
 
 
 @router.get("/catalog", response_model=AgentCatalog)
@@ -81,11 +85,23 @@ async def simulate_task(
 
 @router.post("/run-code")
 async def run_code(
-    request: AgentRunCodeRequest,
+    request: Request,
+    payload: AgentRunCodeRequest,
     sandbox: AgentSandbox = Depends(get_agent_sandbox),
 ) -> dict[str, object]:
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    now = time.time()
+    history = _code_history[client_ip]
+    while history and history[0] < now - _CODE_RATE_WINDOW:
+        history.popleft()
+    if len(history) >= _CODE_RATE_LIMIT:
+        return JSONResponse(
+            status_code=429,
+            content={"detail": f"Code execution rate limit: {_CODE_RATE_LIMIT} requests per minute."},
+        )
+    history.append(now)
     try:
-        return await sandbox.run_code(code=request.code, permissions=request.permissions)
+        return await sandbox.run_code(code=payload.code, permissions=payload.permissions)
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc))
     except Exception as exc:
@@ -139,3 +155,19 @@ async def list_run_logs(
 ) -> list[FlightRecorderEvent]:
     rows = await store.list_agent_logs(run_id)
     return [FlightRecorderEvent(**row) for row in rows]
+
+
+@router.post("/runs/{run_id}/execute")
+async def execute_run(
+    run_id: str,
+    executor: AgentExecutor = Depends(get_agent_executor),
+    store: EncryptedSQLiteStore = Depends(get_store),
+) -> dict[str, str]:
+    row = await store.get_agent_run(run_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Agent run not found")
+    if row["status"] not in ("planned",):
+        raise HTTPException(status_code=409, detail=f"Run status '{row['status']}' is not executable")
+    import asyncio
+    asyncio.create_task(executor.execute_run(run_id))
+    return {"status": "executing", "run_id": run_id}

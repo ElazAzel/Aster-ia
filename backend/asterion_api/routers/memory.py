@@ -25,6 +25,17 @@ async def list_memories(
     return await ledger.list_by_room(room_id)
 
 
+@router.get("/item/{memory_id}", response_model=MemoryRecord)
+async def get_memory(
+    memory_id: str,
+    ledger: MemoryLedger = Depends(get_memory_ledger),
+) -> MemoryRecord:
+    result = await ledger.get(memory_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    return result
+
+
 @router.patch("/{memory_id}", response_model=MemoryRecord)
 async def update_memory(
     memory_id: str,
