@@ -30,3 +30,4 @@ asterion-inference = { path = "../crates/inference" }
 # In-process HTTP server for removing Python sidecar
 axum = { version = "0.7", features = ["tokio", "macros"] }
 tower-http = { version = "0.5", features = ["cors"] }
+futures-util = "0.3"

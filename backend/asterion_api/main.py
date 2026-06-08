@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from asterion_api.config import get_settings
-from asterion_api.dependencies import get_document_indexer, get_ollama_service, get_store
+from asterion_api.dependencies import get_document_indexer, get_store
 from asterion_api.exceptions import AsterionAPIError, global_exception_handler
 from asterion_api.routers import (
     agents,
@@ -59,10 +59,7 @@ async def memory_ttl_enforcer() -> None:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    import sys
-    settings = get_settings()
     await get_store().ensure_schema()
-    from asterion_api.dependencies import get_document_indexer
     await get_document_indexer().start_watching()
     yield
     get_document_indexer().stop_watching()

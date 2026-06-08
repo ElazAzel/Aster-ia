@@ -47,7 +47,6 @@ impl DocumentIndexer {
         let cleaned = cleaned.trim();
         let mut chunks = Vec::new();
         let mut start = 0;
-        let bytes = cleaned.as_bytes();
         while start < cleaned.len() {
             let end = (start + size).min(cleaned.len());
             // Safe slice at char boundary

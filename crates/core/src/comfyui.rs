@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
+use lazy_static::lazy_static;
 use serde_json::Value;
 
 use crate::harness::BaseHarness;
@@ -16,73 +17,75 @@ const BLOCKED_URI_PREFIXES: &[&str] = &["http://", "https://", "ftp://", "s3://"
 struct RecipePreset {
     id: &'static str,
     title: &'static str,
-    recipe: std::collections::HashMap<&'static str, serde_json::Value>,
+    recipe: HashMap<String, Value>,
 }
 
-static RECIPE_PRESETS: &[RecipePreset] = &[
-    RecipePreset {
-        id: "sdxl-square",
-        title: "SDXL Square",
-        recipe: {
-            let mut m = std::collections::HashMap::new();
-            m.insert("width", serde_json::json!(1024));
-            m.insert("height", serde_json::json!(1024));
-            m.insert("steps", serde_json::json!(20));
-            m.insert("cfg", serde_json::json!(7.0));
-            m.insert("sampler_name", serde_json::json!("euler"));
-            m.insert("scheduler", serde_json::json!("normal"));
-            m.insert("filename_prefix", serde_json::json!("asterion-square"));
-            m
+lazy_static! {
+    static ref RECIPE_PRESETS: Vec<RecipePreset> = vec![
+        RecipePreset {
+            id: "sdxl-square",
+            title: "SDXL Square",
+            recipe: {
+                let mut m = HashMap::new();
+                m.insert("width".into(), serde_json::json!(1024));
+                m.insert("height".into(), serde_json::json!(1024));
+                m.insert("steps".into(), serde_json::json!(20));
+                m.insert("cfg".into(), serde_json::json!(7.0));
+                m.insert("sampler_name".into(), serde_json::json!("euler"));
+                m.insert("scheduler".into(), serde_json::json!("normal"));
+                m.insert("filename_prefix".into(), serde_json::json!("asterion-square"));
+                m
+            },
         },
-    },
-    RecipePreset {
-        id: "portrait-fast",
-        title: "Portrait Fast",
-        recipe: {
-            let mut m = std::collections::HashMap::new();
-            m.insert("width", serde_json::json!(832));
-            m.insert("height", serde_json::json!(1216));
-            m.insert("steps", serde_json::json!(16));
-            m.insert("cfg", serde_json::json!(6.5));
-            m.insert("sampler_name", serde_json::json!("euler"));
-            m.insert("scheduler", serde_json::json!("normal"));
-            m.insert("negative_prompt", serde_json::json!("low quality, blurry, distorted anatomy, extra fingers"));
-            m.insert("filename_prefix", serde_json::json!("asterion-portrait"));
-            m
+        RecipePreset {
+            id: "portrait-fast",
+            title: "Portrait Fast",
+            recipe: {
+                let mut m = HashMap::new();
+                m.insert("width".into(), serde_json::json!(832));
+                m.insert("height".into(), serde_json::json!(1216));
+                m.insert("steps".into(), serde_json::json!(16));
+                m.insert("cfg".into(), serde_json::json!(6.5));
+                m.insert("sampler_name".into(), serde_json::json!("euler"));
+                m.insert("scheduler".into(), serde_json::json!("normal"));
+                m.insert("negative_prompt".into(), serde_json::json!("low quality, blurry, distorted anatomy, extra fingers"));
+                m.insert("filename_prefix".into(), serde_json::json!("asterion-portrait"));
+                m
+            },
         },
-    },
-    RecipePreset {
-        id: "wide-concept",
-        title: "Wide Concept",
-        recipe: {
-            let mut m = std::collections::HashMap::new();
-            m.insert("width", serde_json::json!(1344));
-            m.insert("height", serde_json::json!(768));
-            m.insert("steps", serde_json::json!(24));
-            m.insert("cfg", serde_json::json!(7.5));
-            m.insert("sampler_name", serde_json::json!("euler"));
-            m.insert("scheduler", serde_json::json!("normal"));
-            m.insert("filename_prefix", serde_json::json!("asterion-wide"));
-            m
+        RecipePreset {
+            id: "wide-concept",
+            title: "Wide Concept",
+            recipe: {
+                let mut m = HashMap::new();
+                m.insert("width".into(), serde_json::json!(1344));
+                m.insert("height".into(), serde_json::json!(768));
+                m.insert("steps".into(), serde_json::json!(24));
+                m.insert("cfg".into(), serde_json::json!(7.5));
+                m.insert("sampler_name".into(), serde_json::json!("euler"));
+                m.insert("scheduler".into(), serde_json::json!("normal"));
+                m.insert("filename_prefix".into(), serde_json::json!("asterion-wide"));
+                m
+            },
         },
-    },
-    RecipePreset {
-        id: "ui-mockup",
-        title: "UI Mockup",
-        recipe: {
-            let mut m = std::collections::HashMap::new();
-            m.insert("width", serde_json::json!(1152));
-            m.insert("height", serde_json::json!(768));
-            m.insert("steps", serde_json::json!(22));
-            m.insert("cfg", serde_json::json!(6.0));
-            m.insert("sampler_name", serde_json::json!("euler"));
-            m.insert("scheduler", serde_json::json!("normal"));
-            m.insert("negative_prompt", serde_json::json!("messy text, illegible UI, distorted interface, low contrast"));
-            m.insert("filename_prefix", serde_json::json!("asterion-ui"));
-            m
+        RecipePreset {
+            id: "ui-mockup",
+            title: "UI Mockup",
+            recipe: {
+                let mut m = HashMap::new();
+                m.insert("width".into(), serde_json::json!(1152));
+                m.insert("height".into(), serde_json::json!(768));
+                m.insert("steps".into(), serde_json::json!(22));
+                m.insert("cfg".into(), serde_json::json!(6.0));
+                m.insert("sampler_name".into(), serde_json::json!("euler"));
+                m.insert("scheduler".into(), serde_json::json!("normal"));
+                m.insert("negative_prompt".into(), serde_json::json!("messy text, illegible UI, distorted interface, low contrast"));
+                m.insert("filename_prefix".into(), serde_json::json!("asterion-ui"));
+                m
+            },
         },
-    },
-];
+    ];
+}
 
 fn is_loopback_host(hostname: &str) -> bool {
     LOOPBACK_HOSTS.iter().any(|h| *h == hostname)
@@ -255,7 +258,7 @@ impl ComfyUIService {
         Ok(url)
     }
 
-    pub fn get_recipe_preset(&self, preset_id: &str) -> Option<&'static RecipePreset> {
+    pub fn get_recipe_preset(&self, preset_id: &str) -> Option<&RecipePreset> {
         RECIPE_PRESETS.iter().find(|p| p.id == preset_id)
     }
 
@@ -266,11 +269,7 @@ impl ComfyUIService {
                 let mut map = HashMap::new();
                 map.insert("id".into(), Value::String(preset.id.into()));
                 map.insert("title".into(), Value::String(preset.title.into()));
-                let recipe_val: HashMap<String, Value> = preset
-                    .recipe
-                    .iter()
-                    .map(|(k, v)| (k.to_string(), v.clone()))
-                    .collect();
+                let recipe_val: HashMap<String, Value> = preset.recipe.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
                 map.insert("recipe".into(), Value::Object(recipe_val.into_iter().collect()));
                 map.insert(
                     "privacy_level".into(),

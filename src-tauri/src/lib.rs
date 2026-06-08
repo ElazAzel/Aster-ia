@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::Duration;
 use serde::Serialize;
 use tauri::menu::{Menu, MenuItem};
