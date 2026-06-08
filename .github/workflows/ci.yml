@@ -57,7 +57,7 @@ jobs:
 
       - name: Install
         working-directory: frontend
-        run: npm ci
+        run: npm install
 
       - name: Build
         working-directory: frontend
@@ -99,6 +99,9 @@ jobs:
             crates/inference
 
 
+
+      - name: Placeholder frontend dist
+        run: mkdir -p frontend/dist && echo "<!DOCTYPE html>" > frontend/dist/index.html
 
       - name: Cargo check — all workspace
         run: cargo check --workspace

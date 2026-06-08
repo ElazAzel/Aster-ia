@@ -8,7 +8,6 @@ from fastapi.responses import PlainTextResponse, StreamingResponse
 
 from asterion_api.dependencies import get_contradiction_finder, get_store, get_supervisor_agent
 from asterion_api.schemas import (
-    ArtifactBlock,
     ArtifactRecord,
     ContradictionMatch,
     ContradictionRequest,

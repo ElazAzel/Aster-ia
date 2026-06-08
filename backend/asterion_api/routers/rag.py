@@ -155,7 +155,7 @@ async def upload_and_index(
     try:
         return await indexer.index_file(file_path=tmp, room_id=room_id)
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail=f"File not found after upload")
+        raise HTTPException(status_code=404, detail="File not found after upload")
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Indexing failed: {exc}")
     finally:

@@ -469,7 +469,8 @@ def test_workflow_runner_accepts_empty(tmp_path):
     from asterion_api.config import Settings
     from asterion_api.services.workflow_runner import WorkflowRunner
     from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
-    import asyncio, os
+    import asyncio
+    import os
     os.environ["ASTERION_DATA_DIR"] = str(tmp_path)
     os.environ["ASTERION_ALLOW_PLAINTEXT_SQLITE_FOR_DEV"] = "1"
     store = EncryptedSQLiteStore(Settings())
@@ -513,7 +514,8 @@ def test_plugin_manager_skips_invalid_manifest(tmp_path):
 
 @pytest.mark.asyncio
 async def test_workflow_runner_approval_rejection(tmp_path):
-    import asyncio, os
+    import asyncio
+    import os
     from asterion_api.config import Settings
     from asterion_api.services.workflow_runner import WorkflowRunner
     from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
