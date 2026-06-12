@@ -35,9 +35,11 @@ class AgentExecutor:
                 
                 # Skill bindings
                 if "rag-indexing" in step.lower():
+                    from asterion_api.dependencies import get_document_indexer
                     indexer = get_document_indexer()
                     await self._log(run_id, "skill.rag_indexing", "AgentExecutor", f"Calling DocumentIndexer (indexer={'ready' if indexer else 'unavailable'})")
                 elif "privacy-radar" in step.lower():
+                    from asterion_api.dependencies import get_privacy_analyzer
                     analyzer = get_privacy_analyzer()
                     await self._log(run_id, "skill.privacy_radar", "AgentExecutor", f"Calling PrivacyAnalyzer (analyzer={'ready' if analyzer else 'unavailable'})")
                 
