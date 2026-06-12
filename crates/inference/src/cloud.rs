@@ -16,7 +16,7 @@ impl CloudClient {
         }
     }
 
-    fn headers(&self) -> HeaderMap {
+    pub fn headers(&self) -> HeaderMap {
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
         if let Some(ref key) = self.api_key {
