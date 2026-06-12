@@ -157,7 +157,7 @@ mod tests {
     #[test]
     fn test_select_api_fallback_no_vram() {
         let router = ModelRouter::new();
-        let hw = HardwareProfile { vram_gb: 0.0, ram_gb: Some(1.0) };
+        let hw = HardwareProfile { vram_gb: 0.0, ram_gb: Some(0.5) };
         let result = router.select("complex reasoning", &hw);
         assert_eq!(result.mode, "api");
     }

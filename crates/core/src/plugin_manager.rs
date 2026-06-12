@@ -53,16 +53,16 @@ impl PluginManager {
             tl = "danger".into();
         }
 
+        if !self.trust_levels.contains(&tl) {
+            tl = "danger".into();
+        }
+
         if !is_signed {
             if matches!(tl.as_str(), "shell" | "network" | "file" | "danger") {
                 tl = "danger".into();
             } else {
                 tl = "local-only".into();
             }
-        }
-
-        if !self.trust_levels.contains(&tl) {
-            tl = "danger".into();
         }
 
         tl
@@ -181,8 +181,8 @@ mod tests {
     fn test_signed_network_plugin_passes() {
         let pm = PluginManager::new();
         let m = pm.process_manifest("net-plugin", "network", true, true, "/path", Some("A network plugin".into()));
-        assert!(m.is_some());
-        assert_eq!(m.unwrap().trust_level, "network");
-        assert_eq!(m.unwrap().description.unwrap(), "A network plugin");
+        let m = m.unwrap();
+        assert_eq!(m.trust_level, "network");
+        assert_eq!(m.description.unwrap(), "A network plugin");
     }
 }

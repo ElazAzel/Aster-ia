@@ -214,7 +214,7 @@ mod tests {
         let mut wf = HashMap::new();
         wf.insert(
             "steps".into(),
-            Value::Array(steps.into_iter().collect()),
+            Value::Array(steps.into_iter().map(|s| Value::Object(s.into_iter().collect())).collect()),
         );
         wf
     }

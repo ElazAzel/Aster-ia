@@ -546,7 +546,7 @@ mod tests {
             "inputs": {}
         }));
         let mut recipe = HashMap::new();
-        recipe.insert("workflow".into(), Value::Object(workflow));
+        recipe.insert("workflow".into(), Value::Object(workflow.into_iter().collect()));
         let r = svc.validate_recipe(Some(&recipe), "");
         assert!(!r.get("ok").and_then(|v| v.as_bool()).unwrap_or(true));
     }
@@ -560,7 +560,7 @@ mod tests {
             "inputs": {"image": "http://evil.com/payload.png"}
         }));
         let mut recipe = HashMap::new();
-        recipe.insert("workflow".into(), Value::Object(workflow));
+        recipe.insert("workflow".into(), Value::Object(workflow.into_iter().collect()));
         let r = svc.validate_recipe(Some(&recipe), "");
         assert!(!r.get("ok").and_then(|v| v.as_bool()).unwrap_or(true));
     }
@@ -574,7 +574,7 @@ mod tests {
             "inputs": {"model": ["999", 0]}
         }));
         let mut recipe = HashMap::new();
-        recipe.insert("workflow".into(), Value::Object(workflow));
+        recipe.insert("workflow".into(), Value::Object(workflow.into_iter().collect()));
         let r = svc.validate_recipe(Some(&recipe), "");
         assert!(!r.get("ok").and_then(|v| v.as_bool()).unwrap_or(true));
     }
@@ -588,7 +588,7 @@ mod tests {
             "inputs": {"width": 512, "height": 512, "batch_size": 1}
         }));
         let mut recipe = HashMap::new();
-        recipe.insert("workflow".into(), Value::Object(workflow));
+        recipe.insert("workflow".into(), Value::Object(workflow.into_iter().collect()));
         let r = svc.validate_recipe(Some(&recipe), "");
         let warnings = r.get("warnings").and_then(|v| v.as_array()).unwrap();
         assert!(warnings.iter().any(|w| w.as_str().unwrap_or("").contains("SaveImage")));
@@ -639,7 +639,7 @@ mod tests {
             }));
         }
         let mut recipe = HashMap::new();
-        recipe.insert("workflow".into(), Value::Object(workflow));
+        recipe.insert("workflow".into(), Value::Object(workflow.into_iter().collect()));
         let r = svc.validate_recipe(Some(&recipe), "");
         assert!(!r.get("ok").and_then(|v| v.as_bool()).unwrap_or(true));
     }
