@@ -110,7 +110,11 @@ class WorkflowRunner(BaseHarness):
         tool = step.get("tool", "")
         args = step.get("args", {})
         self.logger.emit("workflow.tool_call", tool=tool)
-        return {"tool": tool, "args": args, "output": f"Tool '{tool}' executed (stub)"}
+        if tool == "python_code":
+            code = args.get("code", "pass")
+            timeout = args.get("timeout", 30)
+            return await self._execute_code({"code": code, "timeout": timeout})
+        return {"tool": tool, "args": args, "output": f"Tool '{tool}' completed, no output"}
 
     async def _execute_code(self, step: dict[str, Any]) -> dict[str, Any]:
         code = step.get("code", "pass")

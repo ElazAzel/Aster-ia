@@ -6,6 +6,37 @@ use serde_json::Value;
 use crate::harness::BaseHarness;
 use crate::schemas::{DeepResearchResponse, ResearchResult};
 
+fn urlencoding(s: &str) -> String {
+    s.chars().map(|c| match c {
+        'A'..='Z' | 'a'..='z' | '0'..='9' | '-' | '_' | '.' | '~' => c.to_string(),
+        ' ' => "+".to_string(),
+        c => format!("%{:02X}", c as u8),
+    }).collect()
+}
+
+fn parse_searxng_results(body: &str, subtask: &str) -> Vec<ResearchResult> {
+    if let Ok(json) = serde_json::from_str::<serde_json::Value>(body) {
+        if let Some(results) = json.get("results").and_then(|r| r.as_array()) {
+            return results.iter().filter_map(|item| {
+                let title = item.get("title").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                let url = item.get("url").and_then(|v| v.as_str());
+                let snippet = item.get("content").and_then(|v| v.as_str());
+                if title.is_empty() && url.is_none() {
+                    None
+                } else {
+                    Some(ResearchResult {
+                        subtask: subtask.into(),
+                        title,
+                        url: url.map(|s| s.to_string()),
+                        snippet: snippet.map(|s| s.to_string()),
+                    })
+                }
+            }).collect();
+        }
+    }
+    vec![]
+}
+
 pub struct SupervisorAgent {
     privacy_level: String,
     searxng_url: Mutex<String>,
@@ -64,10 +95,35 @@ impl SupervisorAgent {
             };
         }
 
+        let searxng_url = self.searxng_url.lock().unwrap().clone();
+        let mut all_results: Vec<ResearchResult> = Vec::new();
+
+        for subtask in &subtasks {
+            let url = format!("{}/search?q={}&format=json&language=ru-RU",
+                searxng_url,
+                urlencoding(subtask));
+            match ureq::get(&url).call() {
+                Ok(resp) => {
+                    if let Ok(body) = resp.into_string() {
+                        let results = parse_searxng_results(&body, subtask);
+                        all_results.extend(results);
+                    }
+                }
+                Err(e) => {
+                    all_results.push(ResearchResult {
+                        subtask: subtask.clone(),
+                        title: "SearXNG search error".into(),
+                        url: None,
+                        snippet: Some(format!("Search failed: {e}")),
+                    });
+                }
+            }
+        }
+
         DeepResearchResponse {
             query: query.into(),
             subtasks,
-            results: vec![],
+            results: all_results,
             privacy: None,
         }
     }
@@ -137,11 +193,12 @@ mod tests {
     }
 
     #[test]
-    fn test_research_with_web_returns_stub() {
-        let agent = SupervisorAgent::new();
+    fn test_research_with_web_fallback_on_error() {
+        let agent = SupervisorAgent::with_searxng("http://127.0.0.1:9999");
         let response = agent.research("test", 2, true);
         assert_eq!(response.subtasks.len(), 2);
-        assert!(response.results.is_empty());
+        assert!(!response.results.is_empty());
+        assert!(response.results[0].title.contains("error") || response.results[0].title.contains("Error"));
     }
 
     #[test]

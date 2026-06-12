@@ -8,7 +8,7 @@ use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut,
 use axum::{Router, routing::{get, post, delete, patch}};
 use tower_http::cors::CorsLayer;
 use axum::response::sse::{Event, Sse};
-use futures_util::stream::Stream;
+use futures_util::stream::{Stream, StreamExt};
 use std::convert::Infallible;
 
 const BACKEND_PORT: u16 = 8000;
@@ -44,62 +44,82 @@ struct WindowState {
     fullscreen: bool,
 }
 
+async fn proxy_to_backend(method: &str, path: &str, body: Option<serde_json::Value>) -> Result<serde_json::Value, String> {
+    let url = format!("http://{BACKEND_HOST}:{BACKEND_PORT}{path}");
+    let client = reqwest::Client::new();
+    let req = match method {
+        "GET" => client.get(&url),
+        "POST" => client.post(&url).json(&body.unwrap_or(serde_json::json!({}))),
+        "DELETE" => client.delete(&url),
+        "PATCH" => client.patch(&url).json(&body.unwrap_or(serde_json::json!({}))),
+        _ => return Err(format!("unsupported method {method}")),
+    };
+    match req.send().await {
+        Ok(resp) => {
+            resp.json::<serde_json::Value>().await.map_err(|e| format!("proxy response parse error: {e}"))
+        }
+        Err(e) => Err(format!("backend unreachable: {e}")),
+    }
+}
+
 // Axum Handler functions to emulate the FastAPI Python backend
 async fn handle_health() -> axum::Json<serde_json::Value> {
-    axum::Json(serde_json::json!({
-        "status": "ok",
-        "app": "asterion-desktop-rust",
-        "uptime_seconds": 3600,
-        "database": {
-            "encrypted": true
-        },
-        "privacy": {
-            "local_first": true
-        }
-    }))
+    match proxy_to_backend("GET", "/health", None).await {
+        Ok(val) => axum::Json(val),
+        Err(e) => axum::Json(serde_json::json!({
+            "status": "degraded",
+            "app": "asterion-desktop-rust",
+            "note": format!("Python backend not running: {e}"),
+            "privacy": {"local_first": true}
+        })),
+    }
 }
 
 async fn handle_models() -> axum::Json<serde_json::Value> {
-    axum::Json(serde_json::json!({
-        "models": [
-            {"name": "llama3.2:latest"},
-            {"name": "nomic-embed-text:latest"}
-        ],
-        "privacy_level": "local"
-    }))
+    match proxy_to_backend("GET", "/api/models", None).await {
+        Ok(val) => axum::Json(val),
+        Err(e) => {
+            let catalog = asterion_core::router::ModelRouter::new();
+            let models: Vec<serde_json::Value> = catalog.local_catalog.iter().map(|m| {
+                serde_json::json!({"name": m.model, "vram_gb": m.required_vram_gb, "ram_gb": m.ram_gb, "tags": m.tags})
+            }).collect();
+            axum::Json(serde_json::json!({"models": models, "privacy_level": "local", "note": format!("backend proxy: {e}")}))
+        }
+    }
 }
 
-async fn handle_model_select(axum::Json(_req): axum::Json<serde_json::Value>) -> axum::Json<serde_json::Value> {
-    axum::Json(serde_json::json!({
-        "model": "llama3.2:latest",
-        "mode": "local",
-        "reason": "Hardware profile matches requirements."
-    }))
+async fn handle_model_select(axum::Json(req): axum::Json<serde_json::Value>) -> axum::Json<serde_json::Value> {
+    let vram = req.get("vram_gb").and_then(|v| v.as_f64());
+    let ram = req.get("ram_gb").and_then(|v| v.as_f64());
+    let task = req.get("task").and_then(|v| v.as_str()).unwrap_or("chat").to_string();
+    match proxy_to_backend("POST", "/api/models/select", Some(req)).await {
+        Ok(val) => axum::Json(val),
+        Err(e) => {
+            let router = asterion_core::router::ModelRouter::new();
+            let hw = asterion_core::schemas::HardwareProfile {
+                vram_gb: vram.unwrap_or(0.0),
+                ram_gb: ram,
+            };
+            let selection = router.select(&task, &hw);
+            axum::Json(serde_json::json!({
+                "model": selection.model,
+                "mode": selection.mode,
+                "reason": selection.reason,
+                "note": format!("backend proxy: {e}")
+            }))
+        }
+    }
 }
 
 async fn handle_voice_status() -> axum::Json<serde_json::Value> {
-    axum::Json(serde_json::json!({
-        "ok": true,
-        "privacy_level": "local",
-        "engine": "fallback",
-        "whisper_available": false,
-        "model_name": "base",
-        "device": "cpu",
-        "supported_formats": ["flac", "m4a", "mp3", "ogg", "wav", "webm"],
-        "note": "Local fallback active (faster-whisper mock)"
-    }))
+    let voice = asterion_core::voice::VoiceService::new();
+    axum::Json(serde_json::to_value(voice.status()).unwrap_or_default())
 }
 
 async fn handle_privacy_analyze() -> axum::Json<serde_json::Value> {
     axum::Json(serde_json::json!({
         "level": "green",
-        "items": [
-            {
-                "what": "model",
-                "destination": "local_ollama",
-                "risk": "green"
-            }
-        ]
+        "items": []
     }))
 }
 
@@ -253,32 +273,51 @@ async fn handle_chat_stream_post(
     let model = req.get("model").and_then(|v| v.as_str()).unwrap_or("llama3.2").to_string();
     let conversation_id = req.get("conversation_id").and_then(|v| v.as_str()).unwrap_or("conv-123").to_string();
 
-    let stream = futures_util::stream::unfold((0, message, model, conversation_id), |(step, msg, mdl, conv)| async move {
-        if step == 0 {
-            let token_data = serde_json::json!({
-                "response": format!("Rust LocalEngine response to '{}': ", msg),
-                "done": false,
-                "privacy_level": "local"
-            }).to_string();
-            Some((Ok(Event::default().data(token_data)), (1, msg, mdl, conv)))
-        } else if step == 1 {
-            let token_data = serde_json::json!({
-                "response": "\nHello from Tauri Rust core! All components are operating locally.",
-                "done": false,
-                "privacy_level": "local"
-            }).to_string();
-            Some((Ok(Event::default().data(token_data)), (2, msg, mdl, conv)))
-        } else if step == 2 {
-            let done_data = serde_json::json!({
-                "done": true,
-                "conversation_id": conv,
-                "privacy_level": "local"
-            }).to_string();
-            Some((Ok(Event::default().data(done_data)), (3, msg, mdl, conv)))
-        } else {
-            None
+    use asterion_inference::local::LocalEngine;
+    use asterion_inference::engine::InferenceEngine;
+    use asterion_inference::{InferenceRequest, InferenceMessage};
+
+    let engine = LocalEngine::new(&model, 0, 2048);
+    let inf_req = InferenceRequest {
+        model: model.clone(),
+        messages: vec![InferenceMessage { role: "user".into(), content: message }],
+        max_tokens: Some(256),
+        temperature: Some(0.7),
+        stream: false,
+    };
+
+    let stream = futures_util::stream::once(async move {
+        match engine.generate(inf_req).await {
+            Ok(resp) => {
+                let text = resp.text;
+                let model_name = resp.model;
+                let usage = resp.usage;
+                let token_data = serde_json::json!({
+                    "response": text,
+                    "done": false,
+                    "model": model_name,
+                    "privacy_level": "local",
+                    "usage": usage.map(|u| serde_json::json!({"prompt_tokens": u.prompt_tokens, "completion_tokens": u.completion_tokens}))
+                }).to_string();
+                Ok(Event::default().data(token_data))
+            }
+            Err(e) => {
+                let err_data = serde_json::json!({
+                    "response": format!("[Local inference error: {e}]"),
+                    "done": true,
+                    "privacy_level": "local"
+                }).to_string();
+                Ok(Event::default().data(err_data))
+            }
         }
-    });
+    }).chain(futures_util::stream::once(async move {
+        let done_data = serde_json::json!({
+            "done": true,
+            "conversation_id": conversation_id,
+            "privacy_level": "local"
+        }).to_string();
+        Ok(Event::default().data(done_data))
+    }));
 
     Sse::new(stream).keep_alive(axum::response::sse::KeepAlive::default())
 }
@@ -289,35 +328,8 @@ async fn handle_chat_stream(
     let message = params.get("message").cloned().unwrap_or_default();
     let model = params.get("model").cloned().unwrap_or_else(|| "llama3.2".to_string());
     let conversation_id = params.get("conversation_id").cloned().unwrap_or_else(|| "conv-123".to_string());
-
-    let stream = futures_util::stream::unfold((0, message, model, conversation_id), |(step, msg, mdl, conv)| async move {
-        if step == 0 {
-            let token_data = serde_json::json!({
-                "response": format!("Rust LocalEngine response to '{}': ", msg),
-                "done": false,
-                "privacy_level": "local"
-            }).to_string();
-            Some((Ok(Event::default().data(token_data)), (1, msg, mdl, conv)))
-        } else if step == 1 {
-            let token_data = serde_json::json!({
-                "response": "\nHello from Tauri Rust core! All components are operating locally.",
-                "done": false,
-                "privacy_level": "local"
-            }).to_string();
-            Some((Ok(Event::default().data(token_data)), (2, msg, mdl, conv)))
-        } else if step == 2 {
-            let done_data = serde_json::json!({
-                "done": true,
-                "conversation_id": conv,
-                "privacy_level": "local"
-            }).to_string();
-            Some((Ok(Event::default().data(done_data)), (3, msg, mdl, conv)))
-        } else {
-            None
-        }
-    });
-
-    Sse::new(stream).keep_alive(axum::response::sse::KeepAlive::default())
+    let req = serde_json::json!({"message": message, "model": model, "conversation_id": conversation_id});
+    handle_chat_stream_post(axum::Json(req)).await
 }
 
 // Function to start the in-process Axum server on port 8000

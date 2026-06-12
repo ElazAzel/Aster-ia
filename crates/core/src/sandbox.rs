@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::path::Path;
+use std::process::Command;
 
 use serde_json::Value;
 
@@ -141,17 +142,27 @@ impl AgentSandbox {
             std::path::PathBuf::from(&permissions.allowed_folders[0])
         };
 
-        let mut result = HashMap::new();
-        result.insert("exit_code".into(), Value::Number(0.into()));
-        result.insert("stdout".into(), Value::String("(stub) code execution simulated".into()));
-        result.insert("stderr".into(), Value::String(String::new()));
-        result.insert("sandbox_dir".into(), Value::String(allowed_root.to_string_lossy().to_string()));
-        result.insert("permissions".into(), serde_json::json!({
-            "network": permissions.network,
-            "shell": permissions.shell,
-            "allowed_folders": permissions.allowed_folders,
-        }));
-        Ok(result)
+        let output = Command::new(if cfg!(target_os = "windows") { "python" } else { "python3" })
+            .args(["-c", code])
+            .current_dir(&allowed_root)
+            .output();
+
+        match output {
+            Ok(out) => {
+                let mut result = HashMap::new();
+                result.insert("exit_code".into(), Value::Number(out.status.code().unwrap_or(-1).into()));
+                result.insert("stdout".into(), Value::String(String::from_utf8_lossy(&out.stdout).to_string()));
+                result.insert("stderr".into(), Value::String(String::from_utf8_lossy(&out.stderr).to_string()));
+                result.insert("sandbox_dir".into(), Value::String(allowed_root.to_string_lossy().to_string()));
+                result.insert("permissions".into(), serde_json::json!({
+                    "network": permissions.network,
+                    "shell": permissions.shell,
+                    "allowed_folders": permissions.allowed_folders,
+                }));
+                Ok(result)
+            }
+            Err(e) => Err(format!("Failed to execute code: {e}")),
+        }
     }
 }
 
@@ -281,8 +292,19 @@ mod tests {
         assert!(validate_code("print('hello')", &perms).is_ok());
     }
 
+    fn has_python() -> bool {
+        std::process::Command::new(if cfg!(target_os = "windows") { "python" } else { "python3" })
+            .arg("--version")
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+    }
+
     #[test]
     fn test_agent_sandbox_run_code_ok() {
+        if !has_python() {
+            return;
+        }
         let sandbox = AgentSandbox::new();
         let perms = AgentPermissions {
             allowed_folders: vec![],
@@ -309,6 +331,9 @@ mod tests {
 
     #[test]
     fn test_agent_sandbox_execute_via_harness() {
+        if !has_python() {
+            return;
+        }
         let sandbox = AgentSandbox::new();
         let mut p = HashMap::new();
         p.insert("code".into(), Value::String("print('ok')".into()));

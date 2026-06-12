@@ -209,6 +209,31 @@ impl DocumentIndexer {
     }
 }
 
+impl DocumentIndexer {
+    fn embed_query(query: &str) -> Vec<f64> {
+        let model = "nomic-embed-text";
+        let url = "http://127.0.0.1:11434/api/embeddings";
+        let body = serde_json::json!({"model": model, "prompt": query});
+        let body_str = serde_json::to_string(&body).unwrap_or_default();
+        match ureq::post(url)
+            .set("Content-Type", "application/json")
+            .send_string(&body_str)
+        {
+            Ok(resp) => {
+                if let Ok(body) = resp.into_string() {
+                    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body) {
+                        if let Some(embedding) = json.get("embedding").and_then(|e| e.as_array()) {
+                            return embedding.iter().filter_map(|v| v.as_f64()).collect();
+                        }
+                    }
+                }
+                vec![0.0; 768]
+            }
+            Err(_) => vec![0.0; 768],
+        }
+    }
+}
+
 impl BaseHarness for DocumentIndexer {
     fn privacy_level(&self) -> &str {
         &self.privacy_level
@@ -221,7 +246,7 @@ impl BaseHarness for DocumentIndexer {
             "search" => {
                 let query = p.get("query").and_then(|v| v.as_str()).unwrap_or("");
                 let limit = p.get("limit").and_then(|v| v.as_u64()).unwrap_or(8) as usize;
-                let query_vec = vec![0.0; 768]; // stub embedding
+                let query_vec = DocumentIndexer::embed_query(query);
                 let results = self.hybrid_search(query, &query_vec, limit);
                 serde_json::to_value(results).unwrap_or_default()
             }

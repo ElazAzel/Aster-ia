@@ -49,16 +49,7 @@
     }
   }
 
-  // Pre-configured mock recent items to show when auditLogs is empty
-  const mockLogs = [
-    { ts: new Date(Date.now() - 3600000 * 2).toISOString(), resource: 'Чат: Архитектура микросервисов', details: 'Сессия локального обсуждения API', action: 'approve' },
-    { ts: new Date(Date.now() - 3600000 * 5).toISOString(), resource: 'Документ: Q3_Financial_Report.pdf', details: 'Векторизация в базу RAG', action: 'approve' },
-    { ts: new Date(Date.now() - 3600000 * 25).toISOString(), resource: 'Поиск: API анализ конкурентов', details: 'Гибридный провайдер SearXNG', action: 'approve' },
-    { ts: new Date(Date.now() - 3600000 * 28).toISOString(), resource: 'Чат: Генерация Svelte компонентов', details: 'Генерация кода через локальную Llama', action: 'approve' },
-    { ts: new Date(Date.now() - 3600000 * 50).toISOString(), resource: 'Агент: Парсинг веб-страницы', details: 'Внешний парсинг данных', action: 'approve' }
-  ];
-
-  $: displayLogs = $auditLogs && $auditLogs.length > 0 ? $auditLogs.slice(0, 5) : mockLogs;
+  $: displayLogs = $auditLogs && $auditLogs.length > 0 ? $auditLogs.slice(0, 5) : [];
 
   $: localCount = displayLogs.filter(log => getPrivacyLevel(log) === 'LOCAL').length;
   $: totalCount = displayLogs.length;
