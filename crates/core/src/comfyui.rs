@@ -391,8 +391,9 @@ impl ComfyUIService {
                 }
             }
 
+            let node_ids = ctx.node_ids.clone();
             for (k, v) in inputs {
-                validate_value(v, &ctx.node_ids, &format!("{node_path}.inputs.{k}"), &mut ctx);
+                validate_value(v, &node_ids, &format!("{node_path}.inputs.{k}"), &mut ctx);
             }
         }
 

@@ -65,6 +65,7 @@ dependencies = [
  "asterion-core",
  "asterion-inference",
  "axum",
+ "futures-util",
  "reqwest 0.12.28",
  "rfd",
  "serde",

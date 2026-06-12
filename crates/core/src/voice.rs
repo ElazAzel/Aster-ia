@@ -205,7 +205,7 @@ impl BaseHarness for VoiceService {
                 let text = p.get("text").and_then(|v| v.as_str()).unwrap_or("");
                 let mode = p.get("mode").and_then(|v| v.as_str()).unwrap_or("notes");
                 let markdown = self.to_markdown(text, mode);
-                let mut result = HashMap::new();
+                let mut result: HashMap<&str, Value> = HashMap::new();
                 result.insert("mode".into(), Value::String(mode.into()));
                 result.insert(
                     "summary".into(),

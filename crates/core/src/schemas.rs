@@ -185,7 +185,7 @@ pub struct DeepResearchResponse {
 }
 
 /// Agent permissions for sandbox execution.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AgentPermissions {
     #[serde(default)]
     pub allowed_folders: Vec<String>,
