@@ -100,10 +100,9 @@
     <textarea
       bind:value={input}
       on:keydown={handleKeydown}
-      placeholder="Введите запрос..."
-      rows="3"
-      disabled={streaming}
-    />
+      placeholder="Введите сообщение..."
+      disabled={loading}
+    ></textarea>
     <div class="actions">
       <button type="submit" disabled={streaming || !input.trim()}>Отправить</button>
       <button type="button" class="stop-btn" on:click={stop} disabled={!streaming}>Остановить</button>

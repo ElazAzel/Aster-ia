@@ -44,7 +44,7 @@
       bind:value={prompt}
       placeholder="Введите промпт для анализа..."
       rows="4"
-    />
+    ></textarea>
     <button type="submit" disabled={analyzing || !prompt.trim()}>
       {analyzing ? "Анализ..." : "Анализировать"}
     </button>

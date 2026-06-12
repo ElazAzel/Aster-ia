@@ -5,6 +5,7 @@ node_modules/
 src-tauri/target/
 target/
 src-tauri/binaries/
+src-tauri/gen/
 __pycache__/
 *.py[cod]
 *.db
