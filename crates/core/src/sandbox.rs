@@ -133,6 +133,25 @@ impl AgentSandbox {
         Self
     }
 
+    fn find_python() -> Option<&'static str> {
+        let candidates = if cfg!(target_os = "windows") {
+            &["python", "py", "python3"] as &[&str]
+        } else {
+            &["python3", "python"] as &[&str]
+        };
+        for cmd in candidates {
+            if Command::new(cmd)
+                .arg("--version")
+                .output()
+                .map(|o| o.status.success())
+                .unwrap_or(false)
+            {
+                return Some(cmd);
+            }
+        }
+        None
+    }
+
     pub fn run_code(&self, code: &str, permissions: &AgentPermissions) -> Result<HashMap<String, Value>, String> {
         validate_code(code, permissions)?;
 
@@ -142,7 +161,8 @@ impl AgentSandbox {
             std::path::PathBuf::from(&permissions.allowed_folders[0])
         };
 
-        let output = Command::new(if cfg!(target_os = "windows") { "python" } else { "python3" })
+        let python_cmd = Self::find_python().ok_or_else(|| "Python interpreter not found".to_string())?;
+        let output = Command::new(python_cmd)
             .args(["-c", code])
             .current_dir(&allowed_root)
             .output();
@@ -293,11 +313,22 @@ mod tests {
     }
 
     fn has_python() -> bool {
-        std::process::Command::new(if cfg!(target_os = "windows") { "python" } else { "python3" })
-            .arg("--version")
-            .output()
-            .map(|o| o.status.success())
-            .unwrap_or(false)
+        let candidates = if cfg!(target_os = "windows") {
+            vec!["python", "py", "python3"]
+        } else {
+            vec!["python3", "python"]
+        };
+        for cmd in candidates {
+            if std::process::Command::new(cmd)
+                .arg("--version")
+                .output()
+                .map(|o| o.status.success())
+                .unwrap_or(false)
+            {
+                return true;
+            }
+        }
+        false
     }
 
     #[test]
