@@ -68,28 +68,49 @@ pub fn get_settings() -> &'static Settings {
 mod tests {
     use super::*;
 
+    fn with_clean_env<T>(f: impl FnOnce() -> T) -> T {
+        let api_port = std::env::var("ASTERION_API_PORT").ok();
+        std::env::remove_var("ASTERION_API_PORT");
+        let api_host = std::env::var("ASTERION_API_HOST").ok();
+        std::env::remove_var("ASTERION_API_HOST");
+        let result = f();
+        if let Some(v) = api_port {
+            std::env::set_var("ASTERION_API_PORT", v);
+        }
+        if let Some(v) = api_host {
+            std::env::set_var("ASTERION_API_HOST", v);
+        }
+        result
+    }
+
     #[test]
     fn test_settings_defaults() {
-        let s = Settings::default();
-        assert_eq!(s.app_name, "Asterion AI Sidecar");
-        assert!(s.ollama_base_url.contains("127.0.0.1"));
-        assert_eq!(s.port, 8000);
-        assert!(s.local_first);
-        assert_eq!(s.required_models.len(), 2);
-        assert!(s.searxng_base_url.contains("127.0.0.1"));
+        with_clean_env(|| {
+            let s = Settings::default();
+            assert_eq!(s.app_name, "Asterion AI Sidecar");
+            assert!(s.ollama_base_url.contains("127.0.0.1"));
+            assert_eq!(s.port, 8000);
+            assert!(s.local_first);
+            assert_eq!(s.required_models.len(), 2);
+            assert!(s.searxng_base_url.contains("127.0.0.1"));
+        });
     }
 
     #[test]
     fn test_database_path() {
-        let s = Settings::default();
-        let db = s.database_path();
-        assert!(db.to_string_lossy().ends_with("asterion.db"));
+        with_clean_env(|| {
+            let s = Settings::default();
+            let db = s.database_path();
+            assert!(db.to_string_lossy().ends_with("asterion.db"));
+        });
     }
 
     #[test]
     fn test_allow_plaintext_default_false() {
-        let s = Settings::default();
-        assert!(!s.allow_plaintext_dev_db());
+        with_clean_env(|| {
+            let s = Settings::default();
+            assert!(!s.allow_plaintext_dev_db());
+        });
     }
 
     #[test]
@@ -101,16 +122,20 @@ mod tests {
 
     #[test]
     fn test_env_override() {
-        std::env::set_var("ASTERION_API_PORT", "9090");
-        let s = Settings::default();
-        assert_eq!(s.port, 9090);
-        std::env::remove_var("ASTERION_API_PORT");
+        with_clean_env(|| {
+            std::env::set_var("ASTERION_API_PORT", "9090");
+            let s = Settings::default();
+            assert_eq!(s.port, 9090);
+            std::env::remove_var("ASTERION_API_PORT");
+        });
     }
 
     #[test]
     fn test_duckdb_defaults() {
-        let s = Settings::default();
-        assert_eq!(s.duckdb_memory_limit, "512MB");
-        assert_eq!(s.duckdb_threads, 2);
+        with_clean_env(|| {
+            let s = Settings::default();
+            assert_eq!(s.duckdb_memory_limit, "512MB");
+            assert_eq!(s.duckdb_threads, 2);
+        });
     }
 }
