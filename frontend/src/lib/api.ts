@@ -108,6 +108,24 @@ export type SkillManifest = {
   acceptance_checks: string[];
 };
 
+export type OpenDesignSkillCandidate = {
+  manifest: SkillManifest;
+  source_path: string;
+  mode?: string | null;
+  upstream?: string | null;
+  content_sha256: string;
+  warnings: string[];
+};
+
+export type OpenDesignPreviewResponse = {
+  source_path: string;
+  scanned_count: number;
+  returned_count: number;
+  candidates: OpenDesignSkillCandidate[];
+  warnings: string[];
+  privacy_level: 'local';
+};
+
 export type AgentCatalog = {
   agents: AgentManifest[];
   skills: SkillManifest[];
@@ -417,6 +435,16 @@ export function getAgentCatalog(apiBase: string) {
 
 export function validateAgentCatalog(apiBase: string) {
   return request<CatalogValidation>(apiBase, '/api/agents/catalog/validate');
+}
+
+export function previewOpenDesignSkills(apiBase: string, sourcePath: string, limit = 100) {
+  return request<OpenDesignPreviewResponse>(apiBase, '/api/agents/catalog/open-design/preview', {
+    method: 'POST',
+    body: {
+      source_path: sourcePath,
+      limit
+    }
+  });
 }
 
 export function simulateAgentTask(apiBase: string, task: string) {

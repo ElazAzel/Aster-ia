@@ -344,6 +344,81 @@ def test_plugin_manager_loads_manifest(tmp_path):
     assert plugins[0].trust_level == "local-only"
 
 
+def test_open_design_adapter_previews_skill_md(tmp_path):
+    from asterion_api.services.open_design_adapter import OpenDesignAdapter
+
+    skill_dir = tmp_path / "skills" / "frontend-dev"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text(
+        """---
+name: frontend-dev
+description: |
+  Full-stack frontend with MiniMax API media generation.
+triggers:
+  - "frontend dev"
+od:
+  mode: prototype
+  category: web-artifacts
+  upstream: "https://github.com/MiniMax-AI/skills"
+---
+
+# frontend-dev
+
+Run npm install only after approval.
+""",
+        encoding="utf-8",
+    )
+
+    response = OpenDesignAdapter().preview(str(tmp_path / "skills"), limit=10)
+
+    assert response.privacy_level == "local"
+    assert response.scanned_count == 1
+    assert response.returned_count == 1
+    candidate = response.candidates[0]
+    assert candidate.manifest.id == "od-frontend-dev"
+    assert candidate.manifest.category == "web-artifacts"
+    assert candidate.mode == "prototype"
+    assert candidate.upstream == "https://github.com/MiniMax-AI/skills"
+    assert {"public_web", "external_api", "shell"} <= set(candidate.manifest.requires_consent)
+    assert candidate.content_sha256
+    assert "Run npm install" not in str(candidate.model_dump())
+
+
+def test_open_design_adapter_expands_windows_env_vars(tmp_path, monkeypatch):
+    from asterion_api.services.open_design_adapter import OpenDesignAdapter
+
+    skill_dir = tmp_path / "open-design" / "skills" / "platform-design"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text(
+        """---
+name: platform-design
+description: Local design system rules.
+od:
+  category: design-systems
+---
+
+# platform-design
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ASTERION_OD_SOURCE", str(tmp_path / "open-design"))
+
+    response = OpenDesignAdapter().preview(r"%ASTERION_OD_SOURCE%/skills", limit=5)
+
+    assert response.scanned_count == 1
+    assert response.candidates[0].manifest.id == "od-platform-design"
+
+
+def test_open_design_adapter_implements_harness():
+    from asterion_api.harness import BaseHarness
+    from asterion_api.services.open_design_adapter import OpenDesignAdapter
+
+    adapter = OpenDesignAdapter()
+    assert isinstance(adapter, BaseHarness)
+    state = adapter.get_state()
+    assert state["max_scan_files"] >= 1
+
+
 # ── Storage: Rooms CRUD ───────────────────────────────────────────────────────
 
 @pytest.mark.asyncio

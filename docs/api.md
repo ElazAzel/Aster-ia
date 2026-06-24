@@ -438,7 +438,7 @@ Returns:
 {
   "ok": true,
   "agents_count": 10,
-  "skills_count": 20,
+  "skills_count": 21,
   "errors": [],
   "warnings": []
 }
@@ -449,6 +449,20 @@ Other catalog endpoints:
 - `GET /api/agents/catalog/agents`
 - `GET /api/agents/catalog/skills`
 - `GET /api/agents/catalog/agents/{agent_id}`
+
+Open Design local skill preview:
+
+`POST /api/agents/catalog/open-design/preview`
+
+```json
+{
+  "source_path": "C:\\Users\\user\\AppData\\Local\\Programs\\Open Design\\resources\\open-design\\skills",
+  "limit": 100
+}
+```
+
+The endpoint scans local `SKILL.md` files only, returns reviewable runtime skill candidates, and never executes skill body text, scripts, upstream URLs, or assets.
+`source_path` may use Windows environment variables such as `%LOCALAPPDATA%` and home expansion via `~`; the resolved path must be a readable local directory.
 
 Task simulation:
 

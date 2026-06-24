@@ -168,6 +168,47 @@ def test_agent_catalog_validate(client):
     assert "ok" in body
 
 
+def test_open_design_preview_endpoint(client, tmp_path):
+    skill_dir = tmp_path / "open-design" / "skills" / "creative-director"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text(
+        """---
+name: creative-director
+description: |
+  Creative direction workflow with upstream references.
+triggers:
+  - "creative direction"
+od:
+  mode: design-system
+  category: creative-direction
+  upstream: "https://github.com/example/creative-director"
+---
+
+# creative-director
+
+Do not expose this raw body in preview responses.
+""",
+        encoding="utf-8",
+    )
+
+    r = client.post(
+        "/api/agents/catalog/open-design/preview",
+        json={"source_path": str(tmp_path / "open-design" / "skills"), "limit": 5},
+    )
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["privacy_level"] == "local"
+    assert body["scanned_count"] == 1
+    assert body["returned_count"] == 1
+    candidate = body["candidates"][0]
+    assert candidate["manifest"]["id"] == "od-creative-director"
+    assert candidate["manifest"]["category"] == "creative-direction"
+    assert candidate["source_path"].endswith("SKILL.md")
+    assert candidate["content_sha256"]
+    assert "raw body" not in str(body)
+
+
 def test_benchmark_bad_runs_rejected(client):
     r = client.post("/api/benchmark/run", json={"prompt": "test", "runs_per_model": 99, "max_tokens": 128})
     assert r.status_code in (400, 422)

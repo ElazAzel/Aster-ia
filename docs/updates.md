@@ -1,6 +1,19 @@
 # Updates
 
+## 2026-06-24
+
+### Open Design Skill Preview and Odysseus Benchmark Alignment
+
+- Added local `OpenDesignAdapter` (`BaseHarness`, `privacy_level=local`) to scan Open Design `SKILL.md` folders into reviewable runtime skill candidates without executing body text, scripts, upstream URLs, or assets.
+- Added `POST /api/agents/catalog/open-design/preview` with source path, content hash, consent flags, warning metadata, and bounded scan limits for safe local preview.
+- Upgraded the Plugins workspace into an Open Design Skill Explorer with search, local/elevated consent counters, scan warnings, candidate detail review, and one-click staging into Agent Lab.
+- `source_path` now supports `%LOCALAPPDATA%`, `%USERPROFILE%`, and `~` expansion so the bundled Open Design skills folder can be scanned without hardcoding a personal Windows path.
+- Added runtime skill manifest `open-design-skill-preview` and linked it to `plugin-auditor`; catalog now validates 10 agents and 21 skills.
+- Documented the new API and catalog count. `pewdiepie-archdaemon/odysseus` remains an architectural benchmark only; AGPL code is not copied into Asterion.
+
 ## 2026-06-08 (night)
+
+## 2026-06-07
 
 - **CRITICAL FIX**: Memory update/delete endpoints now go through `MemoryLedger` service with privacy analysis. Previously `PATCH /api/memory/{id}` and `DELETE /api/memory/{id}` bypassed all privacy checks by accessing `EncryptedSQLiteStore` directly.
 - Added `update()` and `delete()` methods to `MemoryLedger` with structured logging.

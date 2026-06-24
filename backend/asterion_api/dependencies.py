@@ -13,6 +13,7 @@ from asterion_api.services.deep_research import SupervisorAgent
 from asterion_api.services.memory_ledger import MemoryLedger
 from asterion_api.services.model_router import ModelRouter
 from asterion_api.services.ollama_service import OllamaService
+from asterion_api.services.open_design_adapter import OpenDesignAdapter
 from asterion_api.services.plugin_manager import PluginManager
 from asterion_api.services.benchmark_service import BenchmarkService
 from asterion_api.services.privacy_analyzer import PrivacyAnalyzer
@@ -92,6 +93,11 @@ def get_agent_registry() -> AgentRegistry:
 @lru_cache(maxsize=1)
 def get_agent_executor() -> AgentExecutor:
     return AgentExecutor(get_store(), get_agent_registry())
+
+
+@lru_cache(maxsize=1)
+def get_open_design_adapter() -> OpenDesignAdapter:
+    return OpenDesignAdapter()
 
 
 @lru_cache(maxsize=1)

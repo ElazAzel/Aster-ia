@@ -5,6 +5,7 @@ import {
   getModels,
   getAgentCatalog,
   validateAgentCatalog,
+  previewOpenDesignSkills,
   listRooms,
   listMemories,
   listRagDocuments,
@@ -50,6 +51,8 @@ import {
   type ModelSelection,
   type AgentCatalog,
   type CatalogValidation,
+  type OpenDesignPreviewResponse,
+  type OpenDesignSkillCandidate,
   type ContextRoom,
   type MemoryRecord,
   type RagDocumentRecord,
@@ -130,6 +133,16 @@ export const contradictions = writable<ContradictionMatch[]>([]);
 
 // Plugin Manager
 export const plugins = writable<PluginManifest[]>([]);
+export const openDesignSourcePath = writable(
+  typeof localStorage !== 'undefined'
+    ? localStorage.getItem('asterion_open_design_source_path')
+      ?? '%LOCALAPPDATA%\\Programs\\Open Design\\resources\\open-design\\skills'
+    : '%LOCALAPPDATA%\\Programs\\Open Design\\resources\\open-design\\skills'
+);
+export const openDesignPreview = writable<OpenDesignPreviewResponse | null>(null);
+export const openDesignPreviewBusy = writable(false);
+export const openDesignSearchQuery = writable('');
+export const openDesignSelectedCandidate = writable<OpenDesignSkillCandidate | null>(null);
 
 // Automation Board
 export const workflowName = writable('Мой рабочий процесс');
@@ -805,6 +818,42 @@ export async function refreshPlugins() {
   const base = get(apiBase);
   const result = await runStep('Читаю плагины', () => listPlugins(base));
   if (result) plugins.set(result);
+}
+
+export async function previewOpenDesignCatalog() {
+  const base = get(apiBase);
+  const sourcePath = get(openDesignSourcePath).trim();
+  if (!sourcePath) return;
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('asterion_open_design_source_path', sourcePath);
+  }
+  openDesignPreviewBusy.set(true);
+  openDesignSelectedCandidate.set(null);
+  const result = await runStep('Сканирую Open Design skills', () =>
+    previewOpenDesignSkills(base, sourcePath, 150)
+  );
+  if (result) {
+    openDesignPreview.set(result);
+    openDesignSelectedCandidate.set(result.candidates[0] ?? null);
+    showToast(`Open Design: найдено ${result.scanned_count} skills`, 'success');
+  }
+  openDesignPreviewBusy.set(false);
+}
+
+export function stageOpenDesignCandidate(candidate: OpenDesignSkillCandidate) {
+  selectedAgentId.set('plugin-auditor');
+  agentTask.set(
+    [
+      `Оцени Open Design skill "${candidate.manifest.name}" для Asterion AI.`,
+      `Источник: ${candidate.source_path}`,
+      `Категория: ${candidate.manifest.category}`,
+      `Privacy: ${candidate.manifest.privacy_level}`,
+      `Consent gates: ${candidate.manifest.requires_consent.join(', ') || 'нет'}`,
+      'Сформируй безопасный план применения: что можно использовать локально, что требует согласия, и какие UI/UX изменения стоит внести.'
+    ].join('\n')
+  );
+  activeTab.set('agents');
+  showToast('Кандидат Open Design перенесен в Agent Lab', 'success');
 }
 
 export async function startWorkflow() {

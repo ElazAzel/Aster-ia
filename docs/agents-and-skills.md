@@ -22,7 +22,7 @@ uv run python -c "from asterion_api.services.agent_registry import AgentRegistry
 Ожидаемый результат:
 
 ```json
-{"ok": true, "agents_count": 10, "skills_count": 20, "errors": [], "warnings": []}
+{"ok": true, "agents_count": 10, "skills_count": 21, "errors": [], "warnings": []}
 ```
 
 ## API
@@ -32,6 +32,7 @@ uv run python -c "from asterion_api.services.agent_registry import AgentRegistry
 - `GET /api/agents/catalog/skills` - только скиллы.
 - `GET /api/agents/catalog/agents/{agent_id}` - один агент.
 - `GET /api/agents/catalog/validate` - проверка ids, ссылок на скиллы и handoff targets.
+- `POST /api/agents/catalog/open-design/preview` - локальный read-only preview Open Design `SKILL.md` как кандидатов runtime skills.
 - `POST /api/agents/simulate` - генерация `AgentPlan`.
 - `POST /api/agents/run-code` - sandboxed Python execution.
 
@@ -71,6 +72,7 @@ uv run python -c "from asterion_api.services.agent_registry import AgentRegistry
 | `task-simulation` | agents | `TaskSimulator` |
 | `flight-recorder` | agents | AgentRun and action log persistence |
 | `sandboxed-code` | agents | `AgentSandbox` |
+| `open-design-skill-preview` | agents | `OpenDesignAdapter` |
 | `comfyui-generation` | images | `ComfyUIService` |
 | `workflow-automation` | automation | `WorkflowRunner`, WebSocket events |
 | `plugin-management` | plugins | `PluginManager` |

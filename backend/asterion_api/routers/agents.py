@@ -10,6 +10,7 @@ from asterion_api.dependencies import (
     get_agent_executor,
     get_agent_registry,
     get_agent_sandbox,
+    get_open_design_adapter,
     get_store,
     get_task_simulator,
 )
@@ -22,11 +23,14 @@ from asterion_api.schemas import (
     AgentRunCreateRequest,
     AgentRunUpdateRequest,
     FlightRecorderEvent,
+    OpenDesignPreviewRequest,
+    OpenDesignPreviewResponse,
     RuntimeSkillManifest,
 )
 from asterion_api.services.agent_executor import AgentExecutor
 from asterion_api.services.agent_registry import AgentRegistry
 from asterion_api.services.agent_sandbox import AgentSandbox, TaskSimulator
+from asterion_api.services.open_design_adapter import OpenDesignAdapter
 from asterion_api.storage.encrypted_sqlite import EncryptedSQLiteStore
 
 router = APIRouter(prefix="/api/agents", tags=["agents"])
@@ -62,6 +66,14 @@ async def validate_catalog(
     registry: AgentRegistry = Depends(get_agent_registry),
 ) -> dict[str, object]:
     return registry.validate_catalog()
+
+
+@router.post("/catalog/open-design/preview", response_model=OpenDesignPreviewResponse)
+async def preview_open_design_skills(
+    request: OpenDesignPreviewRequest,
+    adapter: OpenDesignAdapter = Depends(get_open_design_adapter),
+) -> OpenDesignPreviewResponse:
+    return adapter.preview(request.source_path, limit=request.limit)
 
 
 @router.get("/catalog/agents/{agent_id}", response_model=AgentManifest)

@@ -29,7 +29,7 @@ Status: implemented as backend/runtime foundation.
 - WorkflowRunner with human approval gates and WebSocket events.
 - PluginManager for local MCP plugin manifests.
 - Runtime agent catalog: 10 agents.
-- Runtime skill catalog: 20 skills.
+- Runtime skill catalog: 21 skills.
 - `AgentRegistry.validate_catalog()` and `GET /api/agents/catalog/validate`.
 
 ## Phase 3 - Desktop Product Integration & Unified Rust Runtime

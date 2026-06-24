@@ -342,6 +342,29 @@ class RuntimeSkillManifest(BaseModel):
     acceptance_checks: list[str] = Field(default_factory=list)
 
 
+class OpenDesignPreviewRequest(BaseModel):
+    source_path: str = Field(min_length=1, max_length=4096)
+    limit: int = Field(default=100, ge=1, le=500)
+
+
+class OpenDesignSkillCandidate(BaseModel):
+    manifest: RuntimeSkillManifest
+    source_path: str
+    mode: str | None = None
+    upstream: str | None = None
+    content_sha256: str
+    warnings: list[str] = Field(default_factory=list)
+
+
+class OpenDesignPreviewResponse(BaseModel):
+    source_path: str
+    scanned_count: int
+    returned_count: int
+    candidates: list[OpenDesignSkillCandidate] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    privacy_level: Literal["local"] = "local"
+
+
 class AgentManifest(BaseModel):
     id: str
     name: str
