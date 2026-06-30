@@ -509,3 +509,111 @@ test('17. Command palette toggles theme', async ({ page }) => {
   await expect(paletteInput).not.toBeVisible();
   await expect(page.locator('.toast-container')).toContainText('Тема', { timeout: 5000 });
 });
+
+test('18. Command Center - default view renders with branding', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('aside.side-rail')).toBeVisible();
+  await expect(page.getByText('Asterion AI')).toBeVisible();
+  await expect(page.locator('.system-meter')).toContainText('Sidecar: ok');
+});
+
+test('19. Research Tab - renders with heading', async ({ page }) => {
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Исследования")');
+  await expect(page.getByRole('heading', { name: 'Research Canvas' })).toBeVisible({ timeout: 3000 });
+  await expect(page.getByPlaceholder('Например: Сравнить privacy-модели').first()).toBeVisible();
+});
+
+test('20. System Tab - configuration panels visible', async ({ page }) => {
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Система")');
+  await expect(page.getByRole('heading', { name: 'Инфраструктура' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Модели' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Конфигурация' })).toBeVisible();
+});
+
+test('21. Plugins Tab - Open Design scan', async ({ page }) => {
+  await page.route('**/api/agents/catalog/open-design/preview', async route => {
+    await route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({
+        source_path: 'C:\\Users\\test\\open-design\\skills',
+        scanned_count: 2,
+        returned_count: 2,
+        candidates: [
+          {
+            manifest: { id: 'od-creative-dir', name: 'creative-director', category: 'creative-direction', description: 'Design workflow.', privacy_level: 'local', triggers: ['design'], requires_consent: [], skills: [] },
+            source_path: 'C:\\Users\\test\\open-design\\skills\\creative-director\\SKILL.md',
+            content_sha256: 'abc123', warnings: []
+          },
+          {
+            manifest: { id: 'od-frontend-dev', name: 'frontend-dev', category: 'web-artifacts', description: 'Frontend builder.', privacy_level: 'hybrid', triggers: ['frontend'], requires_consent: ['shell', 'external_api'], skills: [] },
+            source_path: 'C:\\Users\\test\\open-design\\skills\\frontend-dev\\SKILL.md',
+            content_sha256: 'def456', warnings: []
+          }
+        ],
+        warnings: [],
+        privacy_level: 'local'
+      }) });
+  });
+
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Плагины")');
+  await page.fill('input[placeholder*="LOCALAPPDATA"]', 'C:\\Users\\test\\open-design\\skills');
+  await page.click('button:has-text("Сканировать")');
+  await expect(page.locator('text=creative-director')).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('text=frontend-dev')).toBeVisible({ timeout: 3000 });
+  await expect(page.locator('text=2 OD skills')).toBeVisible();
+});
+
+test('22. Image Studio - recipe validation', async ({ page }) => {
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Image Studio")');
+  await expect(page.getByRole('heading', { name: 'Image Studio' })).toBeVisible();
+  const generateBtn = page.locator('button:has-text("Сгенерировать")');
+  await expect(generateBtn).toBeVisible();
+});
+
+test('23. Deep Research - contradiction finder', async ({ page }) => {
+  await page.route('**/api/research/contradictions', async route => {
+    await route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify([
+        { left: 'Local AI is private', right: 'Cloud AI is faster', similarity: 0.35, sentiment_left: 'positive', sentiment_right: 'positive' }
+      ]) });
+  });
+
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Deep Research")');
+  await expect(page.getByRole('heading', { name: 'Contradiction Finder' })).toBeVisible();
+
+  const claimsTextarea = page.locator('textarea[placeholder*="Первое утверждение"]');
+  await claimsTextarea.fill('Local AI is private\nCloud AI is faster');
+  await page.click('button:has-text("Найти противоречия")');
+  await expect(page.locator('text=1 противоречий')).toBeVisible({ timeout: 5000 });
+});
+
+test('24. Voice Mode - tab renders and responds', async ({ page }) => {
+  await page.route('**/api/voice/status', async route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ available: true, model_size: 'base', model_loaded: false, privacy_level: 'local' }) }));
+  await page.route('**/api/voice/transcribe/text', async route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ original_text: 'test', word_count: 1,
+        action_items: ['Call the team'], questions: ['When?'],
+        summary: ['Summary'], document_draft: '# Note',
+        privacy_level: 'local' }) }));
+
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Voice Mode")');
+  await expect(page.getByText('структурирования').first()).toBeVisible({ timeout: 3000 });
+  await page.fill('textarea[placeholder*="структурирования"]', 'We need to call the team.');
+  await page.click('button:has-text("Собрать summary")');
+  await expect(page.locator('text=Call the team')).toBeVisible({ timeout: 5000 });
+});
+
+test('25. System Tab - system prompt section', async ({ page }) => {
+  await page.goto('/');
+  await page.click('aside.side-rail nav button:has-text("Система")');
+  await expect(page.getByRole('heading', { name: 'Системный промпт' })).toBeVisible();
+  await expect(page.getByPlaceholder('Ты — полезный AI ассистент')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Горячие клавиши' })).toBeVisible();
+});

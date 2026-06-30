@@ -1,0 +1,2 @@
+{"ts":"2026-06-06T08:52:41.264129+00:00","action":"schema.ready","tool":"sqlite","privacy_level":"local","error":null,"db_path":"C:\\Users\\i.azelkhanov\\.asterion\\asterion.db"}
+INFO:     127.0.0.1:58806 - "GET /api/health HTTP/1.1" 200 OK

@@ -1,46 +1,54 @@
 <script lang="ts">
-  import Sidebar from "./lib/Sidebar.svelte";
-  import ChatView from "./lib/ChatView.svelte";
-  import ModelSettings from "./lib/ModelSettings.svelte";
-  import PrivacyPanel from "./lib/PrivacyPanel.svelte";
-  import KnowledgeVault from "./lib/KnowledgeVault.svelte";
-  import AgentLab from "./lib/AgentLab.svelte";
-  import WorkflowViewer from "./lib/WorkflowViewer.svelte";
-  import SystemStatus from "./lib/SystemStatus.svelte";
-
-  type View = "chat" | "models" | "privacy" | "knowledge" | "agents" | "workflows" | "status";
-
-  let currentView: View = "chat";
-  let sidebarCollapsed = false;
-
-  function navigate(view: View) {
-    currentView = view;
-  }
+  import SideRail from "./lib/SideRail.svelte";
+  import { activeTab } from "./lib/stores";
+  import CommandCenterTab from "./lib/CommandCenterTab.svelte";
+  import StreamingChat from "./lib/StreamingChat.svelte";
+  import VoiceTab from "./lib/VoiceTab.svelte";
+  import AgentLabTab from "./lib/AgentLabTab.svelte";
+  import AutomationTab from "./lib/AutomationTab.svelte";
+  import VaultTab from "./lib/VaultTab.svelte";
+  import ResearchTab from "./lib/ResearchTab.svelte";
+  import DeepResearchTab from "./lib/DeepResearchTab.svelte";
+  import ImageStudioTab from "./lib/ImageStudioTab.svelte";
+  import ArtifactsTab from "./lib/ArtifactsTab.svelte";
+  import SystemTab from "./lib/SystemTab.svelte";
+  import PluginsTab from "./lib/PluginsTab.svelte";
+  import BenchmarkTab from "./lib/BenchmarkTab.svelte";
+  import AnalyticsTab from "./lib/AnalyticsTab.svelte";
 </script>
 
-<div class="app" class:collapsed={sidebarCollapsed}>
-  <Sidebar
-    {currentView}
-    collapsed={sidebarCollapsed}
-    on:navigate={(e) => navigate(e.detail)}
-    on:toggle-collapse={() => (sidebarCollapsed = !sidebarCollapsed)}
-  />
+<div class="app">
+  <SideRail />
 
   <main class="content">
-    {#if currentView === "chat"}
-      <ChatView />
-    {:else if currentView === "models"}
-      <ModelSettings />
-    {:else if currentView === "privacy"}
-      <PrivacyPanel />
-    {:else if currentView === "knowledge"}
-      <KnowledgeVault />
-    {:else if currentView === "agents"}
-      <AgentLab />
-    {:else if currentView === "workflows"}
-      <WorkflowViewer />
-    {:else if currentView === "status"}
-      <SystemStatus />
+    {#if $activeTab === "command_center"}
+      <CommandCenterTab />
+    {:else if $activeTab === "chat"}
+      <StreamingChat />
+    {:else if $activeTab === "voice"}
+      <VoiceTab />
+    {:else if $activeTab === "agents"}
+      <AgentLabTab />
+    {:else if $activeTab === "automation"}
+      <AutomationTab />
+    {:else if $activeTab === "vault"}
+      <VaultTab />
+    {:else if $activeTab === "research"}
+      <ResearchTab />
+    {:else if $activeTab === "research_deep"}
+      <DeepResearchTab />
+    {:else if $activeTab === "images"}
+      <ImageStudioTab />
+    {:else if $activeTab === "artifacts_browser"}
+      <ArtifactsTab />
+    {:else if $activeTab === "system"}
+      <SystemTab />
+    {:else if $activeTab === "plugins"}
+      <PluginsTab />
+    {:else if $activeTab === "benchmark"}
+      <BenchmarkTab />
+    {:else if $activeTab === "analytics"}
+      <AnalyticsTab />
     {/if}
   </main>
 </div>
@@ -66,10 +74,6 @@
     grid-template-columns: 240px 1fr;
     height: 100vh;
     transition: grid-template-columns 0.2s ease;
-  }
-
-  .app.collapsed {
-    grid-template-columns: 60px 1fr;
   }
 
   .content {

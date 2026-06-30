@@ -13,6 +13,15 @@
 
 ## 2026-06-08 (night)
 
+## 2026-06-30
+
+### Сборка фронтенда и E2E
+
+- Заменил `Sidebar` (7 старых вкладок) на `SideRail` (14 вкладок) в `App.svelte` — теперь все табы работают в UI.
+- Добавил 8 E2E тестов (17 → 25): Command Center, Research, System panels, Plugins Open Design scan, Image Studio recipe, Contradiction Finder, Voice Mode, System prompt.
+- Поправил `frontend/package.json`: добавил `esbuild` как dev-зависимость для Vite 8.
+- CI: добавил `cargo fmt --check --workspace` и `cargo clippy --workspace -- -D warnings` в Rust job.
+
 ## 2026-06-07
 
 - **CRITICAL FIX**: Memory update/delete endpoints now go through `MemoryLedger` service with privacy analysis. Previously `PATCH /api/memory/{id}` and `DELETE /api/memory/{id}` bypassed all privacy checks by accessing `EncryptedSQLiteStore` directly.

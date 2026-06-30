@@ -87,6 +87,8 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
@@ -96,7 +98,11 @@ jobs:
             crates/core
             crates/inference
 
+      - name: Cargo fmt check
+        run: cargo fmt --check --workspace
 
+      - name: Cargo clippy
+        run: cargo clippy --workspace -- -D warnings
 
       - name: Placeholder frontend dist
         run: New-Item -ItemType Directory -Force -Path frontend/dist; Set-Content -Path frontend/dist/index.html -Value "<!DOCTYPE html><html><head></head><body></body></html>"
