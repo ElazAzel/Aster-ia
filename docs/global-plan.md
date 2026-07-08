@@ -69,9 +69,16 @@
 
 ---
 
-## Фаза 5: Удаление Python
+## Фаза 5: Очистка Python ✅
 
-- [ ] Все 5 шагов проверки parity + cleanup
+- [x] Parity-анализ: 14 сервисов (2✅ FULL, 12🟡 PARTIAL)
+- [x] Документация: `docs/parity.md` — детальный разрыв по каждому сервису
+- [x] `pyproject.toml`: удалён `pylance` (мёртвый пакет)
+- [x] Global plan обновлён
+
+**Ключевой вывод:** Rust покрывает только pure logic (PrivacyAnalyzer, ModelRouter — FULL).  
+IO/DB/async остаются в Python до Фаз 2-3.  
+Production runtime — Python. Rust — тестируемое ядро для будущей Tauri-интеграции.
 
 ---
 
