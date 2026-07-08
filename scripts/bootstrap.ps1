@@ -67,15 +67,51 @@ if (-not $SkipRust) {
     # Add to current session PATH
     $env:Path = "$LLVM_DIR\bin;$env:Path"
 
-    # Create dummy libgcc_eh.a for LLVM MinGW
-    $LIB_DIR = "$LLVM_DIR\lib\gcc\x86_64-w64-mingw32"
-    if (-not (Test-Path -LiteralPath "$LIB_DIR\libgcc_eh.a")) {
-        $arExe = "$LLVM_DIR\bin\llvm-ar.exe"
-        if (Test-Path -LiteralPath $arExe) {
-            Ensure-Dir $LIB_DIR
-            & $arExe rc "$LIB_DIR\libgcc_eh.a" 2>$null
-            Write-Host "  + Dummy libgcc_eh.a created" -ForegroundColor Green
+    # Create libgcc.a + libgcc_eh.a from libunwind objects
+    $LIB_DIR = "$LLVM_DIR\lib\gcc\x86_64-w64-mingw32\19"
+    $arExe = "$LLVM_DIR\bin\llvm-ar.exe"
+    if (Test-Path -LiteralPath $arExe) {
+        Ensure-Dir $LIB_DIR
+        $extracted = (Get-ChildItem -LiteralPath "$env:TEMP" -Filter "*.obj").Count -gt 0
+        if (-not (Test-Path -LiteralPath "$LIB_DIR\libgcc.a") -or -not $extracted) {
+            # Extract libunwind objects
+            Push-Location -LiteralPath "$env:TEMP"
+            & $arExe x "$LLVM_DIR\x86_64-w64-mingw32\lib\libunwind.a" 2>$null
+            Pop-Location
+            $objs = Get-ChildItem -LiteralPath "$env:TEMP" -Filter "*.obj" | Where-Object { $_.Name -match "^(libunwind|Unwind)" }
+            if ($objs) {
+                & $arExe rc "$LIB_DIR\libgcc.a" $objs.FullName "$LLVM_DIR\lib\clang\19\lib\windows\libclang_rt.builtins-x86_64.a" 2>$null
+                Copy-Item -Path "$LIB_DIR\libgcc.a" -Destination "$LIB_DIR\libgcc_eh.a" -Force
+                Remove-Item $objs.FullName -Force
+                Write-Host "  + libgcc.a + libgcc_eh.a created from libunwind" -ForegroundColor Green
+            }
+        } else {
+            Write-Host "  + libgcc.a already exists" -ForegroundColor Green
         }
+    }
+
+    # Create dlltool -> llvm-dlltool alias
+    if (-not (Test-Path -LiteralPath "$LLVM_DIR\bin\dlltool.exe")) {
+        Copy-Item -Path "$LLVM_DIR\bin\llvm-dlltool.exe" -Destination "$LLVM_DIR\bin\dlltool.exe"
+        Write-Host "  + dlltool alias created" -ForegroundColor Green
+    }
+
+    # Add LLVM MinGW to PowerShell profile so PATH persists
+    $profileContent = @"
+`$env:Path = "$LLVM_DIR\bin;" + `$env:Path
+`$env:DLLTOOL = "$LLVM_DIR\bin\dlltool.exe"
+"@
+    $profilePath = "$env:USERPROFILE\Documents\PowerShell\Microsoft.PowerShell_profile.ps1"
+    Ensure-Dir "$env:USERPROFILE\Documents\PowerShell"
+    if (Test-Path -LiteralPath $profilePath) {
+        $current = Get-Content $profilePath -Raw
+        if ($current -notlike "*llvm-mingw*") {
+            "$profileContent`n$current" | Set-Content -Path $profilePath
+            Write-Host "  + PowerShell profile updated" -ForegroundColor Green
+        }
+    } else {
+        $profileContent | Set-Content -Path $profilePath
+        Write-Host "  + PowerShell profile created" -ForegroundColor Green
     }
 
     # Configure Cargo to use our GCC
