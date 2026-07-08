@@ -13,6 +13,16 @@
 
 ## 2026-06-08 (night)
 
+## 2026-07-06
+
+### ChatService портирован в Rust
+
+- Добавил `ChatService` в `crates/core/src/chat.rs`: `generate()`, CRUD для conversations/messages, `_build_history()` с лимитом, `_response_blocks()` для парсинга code fence в `ArtifactBlock`.
+- Добавил схемы в `schemas.rs`: `ChatRequest`, `ChatResponse`, `ChatConversationRecord`, `ChatMessageRecord`, `ArtifactBlock`.
+- 22 unit-теста: generate, store messages, history truncation, code fence parsing, conversation CRUD, harness execute.
+- Обновил `lib.rs`: `pub mod chat;`
+- Rust модулей: 17 (было 16), тестов: 183 (было 161).
+
 ## 2026-06-30
 
 ### Сборка фронтенда и E2E

@@ -14,3 +14,4 @@ pub mod agent;
 pub mod research;
 pub mod comfyui;
 pub mod rag;
+pub mod chat;

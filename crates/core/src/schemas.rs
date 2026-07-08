@@ -184,6 +184,69 @@ pub struct DeepResearchResponse {
     pub privacy: Option<crate::schemas::PrivacyReport>,
 }
 
+// ── Chat ─────────────────────────────────────────────────────────────────
+
+/// A request to send a chat message.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatRequest {
+    pub message: String,
+    pub room_id: String,
+    pub conversation_id: Option<String>,
+    pub model: Option<String>,
+    #[serde(default)]
+    pub memory_enabled: bool,
+    #[serde(default)]
+    pub web_access: bool,
+}
+
+/// Response from a chat generation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatResponse {
+    pub conversation_id: String,
+    pub room_id: String,
+    pub model: String,
+    pub response: String,
+    pub latency_ms: f64,
+    pub artifact_id: Option<String>,
+    pub privacy_level: String,
+    pub ts: String,
+}
+
+/// A conversation record.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatConversationRecord {
+    pub id: String,
+    pub room_id: String,
+    pub title: Option<String>,
+    pub created_at: String,
+    pub message_count: u32,
+}
+
+/// A single message in a conversation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatMessageRecord {
+    pub id: String,
+    pub conv_id: String,
+    pub role: String,
+    pub content: String,
+    pub model: Option<String>,
+    pub ts: String,
+}
+
+/// A block within an artifact (text or code).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ArtifactBlock {
+    pub r#type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub language: Option<String>,
+    #[serde(default)]
+    pub metadata: std::collections::HashMap<String, serde_json::Value>,
+}
+
 /// Agent permissions for sandbox execution.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AgentPermissions {
