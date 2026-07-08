@@ -26,7 +26,7 @@ fn now_iso() -> String {
 }
 
 fn code_fence_re() -> Regex {
-    Regex::new(r"```(?P<lang>[A-Za-z0-9_.+-]*)\s*\n(?P<code>.*?)```")
+    Regex::new(r"(?s)```(?P<lang>[A-Za-z0-9_.+-]*)\s*\n(?P<code>.*?)```")
         .expect("valid regex")
 }
 
@@ -34,6 +34,7 @@ pub struct ChatService {
     privacy_level: String,
     default_model: String,
     history_limit: usize,
+    #[allow(dead_code)]
     max_tokens: usize,
     conversations: Mutex<Vec<Conversation>>,
 }
@@ -338,8 +339,8 @@ impl BaseHarness for ChatService {
     }
 
     fn set_state(&self, state: HashMap<String, Value>) {
-        let mut convs = self.conversations.lock().unwrap();
-        if let Some(model) = state.get("default_model").and_then(|v| v.as_str()) {
+        let convs = self.conversations.lock().unwrap();
+        if let Some(_model) = state.get("default_model").and_then(|v| v.as_str()) {
             // Can't modify Mutex-guarded field directly; handle via logic
             drop(convs);
             // We don't support changing default_model at runtime yet
