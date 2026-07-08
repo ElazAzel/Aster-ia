@@ -1,5 +1,13 @@
 # Asterion AI — локальный запуск (бэкенд + фронтенд)
 
+# Проверка: для сборки Rust нужен GNU toolchain + GCC
+$hasGcc = Get-Command gcc.exe -ErrorAction SilentlyContinue
+if (-not $hasGcc) {
+    Write-Host "ВНИМАНИЕ: gcc.exe не найден. Сборка Rust может не работать." -ForegroundColor Yellow
+    Write-Host "Запустите scripts\bootstrap.ps1 для настройки без прав администратора." -ForegroundColor Yellow
+    Write-Host ""
+}
+
 Write-Host "Запуск Asterion AI..." -ForegroundColor Cyan
 
 $backendJob = Start-Job -ScriptBlock {
